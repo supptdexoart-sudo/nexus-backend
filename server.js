@@ -19,7 +19,10 @@ const db = {
 };
 
 // Helper: Get or Create User
-const getUser = (email) => {
+const getUser = (rawEmail) => {
+    if (!rawEmail) return null;
+    const email = rawEmail.toLowerCase().trim();
+    
     if (!db.users[email]) {
         db.users[email] = { 
             email, 
@@ -39,7 +42,7 @@ app.post('/api/auth/login', (req, res) => {
     if (!email) return res.status(400).json({ message: 'Email required' });
     
     const user = getUser(email);
-    console.log(`User logged in: ${email}`);
+    console.log(`User logged in: ${user.email}`);
     res.json({ email: user.email, isNewUser: false });
 });
 
@@ -100,7 +103,7 @@ app.delete('/api/inventory/:email/:cardId', (req, res) => {
     res.json({ success: true });
 });
 
-// --- ROUTES: FRIENDS (NOVÉ) ---
+// --- ROUTES: FRIENDS ---
 
 app.get('/api/users/:email/friends', (req, res) => {
     const user = getUser(req.params.email);
@@ -113,8 +116,8 @@ app.get('/api/users/:email/friends/requests', (req, res) => {
 });
 
 app.post('/api/users/:email/friends/request', (req, res) => {
-    const senderEmail = req.params.email;
-    const { targetEmail } = req.body;
+    const senderEmail = req.params.email.toLowerCase().trim();
+    const targetEmail = req.body.targetEmail ? req.body.targetEmail.toLowerCase().trim() : null;
 
     if (!targetEmail || senderEmail === targetEmail) {
         return res.status(400).json({ message: 'Invalid target email' });
@@ -140,14 +143,15 @@ app.post('/api/users/:email/friends/request', (req, res) => {
 });
 
 app.post('/api/users/:email/friends/respond', (req, res) => {
-    const userEmail = req.params.email;
-    const { targetEmail, accept } = req.body;
+    const userEmail = req.params.email.toLowerCase().trim();
+    const targetEmail = req.body.targetEmail ? req.body.targetEmail.toLowerCase().trim() : null;
+    const { accept } = req.body;
     
     const user = getUser(userEmail);
     // Remove request
     user.requests = user.requests.filter(r => r.fromEmail !== targetEmail);
 
-    if (accept) {
+    if (accept && targetEmail) {
         const targetUser = getUser(targetEmail);
         
         // Add to both lists if not already there
@@ -160,32 +164,41 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     res.json({ success: true });
 });
 
-// --- ROUTES: TRANSFER / BURZA (NOVÉ) ---
+// --- ROUTES: TRANSFER / BURZA (OPRAVENO) ---
 
 app.post('/api/inventory/transfer', (req, res) => {
     const { fromEmail, toEmail, cardId } = req.body;
     
+    if (!fromEmail || !toEmail || !cardId) {
+        return res.status(400).json({ message: 'Missing parameters' });
+    }
+
     const sender = getUser(fromEmail);
     const receiver = getUser(toEmail);
 
+    // 1. Find Item in Sender Inventory
     const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
     if (itemIndex === -1) {
+        console.log(`Transfer Fail: Item ${cardId} not found in ${sender.email}`);
         return res.status(404).json({ message: 'Item not found in sender inventory' });
     }
 
-    const itemToTransfer = sender.inventory[itemIndex];
+    // 2. Clone Item (Deep copy to break reference)
+    const itemToTransfer = { ...sender.inventory[itemIndex] };
     
-    // Remove from sender
+    // 3. Remove from Sender
     sender.inventory.splice(itemIndex, 1);
     
-    // Add to receiver
+    // 4. Add to Receiver
     receiver.inventory.push(itemToTransfer);
 
-    console.log(`Transfer: ${cardId} from ${fromEmail} to ${toEmail}`);
-    res.json({ success: true });
+    console.log(`Transfer SUCCESS: ${cardId} moved from ${sender.email} to ${receiver.email}`);
+    
+    // Return updated sender inventory if needed by frontend, or just success
+    res.json({ success: true, senderInventoryCount: sender.inventory.length });
 });
 
-// --- ROUTES: ROOMS / CHAT (NOVÉ) ---
+// --- ROUTES: ROOMS / CHAT ---
 
 app.post('/api/rooms', (req, res) => {
     const { roomId, hostName } = req.body;
