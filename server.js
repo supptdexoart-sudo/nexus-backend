@@ -1,207 +1,288 @@
-require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- 1. KONFIGURACE CORS ---
-// Povoluje komunikaci z tvého GitHub Pages frontendu
-const allowedOrigins = [
-  'http://localhost:5173',                 // Lokální vývoj
-  'https://supptdexoart-sudo.github.io',   // Tvoje GitHub Pages
-  'https://nexus-game-companion.web.app'   // Alternativa
-];
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Povolit požadavky bez origin (např. Postman/Curl) nebo pokud je v seznamu
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log("Blokován CORS:", origin);
-      callback(null, true); // Pro vývoj povolíme vše, v produkci změň na callback(new Error(...))
+// --- IN-MEMORY DATABASE (Simulace databáze) ---
+// V reálné produkci by zde bylo připojení k MongoDB/PostgreSQL
+const db = {
+    users: {},     // { email: { nickname, inventory: [], friends: [], requests: [] } }
+    rooms: {},     // { roomId: { host, users: [], messages: [] } }
+    codes: {}      // Cache pro Gemini/QR kódy
+};
+
+// Helper: Get or Create User
+const getUser = (email) => {
+    if (!db.users[email]) {
+        db.users[email] = { 
+            email, 
+            nickname: email.split('@')[0], 
+            inventory: [], 
+            friends: [], 
+            requests: [] 
+        };
     }
-  },
-  credentials: true
-}));
+    return db.users[email];
+};
 
-app.use(express.json());
+// --- ROUTES: AUTH & USER ---
 
-// --- 2. NASTAVENÍ EMAILU (NODEMAILER) ---
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER, // Nastaveno na Render.com
-    pass: process.env.EMAIL_PASS  // Nastaveno na Render.com
-  }
-});
-
-// --- 3. IN-MEMORY DATABÁZE (Data zmizí při restartu serveru - pro trvalost je třeba MongoDB) ---
-const users = new Set(); // Seznam registrovaných emailů
-const inventories = {};  // Ukládání karet: { 'email': [karty] }
-const nicknames = {};    // Ukládání přezdívek
-const rooms = {};        // Chatovací místnosti
-
-// --- 4. ENDPOINTY ---
-
-// Test serveru
-app.get('/', (req, res) => {
-  res.send('Nexus Backend is Running v1.0');
-});
-
-// PŘIHLÁŠENÍ / REGISTRACE + NOTIFIKACE ADMINOVI
-app.post('/api/auth/login', async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ message: 'Email chybí' });
-
-  const isNewUser = !users.has(email);
-  
-  if (isNewUser) {
-    users.add(email);
-    // Inicializace prázdného inventáře pro nového uživatele
-    if (!inventories[email]) inventories[email] = [];
-
-    console.log(`Nový uživatel: ${email}`);
-
-    // Odeslání emailu Adminovi
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: 'zbynekbal97@gmail.com',
-      subject: '🚀 NEXUS: Nový hráč se připojil!',
-      text: `Ahoj admine,\n\nDo systému se registroval nový hráč.\n\nEmail: ${email}\nDatum: ${new Date().toLocaleString()}\n\n-- Nexus System`
-    };
-
-    try {
-      if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-        await transporter.sendMail(mailOptions);
-        console.log('Notifikace odeslána.');
-      } else {
-        console.log('Email credentials chybí, email neodeslán.');
-      }
-    } catch (error) {
-      console.error('Chyba odesílání emailu:', error);
-    }
-  }
-
-  res.json({ email, isNewUser, message: 'Success' });
-});
-
-// ZÍSKÁNÍ INVENTÁŘE
-app.get('/api/inventory/:email', (req, res) => {
-  const { email } = req.params;
-  const data = inventories[email] || [];
-  res.json(data);
-});
-
-// ZÍSKÁNÍ KONKRÉTNÍ KARTY
-app.get('/api/inventory/:email/:cardId', (req, res) => {
-  const { email, cardId } = req.params;
-  const userInv = inventories[email] || [];
-  const card = userInv.find(c => c.id === cardId);
-  
-  if (card) {
-    res.json(card);
-  } else {
-    // Pokud není u uživatele, zkusíme "Admin DB" (mocknuté)
-    if (email !== 'zbynekbal97@gmail.com' && inventories['zbynekbal97@gmail.com']) {
-        const adminCard = inventories['zbynekbal97@gmail.com'].find(c => c.id === cardId);
-        if (adminCard) return res.json(adminCard);
-    }
-    res.status(404).json({ message: 'Karta nenalezena' });
-  }
-});
-
-// ULOŽENÍ KARTY (Přidání)
-app.post('/api/inventory/:email', (req, res) => {
-  const { email } = req.params;
-  const card = req.body;
-  
-  if (!inventories[email]) inventories[email] = [];
-  
-  // Odstranění duplicit pokud existují
-  inventories[email] = inventories[email].filter(c => c.id !== card.id);
-  inventories[email].push(card);
-  
-  console.log(`Uložena karta ${card.id} pro ${email}`);
-  res.json(card);
-});
-
-// AKTUALIZACE KARTY
-app.put('/api/inventory/:email/:cardId', (req, res) => {
-  const { email, cardId } = req.params;
-  const updatedCard = req.body;
-  
-  if (!inventories[email]) inventories[email] = [];
-  
-  const index = inventories[email].findIndex(c => c.id === cardId);
-  if (index !== -1) {
-    inventories[email][index] = updatedCard;
-    res.json(updatedCard);
-  } else {
-    inventories[email].push(updatedCard);
-    res.json(updatedCard);
-  }
-});
-
-// SMAZÁNÍ KARTY
-app.delete('/api/inventory/:email/:cardId', (req, res) => {
-  const { email, cardId } = req.params;
-  if (inventories[email]) {
-    inventories[email] = inventories[email].filter(c => c.id !== cardId);
-  }
-  res.json({ message: 'Deleted' });
-});
-
-// PŘEZDÍVKY
-app.post('/api/users/:email/nickname', (req, res) => {
-    const { email } = req.params;
-    const { nickname } = req.body;
-    nicknames[email] = nickname;
-    res.json({ message: 'Saved' });
+app.post('/api/auth/login', (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email required' });
+    
+    const user = getUser(email);
+    console.log(`User logged in: ${email}`);
+    res.json({ email: user.email, isNewUser: false });
 });
 
 app.get('/api/users/:email/nickname', (req, res) => {
-    const { email } = req.params;
-    res.json({ nickname: nicknames[email] || '' });
+    const user = getUser(req.params.email);
+    res.json({ nickname: user.nickname });
 });
 
-// MÍSTNOSTI A CHAT (Zjednodušená verze)
+app.post('/api/users/:email/nickname', (req, res) => {
+    const { nickname } = req.body;
+    const user = getUser(req.params.email);
+    user.nickname = nickname;
+    res.json({ success: true, nickname });
+});
+
+// --- ROUTES: INVENTORY ---
+
+app.get('/api/inventory/:email', (req, res) => {
+    const user = getUser(req.params.email);
+    res.json(user.inventory);
+});
+
+app.get('/api/inventory/:email/:cardId', (req, res) => {
+    const user = getUser(req.params.email);
+    const item = user.inventory.find(i => i.id === req.params.cardId);
+    if (item) res.json(item);
+    else res.status(404).json({ message: 'Item not found' });
+});
+
+app.post('/api/inventory/:email', (req, res) => {
+    const user = getUser(req.params.email);
+    const newItem = req.body;
+    
+    // Check duplication
+    const existingIndex = user.inventory.findIndex(i => i.id === newItem.id);
+    if (existingIndex >= 0) {
+        user.inventory[existingIndex] = newItem; // Update
+    } else {
+        user.inventory.push(newItem); // Insert
+    }
+    res.json(newItem);
+});
+
+app.put('/api/inventory/:email/:cardId', (req, res) => {
+    const user = getUser(req.params.email);
+    const index = user.inventory.findIndex(i => i.id === req.params.cardId);
+    if (index !== -1) {
+        user.inventory[index] = { ...user.inventory[index], ...req.body };
+        res.json(user.inventory[index]);
+    } else {
+        res.status(404).json({ message: 'Item not found' });
+    }
+});
+
+app.delete('/api/inventory/:email/:cardId', (req, res) => {
+    const user = getUser(req.params.email);
+    user.inventory = user.inventory.filter(i => i.id !== req.params.cardId);
+    res.json({ success: true });
+});
+
+// --- ROUTES: FRIENDS (NOVÉ) ---
+
+app.get('/api/users/:email/friends', (req, res) => {
+    const user = getUser(req.params.email);
+    res.json({ friends: user.friends });
+});
+
+app.get('/api/users/:email/friends/requests', (req, res) => {
+    const user = getUser(req.params.email);
+    res.json(user.requests);
+});
+
+app.post('/api/users/:email/friends/request', (req, res) => {
+    const senderEmail = req.params.email;
+    const { targetEmail } = req.body;
+
+    if (!targetEmail || senderEmail === targetEmail) {
+        return res.status(400).json({ message: 'Invalid target email' });
+    }
+
+    const targetUser = getUser(targetEmail); // Creates target if not exists
+    
+    // Check if already friends or requested
+    if (targetUser.friends.includes(senderEmail)) {
+        return res.json({ message: 'Already friends' });
+    }
+    if (targetUser.requests.some(r => r.fromEmail === senderEmail)) {
+        return res.json({ message: 'Request already sent' });
+    }
+
+    targetUser.requests.push({
+        fromEmail: senderEmail,
+        timestamp: Date.now()
+    });
+
+    console.log(`Friend request: ${senderEmail} -> ${targetEmail}`);
+    res.json({ success: true });
+});
+
+app.post('/api/users/:email/friends/respond', (req, res) => {
+    const userEmail = req.params.email;
+    const { targetEmail, accept } = req.body;
+    
+    const user = getUser(userEmail);
+    // Remove request
+    user.requests = user.requests.filter(r => r.fromEmail !== targetEmail);
+
+    if (accept) {
+        const targetUser = getUser(targetEmail);
+        
+        // Add to both lists if not already there
+        if (!user.friends.includes(targetEmail)) user.friends.push(targetEmail);
+        if (!targetUser.friends.includes(userEmail)) targetUser.friends.push(userEmail);
+        
+        console.log(`Friends connected: ${userEmail} <-> ${targetEmail}`);
+    }
+
+    res.json({ success: true });
+});
+
+// --- ROUTES: TRANSFER / BURZA (NOVÉ) ---
+
+app.post('/api/inventory/transfer', (req, res) => {
+    const { fromEmail, toEmail, cardId } = req.body;
+    
+    const sender = getUser(fromEmail);
+    const receiver = getUser(toEmail);
+
+    const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
+    if (itemIndex === -1) {
+        return res.status(404).json({ message: 'Item not found in sender inventory' });
+    }
+
+    const itemToTransfer = sender.inventory[itemIndex];
+    
+    // Remove from sender
+    sender.inventory.splice(itemIndex, 1);
+    
+    // Add to receiver
+    receiver.inventory.push(itemToTransfer);
+
+    console.log(`Transfer: ${cardId} from ${fromEmail} to ${toEmail}`);
+    res.json({ success: true });
+});
+
+// --- ROUTES: ROOMS / CHAT (NOVÉ) ---
+
 app.post('/api/rooms', (req, res) => {
-    const { roomId } = req.body;
-    if(!rooms[roomId]) rooms[roomId] = [];
-    res.json({ message: 'Room created' });
+    const { roomId, hostName } = req.body;
+    if (!db.rooms[roomId]) {
+        db.rooms[roomId] = {
+            id: roomId,
+            host: hostName,
+            users: [hostName],
+            messages: []
+        };
+    }
+    res.json({ success: true, roomId });
 });
 
 app.post('/api/rooms/:roomId/join', (req, res) => {
-    res.json({ message: 'Joined' });
+    const { roomId } = req.params;
+    const { userName } = req.body;
+    
+    const room = db.rooms[roomId];
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+
+    if (!room.users.includes(userName)) {
+        room.users.push(userName);
+        room.messages.push({
+            id: 'sys-' + Date.now(),
+            sender: 'SYSTEM',
+            text: `${userName} se připojil/a.`,
+            timestamp: Date.now(),
+            isSystem: true
+        });
+    }
+    res.json({ success: true });
+});
+
+app.post('/api/rooms/:roomId/leave', (req, res) => {
+    const { roomId } = req.params;
+    const { userName } = req.body;
+    
+    const room = db.rooms[roomId];
+    if (room) {
+        room.users = room.users.filter(u => u !== userName);
+        room.messages.push({
+            id: 'sys-' + Date.now(),
+            sender: 'SYSTEM',
+            text: `${userName} odešel/a.`,
+            timestamp: Date.now(),
+            isSystem: true
+        });
+        // Cleanup empty rooms
+        if (room.users.length === 0) {
+            delete db.rooms[roomId];
+        }
+    }
+    res.json({ success: true });
 });
 
 app.get('/api/rooms/:roomId/messages', (req, res) => {
-    const { roomId } = req.params;
-    res.json(rooms[roomId] || []);
+    const room = db.rooms[req.params.roomId];
+    if (!room) return res.json([]);
+    res.json(room.messages);
 });
 
 app.post('/api/rooms/:roomId/messages', (req, res) => {
     const { roomId } = req.params;
     const { sender, text } = req.body;
-    if(!rooms[roomId]) rooms[roomId] = [];
     
+    const room = db.rooms[roomId];
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+
     const msg = {
         id: Date.now().toString(),
         sender,
         text,
         timestamp: Date.now()
     };
-    rooms[roomId].push(msg);
     
-    // Omezíme historii na 50 zpráv
-    if (rooms[roomId].length > 50) rooms[roomId].shift();
-    
+    room.messages.push(msg);
+    // Keep only last 50 messages
+    if (room.messages.length > 50) room.messages.shift();
+
     res.json(msg);
 });
 
+// --- MOCK GEMINI ---
+app.post('/api/gemini/interpret-code', (req, res) => {
+    // Mock response if Gemini API key isn't set on backend
+    res.json({
+        id: req.body.code,
+        title: "Mystery Item",
+        description: "An item generated by backend mock.",
+        type: "PŘEDMĚT",
+        rarity: "Common",
+        stats: []
+    });
+});
+
+// Start Server
 app.listen(PORT, () => {
-  console.log(`Server běží na portu ${PORT}`);
+    console.log(`Nexus Backend running on port ${PORT}`);
 });
