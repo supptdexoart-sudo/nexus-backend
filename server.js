@@ -176,26 +176,34 @@ app.post('/api/inventory/transfer', (req, res) => {
     const sender = getUser(fromEmail);
     const receiver = getUser(toEmail);
 
-    // 1. Find Item in Sender Inventory
-    const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
-    if (itemIndex === -1) {
-        console.log(`Transfer Fail: Item ${cardId} not found in ${sender.email}`);
+    // 1. Find Item object
+    const itemToTransfer = sender.inventory.find(i => i.id === cardId);
+    
+    if (!itemToTransfer) {
+        console.log(`Transfer FAILED: Item ${cardId} not found in ${sender.email}`);
         return res.status(404).json({ message: 'Item not found in sender inventory' });
     }
 
-    // 2. Clone Item (Deep copy to break reference)
-    const itemToTransfer = { ...sender.inventory[itemIndex] };
+    // 2. Remove from Sender (Using FILTER for safety instead of splice)
+    const initialLength = sender.inventory.length;
+    sender.inventory = sender.inventory.filter(i => i.id !== cardId);
     
-    // 3. Remove from Sender
-    sender.inventory.splice(itemIndex, 1);
+    // Validation check
+    if (sender.inventory.length === initialLength) {
+        console.log("CRITICAL ERROR: Item was found but filter did not remove it.");
+        return res.status(500).json({ message: 'Server error during removal' });
+    }
     
-    // 4. Add to Receiver
-    receiver.inventory.push(itemToTransfer);
+    // 3. Add to Receiver
+    // Create a deep copy to ensure no reference mixing
+    const newItem = JSON.parse(JSON.stringify(itemToTransfer));
+    receiver.inventory.push(newItem);
 
     console.log(`Transfer SUCCESS: ${cardId} moved from ${sender.email} to ${receiver.email}`);
+    console.log(`Sender now has ${sender.inventory.length} items.`);
+    console.log(`Receiver now has ${receiver.inventory.length} items.`);
     
-    // Return updated sender inventory if needed by frontend, or just success
-    res.json({ success: true, senderInventoryCount: sender.inventory.length });
+    res.json({ success: true });
 });
 
 // --- ROUTES: ROOMS / CHAT ---
