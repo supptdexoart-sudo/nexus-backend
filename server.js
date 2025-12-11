@@ -164,7 +164,7 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     res.json({ success: true });
 });
 
-// --- ROUTES: TRANSFER / BURZA (OPRAVENO) ---
+// --- ROUTES: TRANSFER / BURZA (OPRAVENO A VYLEPŠENO) ---
 
 app.post('/api/inventory/transfer', (req, res) => {
     const { fromEmail, toEmail, cardId } = req.body;
@@ -184,7 +184,7 @@ app.post('/api/inventory/transfer', (req, res) => {
         return res.status(404).json({ message: 'Item not found in sender inventory' });
     }
 
-    // 2. Remove from Sender (Using FILTER for safety instead of splice)
+    // 2. Remove from Sender
     const initialLength = sender.inventory.length;
     sender.inventory = sender.inventory.filter(i => i.id !== cardId);
     
@@ -194,14 +194,20 @@ app.post('/api/inventory/transfer', (req, res) => {
         return res.status(500).json({ message: 'Server error during removal' });
     }
     
-    // 3. Add to Receiver
-    // Create a deep copy to ensure no reference mixing
+    // 3. Add to Receiver (With duplicate check)
+    // Create a deep copy
     const newItem = JSON.parse(JSON.stringify(itemToTransfer));
-    receiver.inventory.push(newItem);
+    
+    const existingIndex = receiver.inventory.findIndex(i => i.id === cardId);
+    if (existingIndex >= 0) {
+        // If receiver already has it (maybe glitch), overwrite it
+        receiver.inventory[existingIndex] = newItem;
+        console.log(`Transfer: Overwrote existing item ${cardId} in receiver inventory.`);
+    } else {
+        receiver.inventory.push(newItem);
+    }
 
     console.log(`Transfer SUCCESS: ${cardId} moved from ${sender.email} to ${receiver.email}`);
-    console.log(`Sender now has ${sender.inventory.length} items.`);
-    console.log(`Receiver now has ${receiver.inventory.length} items.`);
     
     res.json({ success: true });
 });
