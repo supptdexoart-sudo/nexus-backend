@@ -117,7 +117,6 @@ const loadDb = () => {
             addedCount++;
         } else {
             // Existing item, UPDATE it (so edits in code reflect in DB after restart)
-            // This is useful for development
             adminInv[existingIndex] = seedItem;
         }
     });
@@ -142,7 +141,7 @@ const saveDb = () => {
 // Initialize DB
 loadDb();
 
-// Helper: Get or Create User
+// Helper: Get or Create User (Normalized Email)
 const getUser = (rawEmail) => {
     if (!rawEmail) return null;
     const email = rawEmail.toLowerCase().trim();
@@ -201,6 +200,7 @@ app.get('/api/inventory/:email/:cardId', (req, res) => {
 app.post('/api/inventory/:email', (req, res) => {
     const user = getUser(req.params.email);
     const newItem = req.body;
+    // Check if item exists to avoid duplicates or to update
     const existingIndex = user.inventory.findIndex(i => i.id === newItem.id);
     if (existingIndex >= 0) {
         user.inventory[existingIndex] = newItem; 
@@ -269,33 +269,54 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     res.json({ success: true });
 });
 
+// --- CRITICAL FIX: ROBUST TRANSFER LOGIC ---
 app.post('/api/inventory/transfer', (req, res) => {
     const { fromEmail, toEmail, cardId } = req.body;
-    if (!fromEmail || !toEmail || !cardId) return res.status(400).json({ message: 'Missing parameters' });
     
-    // Validate emails exist
-    const sender = getUser(fromEmail);
-    const receiver = getUser(toEmail);
+    console.log(`[TRANSFER] Request: ${fromEmail} -> ${toEmail} [${cardId}]`);
+
+    if (!fromEmail || !toEmail || !cardId) {
+        return res.status(400).json({ message: 'Missing parameters' });
+    }
     
-    if (!sender || !receiver) return res.status(404).json({ message: 'User not found' });
+    // Normalize emails strictly to ensure we find the right DB entries
+    const senderKey = fromEmail.toLowerCase().trim();
+    const receiverKey = toEmail.toLowerCase().trim();
+    
+    const sender = db.users[senderKey];
+    const receiver = db.users[receiverKey];
+    
+    if (!sender) return res.status(404).json({ message: 'Sender not found in DB' });
+    if (!receiver) {
+        // If receiver is in the room but not in DB yet (rare, but possible if they just joined via Room ID)
+        // We create them.
+        console.log(`[TRANSFER] Receiver ${receiverKey} not found, creating...`);
+        getUser(receiverKey); // This creates the user in db.users
+    }
+    
+    // Refresh reference after potential creation
+    const validReceiver = db.users[receiverKey];
 
     const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
-    if (itemIndex === -1) return res.status(404).json({ message: 'Item not found in sender inventory' });
+    if (itemIndex === -1) {
+        console.error(`[TRANSFER] Item ${cardId} NOT FOUND in sender inventory.`);
+        return res.status(404).json({ message: 'Item not found in sender inventory' });
+    }
     
-    // 1. Get the item
-    const itemToTransfer = sender.inventory[itemIndex];
+    // 1. Get the item (Deep copy)
+    const itemToTransfer = JSON.parse(JSON.stringify(sender.inventory[itemIndex]));
     
-    // 2. Remove from sender (splice is safer for arrays)
+    // 2. Remove from sender (Modify array in place)
     sender.inventory.splice(itemIndex, 1);
     
-    // 3. Add to receiver (Deep Copy to prevent reference issues)
-    const newItem = JSON.parse(JSON.stringify(itemToTransfer));
+    // 3. Add to receiver
+    validReceiver.inventory.push(itemToTransfer);
     
-    // Optional: Check duplication on receiver, but for gameplay, duplicates might be allowed
-    receiver.inventory.push(newItem);
+    console.log(`[TRANSFER] Success. Saving DB...`);
     
-    console.log(`Trade successful: Item ${cardId} moved from ${fromEmail} to ${toEmail}`);
+    // 4. FORCE SAVE IMMEDIATELY
     saveDb(); 
+    
     res.json({ success: true });
 });
 
