@@ -257,7 +257,7 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     res.json({ success: true });
 });
 
-// --- CRITICAL FIX: ROBUST TRANSFER LOGIC ---
+// --- CRITICAL FIX: RE-ADDED TRANSFER LOGIC ---
 app.post('/api/inventory/transfer', (req, res) => {
     console.log("------------------------------------------");
     console.log("[TRANSFER] Start Transaction");
@@ -272,13 +272,13 @@ app.post('/api/inventory/transfer', (req, res) => {
     // 1. Normalize Keys
     const senderKey = fromEmail.toLowerCase().trim();
     const receiverKey = toEmail.toLowerCase().trim();
-    const cardIdStr = cardId.toString().trim(); // Ensure string matching
+    const cardIdStr = cardId.toString().trim();
 
     console.log(`[TRANSFER] From: ${senderKey} | To: ${receiverKey} | Item: ${cardIdStr}`);
     
     // 2. Load Users
     const sender = getUser(senderKey);
-    const receiver = getUser(receiverKey); // Creates receiver if they don't exist yet in DB
+    const receiver = getUser(receiverKey);
     
     if (!sender) {
         console.log("[TRANSFER] ERROR: Sender not found in DB");
@@ -292,16 +292,17 @@ app.post('/api/inventory/transfer', (req, res) => {
 
     if (itemIndex === -1) {
         console.log("[TRANSFER] ERROR: Item NOT found in sender inventory.");
+        // Debug inventory content
         console.log("[TRANSFER] Sender Inventory IDs:", sender.inventory.map(i => i.id));
         return res.status(404).json({ message: 'Item not found in sender inventory' });
     }
     
-    // 4. Check Permission (Optional but good)
+    // 4. Check 'isShareable' Permission
     const itemToTransfer = sender.inventory[itemIndex];
+    // If isShareable is strictly false, block transfer
     if (itemToTransfer.isShareable === false) {
-        console.log("[TRANSFER] WARNING: Item is marked as NOT shareable. Transferring anyway due to admin/game logic override, or blocking?");
-        // Uncomment below to strictly block non-shareables:
-        // return res.status(403).json({ message: 'Item is not shareable' });
+        console.log("[TRANSFER] ERROR: Item marked as not shareable.");
+        return res.status(403).json({ message: 'Tento předmět nelze darovat (isShareable: false).' });
     }
 
     // 5. Execute Transfer (Deep Copy)
@@ -344,7 +345,6 @@ app.post('/api/rooms', (req, res) => {
     res.json({ success: true, roomId });
 });
 
-// FIXED: Ensure email is updated when joining/rejoining
 app.post('/api/rooms/:roomId/join', (req, res) => {
     const { roomId } = req.params;
     const { userName, hp, email } = req.body;
@@ -365,7 +365,6 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
             isSystem: true
         });
     } else {
-        // Update existing member info, especially EMAIL if it was missing
         existingMember.lastSeen = Date.now();
         if (hp !== undefined) existingMember.hp = hp;
         if (normalizedEmail) existingMember.email = normalizedEmail; 
