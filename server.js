@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'nexus_db.json');
 const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
 
-// --- SEED DATA (Karty, které se vždy obnoví po smazání databáze nebo restartu serveru) ---
+// --- SEED DATA ---
 const ADMIN_SEED_ITEMS = [
     {
         id: "ITEM-001",
@@ -94,7 +94,6 @@ const loadDb = () => {
     }
 
     // --- ADMIN SEED CHECK ---
-    // Ensure Admin exists and has seed items if empty or corrupted
     if (!db.users[ADMIN_EMAIL]) {
         db.users[ADMIN_EMAIL] = { 
             email: ADMIN_EMAIL, 
@@ -105,31 +104,23 @@ const loadDb = () => {
         };
     }
 
-    // Merge Seed Items into Admin Inventory (prevent duplicates based on ID)
     const adminInv = db.users[ADMIN_EMAIL].inventory || [];
     let addedCount = 0;
     
     ADMIN_SEED_ITEMS.forEach(seedItem => {
         const existingIndex = adminInv.findIndex(i => i.id === seedItem.id);
         if (existingIndex === -1) {
-            // New item, add it
             adminInv.push(seedItem);
             addedCount++;
         } else {
-            // Existing item, UPDATE it (so edits in code reflect in DB after restart)
             adminInv[existingIndex] = seedItem;
         }
     });
     
-    db.users[ADMIN_EMAIL].inventory = adminInv; // Re-assign ensuring safety
-    
-    if (addedCount > 0) {
-        console.log(`Seeded ${addedCount} new items to Admin inventory.`);
-    }
+    db.users[ADMIN_EMAIL].inventory = adminInv;
     saveDb();
 };
 
-// Save DB to file
 const saveDb = () => {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
@@ -138,10 +129,9 @@ const saveDb = () => {
     }
 };
 
-// Initialize DB
 loadDb();
 
-// Helper: Get or Create User (Normalized Email)
+// Helper: Get or Create User
 const getUser = (rawEmail) => {
     if (!rawEmail) return null;
     const email = rawEmail.toLowerCase().trim();
@@ -164,7 +154,6 @@ const getUser = (rawEmail) => {
 app.post('/api/auth/login', (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email required' });
-    
     const user = getUser(email);
     console.log(`User logged in: ${user.email}`);
     res.json({ email: user.email, isNewUser: false });
@@ -200,7 +189,6 @@ app.get('/api/inventory/:email/:cardId', (req, res) => {
 app.post('/api/inventory/:email', (req, res) => {
     const user = getUser(req.params.email);
     const newItem = req.body;
-    // Check if item exists to avoid duplicates or to update
     const existingIndex = user.inventory.findIndex(i => i.id === newItem.id);
     if (existingIndex >= 0) {
         user.inventory[existingIndex] = newItem; 
@@ -271,48 +259,71 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
 
 // --- CRITICAL FIX: ROBUST TRANSFER LOGIC ---
 app.post('/api/inventory/transfer', (req, res) => {
-    const { fromEmail, toEmail, cardId } = req.body;
+    console.log("------------------------------------------");
+    console.log("[TRANSFER] Start Transaction");
     
-    console.log(`[TRANSFER] Request: ${fromEmail} -> ${toEmail} [${cardId}]`);
+    const { fromEmail, toEmail, cardId } = req.body;
 
     if (!fromEmail || !toEmail || !cardId) {
+        console.log("[TRANSFER] ERROR: Missing parameters", req.body);
         return res.status(400).json({ message: 'Missing parameters' });
     }
     
-    // Normalize emails strictly to ensure we find the right DB entries
+    // 1. Normalize Keys
     const senderKey = fromEmail.toLowerCase().trim();
     const receiverKey = toEmail.toLowerCase().trim();
+    const cardIdStr = cardId.toString().trim(); // Ensure string matching
+
+    console.log(`[TRANSFER] From: ${senderKey} | To: ${receiverKey} | Item: ${cardIdStr}`);
     
-    // Ensure both users exist in DB (getUser creates them if missing)
+    // 2. Load Users
     const sender = getUser(senderKey);
-    const receiver = getUser(receiverKey); // This ensures 'phantom' receivers are created
+    const receiver = getUser(receiverKey); // Creates receiver if they don't exist yet in DB
     
-    if (!sender) return res.status(404).json({ message: 'Sender not found in DB' });
-    
-    const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
+    if (!sender) {
+        console.log("[TRANSFER] ERROR: Sender not found in DB");
+        return res.status(404).json({ message: 'Sender not found' });
+    }
+
+    // 3. Find Item (Case-Insensitive ID Check)
+    const itemIndex = sender.inventory.findIndex(i => 
+        i.id.toLowerCase() === cardIdStr.toLowerCase()
+    );
+
     if (itemIndex === -1) {
-        console.error(`[TRANSFER] Item ${cardId} NOT FOUND in sender inventory.`);
+        console.log("[TRANSFER] ERROR: Item NOT found in sender inventory.");
+        console.log("[TRANSFER] Sender Inventory IDs:", sender.inventory.map(i => i.id));
         return res.status(404).json({ message: 'Item not found in sender inventory' });
     }
     
-    // 1. Get the item (Deep copy)
-    const itemToTransfer = JSON.parse(JSON.stringify(sender.inventory[itemIndex]));
+    // 4. Check Permission (Optional but good)
+    const itemToTransfer = sender.inventory[itemIndex];
+    if (itemToTransfer.isShareable === false) {
+        console.log("[TRANSFER] WARNING: Item is marked as NOT shareable. Transferring anyway due to admin/game logic override, or blocking?");
+        // Uncomment below to strictly block non-shareables:
+        // return res.status(403).json({ message: 'Item is not shareable' });
+    }
+
+    // 5. Execute Transfer (Deep Copy)
+    const transferPayload = JSON.parse(JSON.stringify(itemToTransfer));
     
-    // 2. Remove from sender (Modify array in place)
+    // Remove from sender
     sender.inventory.splice(itemIndex, 1);
     
-    // 3. Add to receiver
-    receiver.inventory.push(itemToTransfer);
+    // Add to receiver
+    receiver.inventory.push(transferPayload);
     
-    console.log(`[TRANSFER] Success. Saving DB...`);
+    console.log(`[TRANSFER] Success! Item moved. Saving DB...`);
     
-    // 4. FORCE SAVE IMMEDIATELY
+    // 6. FORCE SAVE
     saveDb(); 
     
+    console.log("[TRANSFER] DB Saved. Response sent.");
+    console.log("------------------------------------------");
     res.json({ success: true });
 });
 
-// --- ROUTES: ROOMS / CHAT (UPDATED FOR DIRECT TRADE) ---
+// --- ROUTES: ROOMS ---
 
 app.post('/api/rooms', (req, res) => {
     const { roomId, hostName, hostEmail } = req.body; 
@@ -320,7 +331,12 @@ app.post('/api/rooms', (req, res) => {
         db.rooms[roomId] = {
             id: roomId,
             host: hostName,
-            members: [{ name: hostName, email: hostEmail ? hostEmail.toLowerCase().trim() : undefined, hp: 100, lastSeen: Date.now() }], 
+            members: [{ 
+                name: hostName, 
+                email: hostEmail ? hostEmail.toLowerCase().trim() : undefined, 
+                hp: 100, 
+                lastSeen: Date.now() 
+            }], 
             messages: []
         };
         saveDb();
@@ -328,6 +344,7 @@ app.post('/api/rooms', (req, res) => {
     res.json({ success: true, roomId });
 });
 
+// FIXED: Ensure email is updated when joining/rejoining
 app.post('/api/rooms/:roomId/join', (req, res) => {
     const { roomId } = req.params;
     const { userName, hp, email } = req.body;
@@ -348,9 +365,10 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
             isSystem: true
         });
     } else {
+        // Update existing member info, especially EMAIL if it was missing
         existingMember.lastSeen = Date.now();
         if (hp !== undefined) existingMember.hp = hp;
-        if (normalizedEmail) existingMember.email = normalizedEmail; // Update email on rejoin
+        if (normalizedEmail) existingMember.email = normalizedEmail; 
     }
     saveDb();
     res.json({ success: true });
