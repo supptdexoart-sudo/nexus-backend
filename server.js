@@ -71,7 +71,8 @@ const ADMIN_SEED_ITEMS = [
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- GLOBAL REQUEST LOGGER (NEW) ---
+// --- GLOBAL REQUEST LOGGER ---
+// This ensures we see every attempt to contact the server
 app.use((req, res, next) => {
     console.log(`[REQUEST] ${req.method} ${req.url}`);
     next();
@@ -111,13 +112,11 @@ const loadDb = () => {
     }
 
     const adminInv = db.users[ADMIN_EMAIL].inventory || [];
-    let addedCount = 0;
     
     ADMIN_SEED_ITEMS.forEach(seedItem => {
         const existingIndex = adminInv.findIndex(i => i.id === seedItem.id);
         if (existingIndex === -1) {
             adminInv.push(seedItem);
-            addedCount++;
         } else {
             adminInv[existingIndex] = seedItem;
         }
@@ -298,14 +297,12 @@ app.post('/api/inventory/transfer', (req, res) => {
 
     if (itemIndex === -1) {
         console.log("[TRANSFER] ERROR: Item NOT found in sender inventory.");
-        // Debug inventory content
         console.log("[TRANSFER] Sender Inventory IDs:", sender.inventory.map(i => i.id));
         return res.status(404).json({ message: 'Item not found in sender inventory' });
     }
     
     // 4. Check 'isShareable' Permission
     const itemToTransfer = sender.inventory[itemIndex];
-    // If isShareable is strictly false, block transfer
     if (itemToTransfer.isShareable === false) {
         console.log("[TRANSFER] ERROR: Item marked as not shareable.");
         return res.status(403).json({ message: 'Tento předmět nelze darovat (isShareable: false).' });
@@ -373,6 +370,7 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
     } else {
         existingMember.lastSeen = Date.now();
         if (hp !== undefined) existingMember.hp = hp;
+        // CRITICAL: Always update email if provided to fix missing email in members list
         if (normalizedEmail) existingMember.email = normalizedEmail; 
     }
     saveDb();
