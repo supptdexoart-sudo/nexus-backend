@@ -2,20 +2,116 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const DB_FILE = path.join(__dirname, 'nexus_db.json');
+const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
+
+// --- SEED DATA (Karty, které se vždy obnoví po smazání databáze) ---
+const ADMIN_SEED_ITEMS = [
+    {
+        id: "ITEM-001",
+        title: "Lékárnička",
+        description: "Základní zdravotnický balíček. Obnoví malé množství zdraví.",
+        type: "PŘEDMĚT",
+        rarity: "Common",
+        isShareable: true,
+        stats: [{ label: "HP", value: "+20" }],
+        price: 50
+    },
+    {
+        id: "WEAPON-01",
+        title: "Plazmová Puška",
+        description: "Standardní zbraň pěchoty. Účinná proti lehkému pancíři.",
+        type: "PŘEDMĚT",
+        rarity: "Rare",
+        isShareable: true,
+        stats: [{ label: "DMG", value: "15" }],
+        price: 120
+    },
+    {
+        id: "SHOP-001",
+        title: "Překupník se Zbraněmi",
+        description: "Tento obchodník nabízí nelegální zbraně a munici.",
+        type: "OBCHODNÍK",
+        rarity: "Epic",
+        isShareable: false,
+        merchantItems: [
+            { id: "ITEM-001", stock: 10 },
+            { id: "WEAPON-01", stock: 5 }
+        ]
+    }
+];
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- IN-MEMORY DATABASE (Simulace databáze) ---
-const db = {
-    users: {},     // { email: { nickname, inventory: [], friends: [], requests: [] } }
-    rooms: {},     // { roomId: { host, members: [{ name, hp, email, lastSeen }], messages: [] } }
-    codes: {}      
+// --- DATABASE HANDLERS ---
+
+let db = {
+    users: {},
+    rooms: {},
+    codes: {}
 };
+
+// Load DB from file
+const loadDb = () => {
+    if (fs.existsSync(DB_FILE)) {
+        try {
+            const data = fs.readFileSync(DB_FILE, 'utf8');
+            db = JSON.parse(data);
+            console.log("Database loaded from file.");
+        } catch (e) {
+            console.error("Error loading DB, starting fresh.", e);
+        }
+    } else {
+        console.log("No DB file found, starting fresh.");
+    }
+
+    // --- ADMIN SEED CHECK ---
+    // Ensure Admin exists and has seed items if empty
+    if (!db.users[ADMIN_EMAIL]) {
+        db.users[ADMIN_EMAIL] = { 
+            email: ADMIN_EMAIL, 
+            nickname: 'Master Admin', 
+            inventory: [], 
+            friends: [], 
+            requests: [] 
+        };
+    }
+
+    // Merge Seed Items into Admin Inventory (prevent duplicates)
+    const adminInv = db.users[ADMIN_EMAIL].inventory;
+    let addedCount = 0;
+    ADMIN_SEED_ITEMS.forEach(seedItem => {
+        const exists = adminInv.find(i => i.id === seedItem.id);
+        if (!exists) {
+            adminInv.push(seedItem);
+            addedCount++;
+        }
+    });
+    
+    if (addedCount > 0) {
+        console.log(`Seeded ${addedCount} items to Admin inventory.`);
+        saveDb();
+    }
+};
+
+// Save DB to file
+const saveDb = () => {
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+    } catch (e) {
+        console.error("Failed to save DB:", e);
+    }
+};
+
+// Initialize DB
+loadDb();
 
 // Helper: Get or Create User
 const getUser = (rawEmail) => {
@@ -30,6 +126,7 @@ const getUser = (rawEmail) => {
             friends: [], 
             requests: [] 
         };
+        saveDb();
     }
     return db.users[email];
 };
@@ -54,6 +151,7 @@ app.post('/api/users/:email/nickname', (req, res) => {
     const { nickname } = req.body;
     const user = getUser(req.params.email);
     user.nickname = nickname;
+    saveDb();
     res.json({ success: true, nickname });
 });
 
@@ -80,6 +178,7 @@ app.post('/api/inventory/:email', (req, res) => {
     } else {
         user.inventory.push(newItem); 
     }
+    saveDb();
     res.json(newItem);
 });
 
@@ -88,6 +187,7 @@ app.put('/api/inventory/:email/:cardId', (req, res) => {
     const index = user.inventory.findIndex(i => i.id === req.params.cardId);
     if (index !== -1) {
         user.inventory[index] = { ...user.inventory[index], ...req.body };
+        saveDb();
         res.json(user.inventory[index]);
     } else {
         res.status(404).json({ message: 'Item not found' });
@@ -97,6 +197,7 @@ app.put('/api/inventory/:email/:cardId', (req, res) => {
 app.delete('/api/inventory/:email/:cardId', (req, res) => {
     const user = getUser(req.params.email);
     user.inventory = user.inventory.filter(i => i.id !== req.params.cardId);
+    saveDb();
     res.json({ success: true });
 });
 
@@ -120,6 +221,7 @@ app.post('/api/users/:email/friends/request', (req, res) => {
     if (targetUser.friends.includes(senderEmail)) return res.json({ message: 'Already friends' });
     if (targetUser.requests.some(r => r.fromEmail === senderEmail)) return res.json({ message: 'Request already sent' });
     targetUser.requests.push({ fromEmail: senderEmail, timestamp: Date.now() });
+    saveDb();
     res.json({ success: true });
 });
 
@@ -134,6 +236,7 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
         if (!user.friends.includes(targetEmail)) user.friends.push(targetEmail);
         if (!targetUser.friends.includes(userEmail)) targetUser.friends.push(userEmail);
     }
+    saveDb();
     res.json({ success: true });
 });
 
@@ -155,34 +258,39 @@ app.post('/api/inventory/transfer', (req, res) => {
     
     // Add to receiver
     const newItem = JSON.parse(JSON.stringify(itemToTransfer));
-    const existingIndex = receiver.inventory.findIndex(i => i.id === cardId);
     
-    if (existingIndex >= 0) receiver.inventory[existingIndex] = newItem;
-    else receiver.inventory.push(newItem);
+    // Check if receiver already has it (optional: allow duplicates? lets allow updates for now)
+    const existingIndex = receiver.inventory.findIndex(i => i.id === cardId);
+    if (existingIndex >= 0) {
+        receiver.inventory[existingIndex] = newItem;
+    } else {
+        receiver.inventory.push(newItem);
+    }
     
     console.log(`Trade successful: ${cardId} from ${fromEmail} to ${toEmail}`);
+    saveDb(); // Critical: Save changes
     res.json({ success: true });
 });
 
 // --- ROUTES: ROOMS / CHAT (UPDATED FOR DIRECT TRADE) ---
 
 app.post('/api/rooms', (req, res) => {
-    const { roomId, hostName, hostEmail } = req.body; // Added hostEmail
+    const { roomId, hostName, hostEmail } = req.body; 
     if (!db.rooms[roomId]) {
         db.rooms[roomId] = {
             id: roomId,
             host: hostName,
-            // Store email in member data
             members: [{ name: hostName, email: hostEmail, hp: 100, lastSeen: Date.now() }], 
             messages: []
         };
+        saveDb();
     }
     res.json({ success: true, roomId });
 });
 
 app.post('/api/rooms/:roomId/join', (req, res) => {
     const { roomId } = req.params;
-    const { userName, hp, email } = req.body; // Accept email on join
+    const { userName, hp, email } = req.body;
     
     const room = db.rooms[roomId];
     if (!room) return res.status(404).json({ message: 'Room not found' });
@@ -198,15 +306,14 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
             isSystem: true
         });
     } else {
-        // Update existing if re-joining
         existingMember.lastSeen = Date.now();
         if (hp !== undefined) existingMember.hp = hp;
-        if (email) existingMember.email = email; // Update email if provided
+        if (email) existingMember.email = email;
     }
+    saveDb();
     res.json({ success: true });
 });
 
-// Update Player Status (Heartbeat)
 app.post('/api/rooms/:roomId/status', (req, res) => {
     const { roomId } = req.params;
     const { userName, hp } = req.body;
@@ -217,13 +324,14 @@ app.post('/api/rooms/:roomId/status', (req, res) => {
             member.hp = hp;
             member.lastSeen = Date.now();
         }
+        // Status updates are too frequent to save to disk every time, maybe skip saveDb here or throttle
+        // For safety in this version, we will NOT save every heartbeat to avoid disk thrashing
         res.json({ success: true });
     } else {
         res.status(404).json({ message: 'Room not found' });
     }
 });
 
-// Get Members (now includes emails for trade logic)
 app.get('/api/rooms/:roomId/members', (req, res) => {
     const room = db.rooms[req.params.roomId];
     if (!room) return res.json([]);
@@ -244,6 +352,7 @@ app.post('/api/rooms/:roomId/leave', (req, res) => {
             isSystem: true
         });
         if (room.members.length === 0) delete db.rooms[roomId];
+        saveDb();
     }
     res.json({ success: true });
 });
@@ -262,10 +371,10 @@ app.post('/api/rooms/:roomId/messages', (req, res) => {
     const msg = { id: Date.now().toString(), sender, text, timestamp: Date.now() };
     room.messages.push(msg);
     if (room.messages.length > 50) room.messages.shift();
+    saveDb();
     res.json(msg);
 });
 
-// --- MOCK GEMINI ---
 app.post('/api/gemini/interpret-code', (req, res) => {
     res.json({
         id: req.body.code,
