@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 // --- IN-MEMORY DATABASE (Simulace databáze) ---
 const db = {
     users: {},     // { email: { nickname, inventory: [], friends: [], requests: [] } }
-    rooms: {},     // { roomId: { host, members: [{ name, hp, lastSeen }], messages: [] } }
+    rooms: {},     // { roomId: { host, members: [{ name, hp, email, lastSeen }], messages: [] } }
     codes: {}      
 };
 
@@ -101,8 +101,6 @@ app.delete('/api/inventory/:email/:cardId', (req, res) => {
 });
 
 // --- ROUTES: FRIENDS & TRANSFER ---
-// (Zkráceno pro přehlednost - logika zůstává stejná jako v předchozí verzi, 
-//  pokud není změněna, server.js by měl obsahovat vše. Zde pro update přidávám ROOM LOGIC changes)
 
 app.get('/api/users/:email/friends', (req, res) => {
     const user = getUser(req.params.email);
@@ -142,27 +140,40 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
 app.post('/api/inventory/transfer', (req, res) => {
     const { fromEmail, toEmail, cardId } = req.body;
     if (!fromEmail || !toEmail || !cardId) return res.status(400).json({ message: 'Missing parameters' });
+    
+    // Validate emails exist
     const sender = getUser(fromEmail);
     const receiver = getUser(toEmail);
+    
+    if (!sender || !receiver) return res.status(404).json({ message: 'User not found' });
+
     const itemToTransfer = sender.inventory.find(i => i.id === cardId);
-    if (!itemToTransfer) return res.status(404).json({ message: 'Item not found' });
+    if (!itemToTransfer) return res.status(404).json({ message: 'Item not found in sender inventory' });
+    
+    // Remove from sender
     sender.inventory = sender.inventory.filter(i => i.id !== cardId);
+    
+    // Add to receiver
     const newItem = JSON.parse(JSON.stringify(itemToTransfer));
     const existingIndex = receiver.inventory.findIndex(i => i.id === cardId);
+    
     if (existingIndex >= 0) receiver.inventory[existingIndex] = newItem;
     else receiver.inventory.push(newItem);
+    
+    console.log(`Trade successful: ${cardId} from ${fromEmail} to ${toEmail}`);
     res.json({ success: true });
 });
 
-// --- ROUTES: ROOMS / CHAT (UPDATED FOR HP SYNC) ---
+// --- ROUTES: ROOMS / CHAT (UPDATED FOR DIRECT TRADE) ---
 
 app.post('/api/rooms', (req, res) => {
-    const { roomId, hostName } = req.body;
+    const { roomId, hostName, hostEmail } = req.body; // Added hostEmail
     if (!db.rooms[roomId]) {
         db.rooms[roomId] = {
             id: roomId,
             host: hostName,
-            members: [{ name: hostName, hp: 100, lastSeen: Date.now() }], // New Structure
+            // Store email in member data
+            members: [{ name: hostName, email: hostEmail, hp: 100, lastSeen: Date.now() }], 
             messages: []
         };
     }
@@ -171,14 +182,14 @@ app.post('/api/rooms', (req, res) => {
 
 app.post('/api/rooms/:roomId/join', (req, res) => {
     const { roomId } = req.params;
-    const { userName, hp } = req.body; // Accept HP on join
+    const { userName, hp, email } = req.body; // Accept email on join
     
     const room = db.rooms[roomId];
     if (!room) return res.status(404).json({ message: 'Room not found' });
 
     const existingMember = room.members.find(m => m.name === userName);
     if (!existingMember) {
-        room.members.push({ name: userName, hp: hp || 100, lastSeen: Date.now() });
+        room.members.push({ name: userName, email: email, hp: hp || 100, lastSeen: Date.now() });
         room.messages.push({
             id: 'sys-' + Date.now(),
             sender: 'SYSTEM',
@@ -190,11 +201,12 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
         // Update existing if re-joining
         existingMember.lastSeen = Date.now();
         if (hp !== undefined) existingMember.hp = hp;
+        if (email) existingMember.email = email; // Update email if provided
     }
     res.json({ success: true });
 });
 
-// New Endpoint: Update Player Status (Heartbeat)
+// Update Player Status (Heartbeat)
 app.post('/api/rooms/:roomId/status', (req, res) => {
     const { roomId } = req.params;
     const { userName, hp } = req.body;
@@ -211,11 +223,10 @@ app.post('/api/rooms/:roomId/status', (req, res) => {
     }
 });
 
-// New Endpoint: Get Members
+// Get Members (now includes emails for trade logic)
 app.get('/api/rooms/:roomId/members', (req, res) => {
     const room = db.rooms[req.params.roomId];
     if (!room) return res.json([]);
-    // Filter out stale members (inactive for > 1 min) - optional, keeping simple for now
     res.json(room.members);
 });
 
