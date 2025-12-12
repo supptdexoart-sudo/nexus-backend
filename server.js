@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'nexus_db.json');
 const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
 
-// --- SEED DATA (Karty, které se vždy obnoví po smazání databáze) ---
+// --- SEED DATA (Karty, které se vždy obnoví po smazání databáze nebo restartu serveru) ---
 const ADMIN_SEED_ITEMS = [
     {
         id: "ITEM-001",
@@ -23,6 +23,16 @@ const ADMIN_SEED_ITEMS = [
         price: 50
     },
     {
+        id: "ITEM-002",
+        title: "Adrenalinová Injekce",
+        description: "Okamžité oživení, ale s vedlejšími účinky.",
+        type: "PŘEDMĚT",
+        rarity: "Rare",
+        isShareable: true,
+        stats: [{ label: "HP", value: "+50" }, { label: "STAMINA", value: "+10" }],
+        price: 150
+    },
+    {
         id: "WEAPON-01",
         title: "Plazmová Puška",
         description: "Standardní zbraň pěchoty. Účinná proti lehkému pancíři.",
@@ -33,6 +43,16 @@ const ADMIN_SEED_ITEMS = [
         price: 120
     },
     {
+        id: "WEAPON-02",
+        title: "Energetická Čepel",
+        description: "Tichá a smrtící zbraň na blízko.",
+        type: "PŘEDMĚT",
+        rarity: "Epic",
+        isShareable: true,
+        stats: [{ label: "DMG", value: "25" }, { label: "CRIT", value: "10%" }],
+        price: 300
+    },
+    {
         id: "SHOP-001",
         title: "Překupník se Zbraněmi",
         description: "Tento obchodník nabízí nelegální zbraně a munici.",
@@ -41,7 +61,8 @@ const ADMIN_SEED_ITEMS = [
         isShareable: false,
         merchantItems: [
             { id: "ITEM-001", stock: 10 },
-            { id: "WEAPON-01", stock: 5 }
+            { id: "WEAPON-01", stock: 5 },
+            { id: "WEAPON-02", stock: 2 }
         ]
     }
 ];
@@ -73,7 +94,7 @@ const loadDb = () => {
     }
 
     // --- ADMIN SEED CHECK ---
-    // Ensure Admin exists and has seed items if empty
+    // Ensure Admin exists and has seed items if empty or corrupted
     if (!db.users[ADMIN_EMAIL]) {
         db.users[ADMIN_EMAIL] = { 
             email: ADMIN_EMAIL, 
@@ -84,21 +105,29 @@ const loadDb = () => {
         };
     }
 
-    // Merge Seed Items into Admin Inventory (prevent duplicates)
-    const adminInv = db.users[ADMIN_EMAIL].inventory;
+    // Merge Seed Items into Admin Inventory (prevent duplicates based on ID)
+    const adminInv = db.users[ADMIN_EMAIL].inventory || [];
     let addedCount = 0;
+    
     ADMIN_SEED_ITEMS.forEach(seedItem => {
-        const exists = adminInv.find(i => i.id === seedItem.id);
-        if (!exists) {
+        const existingIndex = adminInv.findIndex(i => i.id === seedItem.id);
+        if (existingIndex === -1) {
+            // New item, add it
             adminInv.push(seedItem);
             addedCount++;
+        } else {
+            // Existing item, UPDATE it (so edits in code reflect in DB after restart)
+            // This is useful for development
+            adminInv[existingIndex] = seedItem;
         }
     });
     
+    db.users[ADMIN_EMAIL].inventory = adminInv; // Re-assign ensuring safety
+    
     if (addedCount > 0) {
-        console.log(`Seeded ${addedCount} items to Admin inventory.`);
-        saveDb();
+        console.log(`Seeded ${addedCount} new items to Admin inventory.`);
     }
+    saveDb();
 };
 
 // Save DB to file
@@ -250,25 +279,23 @@ app.post('/api/inventory/transfer', (req, res) => {
     
     if (!sender || !receiver) return res.status(404).json({ message: 'User not found' });
 
-    const itemToTransfer = sender.inventory.find(i => i.id === cardId);
-    if (!itemToTransfer) return res.status(404).json({ message: 'Item not found in sender inventory' });
+    const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
+    if (itemIndex === -1) return res.status(404).json({ message: 'Item not found in sender inventory' });
     
-    // Remove from sender
-    sender.inventory = sender.inventory.filter(i => i.id !== cardId);
+    // 1. Get the item
+    const itemToTransfer = sender.inventory[itemIndex];
     
-    // Add to receiver
+    // 2. Remove from sender (splice is safer for arrays)
+    sender.inventory.splice(itemIndex, 1);
+    
+    // 3. Add to receiver (Deep Copy to prevent reference issues)
     const newItem = JSON.parse(JSON.stringify(itemToTransfer));
     
-    // Check if receiver already has it (optional: allow duplicates? lets allow updates for now)
-    const existingIndex = receiver.inventory.findIndex(i => i.id === cardId);
-    if (existingIndex >= 0) {
-        receiver.inventory[existingIndex] = newItem;
-    } else {
-        receiver.inventory.push(newItem);
-    }
+    // Optional: Check duplication on receiver, but for gameplay, duplicates might be allowed
+    receiver.inventory.push(newItem);
     
-    console.log(`Trade successful: ${cardId} from ${fromEmail} to ${toEmail}`);
-    saveDb(); // Critical: Save changes
+    console.log(`Trade successful: Item ${cardId} moved from ${fromEmail} to ${toEmail}`);
+    saveDb(); 
     res.json({ success: true });
 });
 
@@ -324,8 +351,6 @@ app.post('/api/rooms/:roomId/status', (req, res) => {
             member.hp = hp;
             member.lastSeen = Date.now();
         }
-        // Status updates are too frequent to save to disk every time, maybe skip saveDb here or throttle
-        // For safety in this version, we will NOT save every heartbeat to avoid disk thrashing
         res.json({ success: true });
     } else {
         res.status(404).json({ message: 'Room not found' });
