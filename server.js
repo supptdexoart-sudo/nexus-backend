@@ -71,6 +71,12 @@ const ADMIN_SEED_ITEMS = [
 app.use(cors());
 app.use(bodyParser.json());
 
+// --- GLOBAL REQUEST LOGGER (NEW) ---
+app.use((req, res, next) => {
+    console.log(`[REQUEST] ${req.method} ${req.url}`);
+    next();
+});
+
 // --- DATABASE HANDLERS ---
 
 let db = {
@@ -257,7 +263,7 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     res.json({ success: true });
 });
 
-// --- CRITICAL FIX: RE-ADDED TRANSFER LOGIC ---
+// --- CRITICAL FIX: TRANSFER LOGIC ---
 app.post('/api/inventory/transfer', (req, res) => {
     console.log("------------------------------------------");
     console.log("[TRANSFER] Start Transaction");
@@ -446,4 +452,3 @@ app.post('/api/gemini/interpret-code', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Nexus Backend running on port ${PORT}`);
 });
-
