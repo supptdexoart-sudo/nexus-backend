@@ -283,20 +283,12 @@ app.post('/api/inventory/transfer', (req, res) => {
     const senderKey = fromEmail.toLowerCase().trim();
     const receiverKey = toEmail.toLowerCase().trim();
     
-    const sender = db.users[senderKey];
-    const receiver = db.users[receiverKey];
+    // Ensure both users exist in DB (getUser creates them if missing)
+    const sender = getUser(senderKey);
+    const receiver = getUser(receiverKey); // This ensures 'phantom' receivers are created
     
     if (!sender) return res.status(404).json({ message: 'Sender not found in DB' });
-    if (!receiver) {
-        // If receiver is in the room but not in DB yet (rare, but possible if they just joined via Room ID)
-        // We create them.
-        console.log(`[TRANSFER] Receiver ${receiverKey} not found, creating...`);
-        getUser(receiverKey); // This creates the user in db.users
-    }
     
-    // Refresh reference after potential creation
-    const validReceiver = db.users[receiverKey];
-
     const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
     if (itemIndex === -1) {
         console.error(`[TRANSFER] Item ${cardId} NOT FOUND in sender inventory.`);
@@ -310,7 +302,7 @@ app.post('/api/inventory/transfer', (req, res) => {
     sender.inventory.splice(itemIndex, 1);
     
     // 3. Add to receiver
-    validReceiver.inventory.push(itemToTransfer);
+    receiver.inventory.push(itemToTransfer);
     
     console.log(`[TRANSFER] Success. Saving DB...`);
     
@@ -328,7 +320,7 @@ app.post('/api/rooms', (req, res) => {
         db.rooms[roomId] = {
             id: roomId,
             host: hostName,
-            members: [{ name: hostName, email: hostEmail, hp: 100, lastSeen: Date.now() }], 
+            members: [{ name: hostName, email: hostEmail ? hostEmail.toLowerCase().trim() : undefined, hp: 100, lastSeen: Date.now() }], 
             messages: []
         };
         saveDb();
@@ -343,9 +335,11 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
     const room = db.rooms[roomId];
     if (!room) return res.status(404).json({ message: 'Room not found' });
 
+    const normalizedEmail = email ? email.toLowerCase().trim() : undefined;
+
     const existingMember = room.members.find(m => m.name === userName);
     if (!existingMember) {
-        room.members.push({ name: userName, email: email, hp: hp || 100, lastSeen: Date.now() });
+        room.members.push({ name: userName, email: normalizedEmail, hp: hp || 100, lastSeen: Date.now() });
         room.messages.push({
             id: 'sys-' + Date.now(),
             sender: 'SYSTEM',
@@ -356,7 +350,7 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
     } else {
         existingMember.lastSeen = Date.now();
         if (hp !== undefined) existingMember.hp = hp;
-        if (email) existingMember.email = email;
+        if (normalizedEmail) existingMember.email = normalizedEmail; // Update email on rejoin
     }
     saveDb();
     res.json({ success: true });
