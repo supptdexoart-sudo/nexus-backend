@@ -164,7 +164,7 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     res.json({ success: true });
 });
 
-// --- ROUTES: TRANSFER / BURZA (OPRAVENO A VYLEPŠENO) ---
+// --- ROUTES: TRANSFER / BURZA (OPRAVENO - ROBUSTNÍ LOGIKA) ---
 
 app.post('/api/inventory/transfer', (req, res) => {
     const { fromEmail, toEmail, cardId } = req.body;
@@ -176,35 +176,27 @@ app.post('/api/inventory/transfer', (req, res) => {
     const sender = getUser(fromEmail);
     const receiver = getUser(toEmail);
 
-    // 1. Find Item object
-    const itemToTransfer = sender.inventory.find(i => i.id === cardId);
+    // 1. Find Index of Item
+    const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
     
-    if (!itemToTransfer) {
+    if (itemIndex === -1) {
         console.log(`Transfer FAILED: Item ${cardId} not found in ${sender.email}`);
         return res.status(404).json({ message: 'Item not found in sender inventory' });
     }
 
-    // 2. Remove from Sender
-    const initialLength = sender.inventory.length;
-    sender.inventory = sender.inventory.filter(i => i.id !== cardId);
+    // 2. ATOMIC MOVE: Remove from Sender using splice (returns array of removed items)
+    const [movedItem] = sender.inventory.splice(itemIndex, 1);
     
-    // Validation check
-    if (sender.inventory.length === initialLength) {
-        console.log("CRITICAL ERROR: Item was found but filter did not remove it.");
-        return res.status(500).json({ message: 'Server error during removal' });
-    }
+    // 3. Add to Receiver
+    // Create a deep copy to ensure no reference issues, though splice handles references fine
+    const receivedItem = JSON.parse(JSON.stringify(movedItem));
     
-    // 3. Add to Receiver (With duplicate check)
-    // Create a deep copy
-    const newItem = JSON.parse(JSON.stringify(itemToTransfer));
-    
-    const existingIndex = receiver.inventory.findIndex(i => i.id === cardId);
-    if (existingIndex >= 0) {
-        // If receiver already has it (maybe glitch), overwrite it
-        receiver.inventory[existingIndex] = newItem;
-        console.log(`Transfer: Overwrote existing item ${cardId} in receiver inventory.`);
+    // Check duplication on receiver side just in case (overwrite if exists to be safe)
+    const receiverExistingIndex = receiver.inventory.findIndex(i => i.id === cardId);
+    if (receiverExistingIndex >= 0) {
+        receiver.inventory[receiverExistingIndex] = receivedItem;
     } else {
-        receiver.inventory.push(newItem);
+        receiver.inventory.push(receivedItem);
     }
 
     console.log(`Transfer SUCCESS: ${cardId} moved from ${sender.email} to ${receiver.email}`);
