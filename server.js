@@ -8,14 +8,13 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' })); // Increased limit for bulk sync
 
 // --- IN-MEMORY DATABASE (Simulace databáze) ---
-// V reálné produkci by zde bylo připojení k MongoDB/PostgreSQL
 const db = {
     users: {},     // { email: { nickname, inventory: [], friends: [], requests: [] } }
-    rooms: {},     // { roomId: { host, users: [], messages: [] } }
-    codes: {}      // Cache pro Gemini/QR kódy
+    rooms: {},     // { roomId: { host, members: [{ name, hp, lastSeen }], messages: [] } }
+    codes: {}      
 };
 
 // Helper: Get or Create User
@@ -43,7 +42,9 @@ app.post('/api/auth/login', (req, res) => {
     
     const user = getUser(email);
     console.log(`User logged in: ${user.email}`);
-    res.json({ email: user.email, isNewUser: false });
+    // Return whether the user was just created (meaning server might have been reset)
+    // We check if inventory is empty as a heuristic for a "fresh/wiped" user
+    res.json({ email: user.email, isNewUser: user.inventory.length === 0 });
 });
 
 app.get('/api/users/:email/nickname', (req, res) => {
@@ -75,15 +76,31 @@ app.get('/api/inventory/:email/:cardId', (req, res) => {
 app.post('/api/inventory/:email', (req, res) => {
     const user = getUser(req.params.email);
     const newItem = req.body;
-    
-    // Check duplication
     const existingIndex = user.inventory.findIndex(i => i.id === newItem.id);
     if (existingIndex >= 0) {
-        user.inventory[existingIndex] = newItem; // Update
+        user.inventory[existingIndex] = newItem; 
     } else {
-        user.inventory.push(newItem); // Insert
+        user.inventory.push(newItem); 
     }
     res.json(newItem);
+});
+
+// NEW: BULK RESTORE ENDPOINT
+// Used to re-upload local backup to server after a reset
+app.post('/api/inventory/:email/restore', (req, res) => {
+    const user = getUser(req.params.email);
+    const { items } = req.body; // Expects array of items
+    
+    if (!Array.isArray(items)) {
+        return res.status(400).json({ message: 'Invalid data format' });
+    }
+
+    // Merge strategy: Overwrite server data with local backup
+    // Or we could merge, but for restoration, local is usually truth
+    user.inventory = items;
+    
+    console.log(`Restored ${items.length} items for ${user.email}`);
+    res.json({ success: true, count: items.length });
 });
 
 app.put('/api/inventory/:email/:cardId', (req, res) => {
@@ -103,7 +120,7 @@ app.delete('/api/inventory/:email/:cardId', (req, res) => {
     res.json({ success: true });
 });
 
-// --- ROUTES: FRIENDS ---
+// --- ROUTES: FRIENDS & TRANSFER ---
 
 app.get('/api/users/:email/friends', (req, res) => {
     const user = getUser(req.params.email);
@@ -118,27 +135,11 @@ app.get('/api/users/:email/friends/requests', (req, res) => {
 app.post('/api/users/:email/friends/request', (req, res) => {
     const senderEmail = req.params.email.toLowerCase().trim();
     const targetEmail = req.body.targetEmail ? req.body.targetEmail.toLowerCase().trim() : null;
-
-    if (!targetEmail || senderEmail === targetEmail) {
-        return res.status(400).json({ message: 'Invalid target email' });
-    }
-
-    const targetUser = getUser(targetEmail); // Creates target if not exists
-    
-    // Check if already friends or requested
-    if (targetUser.friends.includes(senderEmail)) {
-        return res.json({ message: 'Already friends' });
-    }
-    if (targetUser.requests.some(r => r.fromEmail === senderEmail)) {
-        return res.json({ message: 'Request already sent' });
-    }
-
-    targetUser.requests.push({
-        fromEmail: senderEmail,
-        timestamp: Date.now()
-    });
-
-    console.log(`Friend request: ${senderEmail} -> ${targetEmail}`);
+    if (!targetEmail || senderEmail === targetEmail) return res.status(400).json({ message: 'Invalid target email' });
+    const targetUser = getUser(targetEmail); 
+    if (targetUser.friends.includes(senderEmail)) return res.json({ message: 'Already friends' });
+    if (targetUser.requests.some(r => r.fromEmail === senderEmail)) return res.json({ message: 'Request already sent' });
+    targetUser.requests.push({ fromEmail: senderEmail, timestamp: Date.now() });
     res.json({ success: true });
 });
 
@@ -146,61 +147,28 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     const userEmail = req.params.email.toLowerCase().trim();
     const targetEmail = req.body.targetEmail ? req.body.targetEmail.toLowerCase().trim() : null;
     const { accept } = req.body;
-    
     const user = getUser(userEmail);
-    // Remove request
     user.requests = user.requests.filter(r => r.fromEmail !== targetEmail);
-
     if (accept && targetEmail) {
         const targetUser = getUser(targetEmail);
-        
-        // Add to both lists if not already there
         if (!user.friends.includes(targetEmail)) user.friends.push(targetEmail);
         if (!targetUser.friends.includes(userEmail)) targetUser.friends.push(userEmail);
-        
-        console.log(`Friends connected: ${userEmail} <-> ${targetEmail}`);
     }
-
     res.json({ success: true });
 });
 
-// --- ROUTES: TRANSFER / BURZA (OPRAVENO - ROBUSTNÍ LOGIKA) ---
-
 app.post('/api/inventory/transfer', (req, res) => {
     const { fromEmail, toEmail, cardId } = req.body;
-    
-    if (!fromEmail || !toEmail || !cardId) {
-        return res.status(400).json({ message: 'Missing parameters' });
-    }
-
+    if (!fromEmail || !toEmail || !cardId) return res.status(400).json({ message: 'Missing parameters' });
     const sender = getUser(fromEmail);
     const receiver = getUser(toEmail);
-
-    // 1. Find Index of Item
-    const itemIndex = sender.inventory.findIndex(i => i.id === cardId);
-    
-    if (itemIndex === -1) {
-        console.log(`Transfer FAILED: Item ${cardId} not found in ${sender.email}`);
-        return res.status(404).json({ message: 'Item not found in sender inventory' });
-    }
-
-    // 2. ATOMIC MOVE: Remove from Sender using splice (returns array of removed items)
-    const [movedItem] = sender.inventory.splice(itemIndex, 1);
-    
-    // 3. Add to Receiver
-    // Create a deep copy to ensure no reference issues, though splice handles references fine
-    const receivedItem = JSON.parse(JSON.stringify(movedItem));
-    
-    // Check duplication on receiver side just in case (overwrite if exists to be safe)
-    const receiverExistingIndex = receiver.inventory.findIndex(i => i.id === cardId);
-    if (receiverExistingIndex >= 0) {
-        receiver.inventory[receiverExistingIndex] = receivedItem;
-    } else {
-        receiver.inventory.push(receivedItem);
-    }
-
-    console.log(`Transfer SUCCESS: ${cardId} moved from ${sender.email} to ${receiver.email}`);
-    
+    const itemToTransfer = sender.inventory.find(i => i.id === cardId);
+    if (!itemToTransfer) return res.status(404).json({ message: 'Item not found' });
+    sender.inventory = sender.inventory.filter(i => i.id !== cardId);
+    const newItem = JSON.parse(JSON.stringify(itemToTransfer));
+    const existingIndex = receiver.inventory.findIndex(i => i.id === cardId);
+    if (existingIndex >= 0) receiver.inventory[existingIndex] = newItem;
+    else receiver.inventory.push(newItem);
     res.json({ success: true });
 });
 
@@ -212,7 +180,7 @@ app.post('/api/rooms', (req, res) => {
         db.rooms[roomId] = {
             id: roomId,
             host: hostName,
-            users: [hostName],
+            members: [{ name: hostName, hp: 100, lastSeen: Date.now() }],
             messages: []
         };
     }
@@ -221,13 +189,14 @@ app.post('/api/rooms', (req, res) => {
 
 app.post('/api/rooms/:roomId/join', (req, res) => {
     const { roomId } = req.params;
-    const { userName } = req.body;
+    const { userName, hp } = req.body;
     
     const room = db.rooms[roomId];
     if (!room) return res.status(404).json({ message: 'Room not found' });
 
-    if (!room.users.includes(userName)) {
-        room.users.push(userName);
+    const existingMember = room.members.find(m => m.name === userName);
+    if (!existingMember) {
+        room.members.push({ name: userName, hp: hp || 100, lastSeen: Date.now() });
         room.messages.push({
             id: 'sys-' + Date.now(),
             sender: 'SYSTEM',
@@ -235,17 +204,41 @@ app.post('/api/rooms/:roomId/join', (req, res) => {
             timestamp: Date.now(),
             isSystem: true
         });
+    } else {
+        existingMember.lastSeen = Date.now();
+        if (hp !== undefined) existingMember.hp = hp;
     }
     res.json({ success: true });
+});
+
+app.post('/api/rooms/:roomId/status', (req, res) => {
+    const { roomId } = req.params;
+    const { userName, hp } = req.body;
+    const room = db.rooms[roomId];
+    if (room) {
+        const member = room.members.find(m => m.name === userName);
+        if (member) {
+            member.hp = hp;
+            member.lastSeen = Date.now();
+        }
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ message: 'Room not found' });
+    }
+});
+
+app.get('/api/rooms/:roomId/members', (req, res) => {
+    const room = db.rooms[req.params.roomId];
+    if (!room) return res.json([]);
+    res.json(room.members);
 });
 
 app.post('/api/rooms/:roomId/leave', (req, res) => {
     const { roomId } = req.params;
     const { userName } = req.body;
-    
     const room = db.rooms[roomId];
     if (room) {
-        room.users = room.users.filter(u => u !== userName);
+        room.members = room.members.filter(u => u.name !== userName);
         room.messages.push({
             id: 'sys-' + Date.now(),
             sender: 'SYSTEM',
@@ -253,10 +246,7 @@ app.post('/api/rooms/:roomId/leave', (req, res) => {
             timestamp: Date.now(),
             isSystem: true
         });
-        // Cleanup empty rooms
-        if (room.users.length === 0) {
-            delete db.rooms[roomId];
-        }
+        if (room.members.length === 0) delete db.rooms[roomId];
     }
     res.json({ success: true });
 });
@@ -270,27 +260,16 @@ app.get('/api/rooms/:roomId/messages', (req, res) => {
 app.post('/api/rooms/:roomId/messages', (req, res) => {
     const { roomId } = req.params;
     const { sender, text } = req.body;
-    
     const room = db.rooms[roomId];
     if (!room) return res.status(404).json({ message: 'Room not found' });
-
-    const msg = {
-        id: Date.now().toString(),
-        sender,
-        text,
-        timestamp: Date.now()
-    };
-    
+    const msg = { id: Date.now().toString(), sender, text, timestamp: Date.now() };
     room.messages.push(msg);
-    // Keep only last 50 messages
     if (room.messages.length > 50) room.messages.shift();
-
     res.json(msg);
 });
 
 // --- MOCK GEMINI ---
 app.post('/api/gemini/interpret-code', (req, res) => {
-    // Mock response if Gemini API key isn't set on backend
     res.json({
         id: req.body.code,
         title: "Mystery Item",
@@ -301,7 +280,7 @@ app.post('/api/gemini/interpret-code', (req, res) => {
     });
 });
 
-// Start Server
 app.listen(PORT, () => {
     console.log(`Nexus Backend running on port ${PORT}`);
 });
+
