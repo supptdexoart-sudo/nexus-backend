@@ -182,19 +182,38 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     res.json({ success: true });
 });
 
+// REWRITTEN TRANSFER LOGIC FOR ROBUSTNESS
 app.post('/api/inventory/transfer', (req, res) => {
     const { fromEmail, toEmail, cardId } = req.body;
     if (!fromEmail || !toEmail || !cardId) return res.status(400).json({ message: 'Missing parameters' });
+    
     const sender = getUser(fromEmail);
     const receiver = getUser(toEmail);
-    const itemToTransfer = sender.inventory.find(i => i.id === cardId);
-    if (!itemToTransfer) return res.status(404).json({ message: 'Item not found' });
-    sender.inventory = sender.inventory.filter(i => i.id !== cardId);
-    const newItem = JSON.parse(JSON.stringify(itemToTransfer));
-    const existingIndex = receiver.inventory.findIndex(i => i.id === cardId);
-    if (existingIndex >= 0) receiver.inventory[existingIndex] = newItem;
-    else receiver.inventory.push(newItem);
-    res.json({ success: true });
+    
+    // Normalize ID for comparison (trim spaces, string cast)
+    const targetId = String(cardId).trim();
+
+    // 1. FIND INDEX
+    const itemIndex = sender.inventory.findIndex(i => String(i.id).trim() === targetId);
+    
+    if (itemIndex === -1) {
+        console.warn(`Transfer failed: Item ${targetId} not found in ${fromEmail}`);
+        return res.status(404).json({ message: 'Item not found in sender inventory' });
+    }
+
+    // 2. REMOVE (Splice is safer than filter for single item moves)
+    const [transferredItem] = sender.inventory.splice(itemIndex, 1);
+
+    // 3. CLONE & ADD
+    // We clone to break any reference issues, although in-memory JS logic usually handles object moves fine.
+    // This also ensures the receiver gets a "fresh" copy.
+    const newItemForReceiver = JSON.parse(JSON.stringify(transferredItem));
+    
+    // Optional: Deduplication if unique? For now, we allow duplicates.
+    receiver.inventory.push(newItemForReceiver);
+
+    console.log(`TRANSFERRED: ${targetId} from ${fromEmail} to ${toEmail}`);
+    res.json({ success: true, item: newItemForReceiver });
 });
 
 // --- ROUTES: ROOMS / CHAT ---
