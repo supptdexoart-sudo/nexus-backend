@@ -143,10 +143,16 @@ app.get('/api/users/:email/friends/requests', (req, res) => {
 app.post('/api/users/:email/friends/request', (req, res) => {
     const senderEmail = req.params.email.toLowerCase().trim();
     const targetEmail = req.body.targetEmail ? req.body.targetEmail.toLowerCase().trim() : null;
-    if (!targetEmail || senderEmail === targetEmail) return res.status(400).json({ message: 'Invalid target email' });
+    
+    // STRICT SELF-CHECK
+    if (!targetEmail || senderEmail === targetEmail) {
+        return res.status(400).json({ message: 'Nemůžete si přidat sami sebe.' });
+    }
+
     const targetUser = getUser(targetEmail); 
     if (targetUser.friends.includes(senderEmail)) return res.json({ message: 'Already friends' });
     if (targetUser.requests.some(r => r.fromEmail === senderEmail)) return res.json({ message: 'Request already sent' });
+    
     targetUser.requests.push({ fromEmail: senderEmail, timestamp: Date.now() });
     res.json({ success: true });
 });
@@ -155,11 +161,22 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
     const userEmail = req.params.email.toLowerCase().trim();
     const targetEmail = req.body.targetEmail ? req.body.targetEmail.toLowerCase().trim() : null;
     const { accept } = req.body;
+    
+    if (!targetEmail || userEmail === targetEmail) {
+        return res.status(400).json({ message: 'Invalid operation.' });
+    }
+
     const user = getUser(userEmail);
+    // Remove from requests
     user.requests = user.requests.filter(r => r.fromEmail !== targetEmail);
+    
     if (accept && targetEmail) {
         const targetUser = getUser(targetEmail);
+        
+        // Add to User's list if not present
         if (!user.friends.includes(targetEmail)) user.friends.push(targetEmail);
+        
+        // Add User to Target's list if not present
         if (!targetUser.friends.includes(userEmail)) targetUser.friends.push(userEmail);
     }
     res.json({ success: true });
