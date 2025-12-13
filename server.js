@@ -180,7 +180,9 @@ app.post('/api/inventory/send-gift', (req, res) => {
     if (!fromEmail || !cardId) return res.status(400).json({ message: 'Missing parameters' });
     
     const sender = getUser(fromEmail);
-    
+    // Extra safety: Check if sender exists (should exist via getUser, but safe is better)
+    if (!sender) return res.status(500).json({ message: 'User initialization failed' });
+
     // Normalize ID
     const targetId = String(cardId).trim();
     
@@ -189,6 +191,7 @@ app.post('/api/inventory/send-gift', (req, res) => {
     
     if (itemIndex === -1) {
         console.warn(`Gift failed: Item ${targetId} not found in ${fromEmail}`);
+        // IMPORTANT: Return 404 so frontend knows server doesn't have it
         return res.status(404).json({ message: 'Item not found in sender inventory' });
     }
 
