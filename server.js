@@ -34,6 +34,14 @@ const getUser = (rawEmail) => {
     return db.users[email];
 };
 
+// --- SYSTEM ROUTES ---
+
+// NEW: Health Check (Heartbeat)
+// Lightweight endpoint to check if server is running
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'online', timestamp: Date.now() });
+});
+
 // --- ROUTES: AUTH & USER ---
 
 app.post('/api/auth/login', (req, res) => {
@@ -283,4 +291,3 @@ app.post('/api/gemini/interpret-code', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Nexus Backend running on port ${PORT}`);
 });
-
