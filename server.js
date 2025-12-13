@@ -185,6 +185,8 @@ app.post('/api/users/:email/friends/respond', (req, res) => {
 // REWRITTEN TRANSFER LOGIC FOR ROBUSTNESS
 app.post('/api/inventory/transfer', (req, res) => {
     const { fromEmail, toEmail, cardId } = req.body;
+    console.log(`TRANSFER REQUEST: ${fromEmail} -> ${toEmail} [${cardId}]`); // Explicit Log
+
     if (!fromEmail || !toEmail || !cardId) return res.status(400).json({ message: 'Missing parameters' });
     
     const sender = getUser(fromEmail);
@@ -212,7 +214,7 @@ app.post('/api/inventory/transfer', (req, res) => {
     // Optional: Deduplication if unique? For now, we allow duplicates.
     receiver.inventory.push(newItemForReceiver);
 
-    console.log(`TRANSFERRED: ${targetId} from ${fromEmail} to ${toEmail}`);
+    console.log(`TRANSFERRED SUCCESS: ${targetId}`);
     res.json({ success: true, item: newItemForReceiver });
 });
 
