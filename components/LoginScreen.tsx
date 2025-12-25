@@ -1,259 +1,207 @@
 
 import React, { useState } from 'react';
-import { User, Lock, ArrowRight, ShieldCheck, Cpu, AlertTriangle, Check, Loader2, WifiOff } from 'lucide-react';
+import { User, ArrowRight, ShieldCheck, AlertTriangle, Check, ShieldAlert, Cpu, Database, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleLogin } from '@react-oauth/google';
 import * as apiService from '../services/apiService';
+import ServerLoader from './ServerLoader';
+import { playSound, vibrate } from '../services/soundService';
 
 interface LoginScreenProps {
-  onLogin: (email: string) => void;
+  onLogin: (email: string, nickname?: string) => void;
 }
 
-const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
-
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [guestNickname, setGuestNickname] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = email.toLowerCase().trim() === ADMIN_EMAIL;
-
-  const handleInitialSubmit = (e: React.FormEvent) => {
+  // Guest Login Logic
+  const handleGuestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !email.includes('@')) {
-        setError("Zadejte platnou emailovou adresu.");
+    if (guestNickname.trim().length < 3) {
+        setError("Identifikátor (Nick) musí mít alespoň 3 znaky.");
+        vibrate(100);
+        playSound('error');
         return;
     }
-    
-    // Admin Validation
-    if (isAdmin && !password.trim()) {
-        setError("Admin účet vyžaduje bezpečnostní klíč.");
-        return;
-    }
-
     setError(null);
     setShowConsentModal(true);
   };
 
-  const handleConsentAndLogin = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-        // Call the backend API with optional password
-        await apiService.loginUser(email, password);
-        onLogin(email);
-    } catch (err: any) {
-        console.error(err);
-        if (err.message && err.message.includes('401')) {
-             setError("Chybné heslo pro Admin účet.");
-        } else {
-             setError("Nepodařilo se připojit k serveru. Ověřte připojení.");
-        }
-        setIsLoading(false);
-        setShowConsentModal(false);
-    }
+  const confirmGuestLogin = () => {
+    setShowConsentModal(false);
+    playSound('click');
+    
+    // Uložíme nick do localStorage pro jistotu, ale hlavně ho předáme nahoru
+    localStorage.setItem('nexus_nickname_guest', guestNickname.toUpperCase());
+    
+    setIsConnecting(true);
+    // Simulace načítání pro efekt
+    setTimeout(() => {
+        onLogin('guest', guestNickname.toUpperCase()); 
+    }, 1500);
   };
 
-  const handleGuestLogin = () => {
-      onLogin('guest');
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+      if (credentialResponse.credential) {
+          setIsConnecting(true);
+          setError(null);
+          playSound('click');
+          try {
+              const result = await apiService.loginWithGoogle(credentialResponse.credential);
+              vibrate([50, 50]);
+              onLogin(result.email);
+          } catch (err: any) {
+              setIsConnecting(false);
+              console.error("Google Login Error:", err);
+              
+              let msg = "Chyba Google ověření.";
+              if (err.message && err.message.includes('Failed to fetch')) {
+                  msg = "Nelze se spojit se serverem (Backend spí nebo blokován).";
+              } else if (err.message) {
+                  msg = `Server Error: ${err.message}`;
+              }
+              setError(msg);
+              playSound('error');
+          }
+      }
   };
+
+  if (isConnecting) return <ServerLoader onConnected={() => {}} onSwitchToOffline={() => { setIsConnecting(false); setError("Odkaz přerušen."); }} />;
 
   return (
-    <div className="h-screen w-screen bg-zinc-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      
-      {/* Background Ambience */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-20%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[100px] animate-pulse-slow"></div>
-        <div className="absolute bottom-[-20%] right-[-20%] w-[50%] h-[50%] bg-neon-purple/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+    <div className="h-screen w-screen bg-[#0a0b0d] flex flex-col items-center justify-center p-8 relative overflow-hidden font-sans">
+      {/* Background Dots */}
+      <div className="absolute inset-0 pointer-events-none opacity-5 z-0" 
+           style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+      </div>
+
+      <div className="absolute inset-0 pointer-events-none opacity-10">
+        <div className="flex justify-between w-full p-8 font-mono text-[10px] text-signal-cyan">
+           <span>SIGNÁL: VYHLEDÁVÁNÍ...</span>
+           <span>POZ: HLAVNÍ_BRÁNA</span>
+        </div>
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-sm relative z-10"
+        {...({ initial: { opacity: 0, y: 15 }, animate: { opacity: 1, y: 0 } } as any)}
+        className="w-full max-w-sm z-10"
       >
         <div className="text-center mb-10">
-           <motion.div 
-             initial={{ scale: 0 }}
-             animate={{ scale: 1 }}
-             transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-             className="inline-flex items-center justify-center w-20 h-20 bg-zinc-900 border-2 border-neon-blue rounded-2xl mb-6 shadow-[0_0_30px_rgba(0,243,255,0.3)] relative"
-           >
-              <Cpu className="w-10 h-10 text-neon-blue animate-pulse" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full border border-zinc-900"></div>
-           </motion.div>
-           <h1 className="text-4xl font-display font-black text-white tracking-wider mb-2">NEXUS DESKOVÁ HRA</h1>
-           <p className="text-zinc-500 font-mono text-xs tracking-[0.3em] uppercase">Real-time synchronizace</p>
+           <div className="relative inline-block mb-8">
+              <div className="w-24 h-24 tactical-card flex items-center justify-center border-signal-cyan/40 bg-black/40">
+                <div className="corner-accent top-left !border-2"></div>
+                <div className="corner-accent bottom-right !border-2"></div>
+                <ShieldAlert className="w-12 h-12 text-signal-cyan" />
+              </div>
+           </div>
+           <h1 className="text-5xl font-black text-white tracking-tighter uppercase mb-2 chromatic-text">Nexus_Auth</h1>
+           <p className="text-signal-cyan font-mono text-[10px] uppercase tracking-[0.5em] font-black">Hybridní desková hra</p>
         </div>
 
-        <form onSubmit={handleInitialSubmit} className="space-y-4">
-          <motion.div 
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="space-y-1"
-          >
-            <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest pl-1">Identita: (Email)</label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-zinc-600 group-focus-within:text-neon-blue transition-colors" />
-              </div>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-4 bg-zinc-900/80 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all font-mono"
-                placeholder="vas@email.cz"
-                disabled={isLoading}
-              />
+        {/* SECTION 1: GOOGLE LOGIN (FULL ACCOUNT) */}
+        <div className="mb-8">
+            <div className="flex items-center gap-2 mb-3 justify-center">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-green-500">Doporučeno: Cloud Save (Všechna zařízení)</span>
             </div>
-          </motion.div>
+            <div className="flex flex-col justify-center gap-2">
+                <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setError("Google Login selhal na úrovni klienta.")}
+                    theme="filled_black"
+                    shape="pill"
+                    size="large"
+                    text="signin_with"
+                    width="100%"
+                />
+            </div>
+        </div>
 
-          <motion.div 
-             initial={{ x: -20, opacity: 0 }}
-             animate={{ x: 0, opacity: 1 }}
-             transition={{ delay: 0.5 }}
-             className="space-y-1"
-          >
-            <label className={`text-xs font-bold uppercase tracking-widest pl-1 transition-colors ${isAdmin ? 'text-neon-purple' : 'text-zinc-500'}`}>
-                {isAdmin ? 'ADMIN ACCESS KEY (POVINNÉ)' : 'HESLO (VOLITELNÉ)'}
+        {/* DIVIDER */}
+        <div className="flex items-center gap-4 mb-8">
+             <div className="h-px bg-white/10 flex-1"></div>
+             <span className="text-[10px] text-white/30 uppercase font-mono tracking-widest font-black">NEBO HOST (LOCAL SAVE)</span>
+             <div className="h-px bg-white/10 flex-1"></div>
+        </div>
+
+        {/* SECTION 2: GUEST NICKNAME FORM */}
+        <form onSubmit={handleGuestSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-white/50 uppercase tracking-[0.2em] ml-1 font-mono flex justify-between">
+                <span>Identifikace Jednotky</span>
+                <span className="text-zinc-500 flex items-center gap-1"><Save className="w-3 h-3"/> Ukládání v prohlížeči</span>
             </label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className={`h-5 w-5 transition-colors ${isAdmin ? 'text-neon-purple' : 'text-zinc-600 group-focus-within:text-neon-purple'}`} />
+            <div className="tactical-card p-0 overflow-hidden border-white/10 focus-within:border-white/40 transition-colors bg-white/5">
+              <div className="flex items-center px-5 py-5 gap-4">
+                <User className="w-6 h-6 text-zinc-500" />
+                <input
+                  type="text"
+                  required
+                  value={guestNickname}
+                  onChange={(e) => setGuestNickname(e.target.value)}
+                  className="w-full bg-transparent text-white placeholder-white/20 focus:outline-none font-mono text-sm uppercase font-bold"
+                  placeholder="ZADEJTE PŘEZDÍVKU..."
+                  maxLength={12}
+                />
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`block w-full pl-10 pr-3 py-4 bg-zinc-900/80 border rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-1 transition-all font-mono ${isAdmin ? 'border-neon-purple focus:border-neon-purple focus:ring-neon-purple' : 'border-zinc-800 focus:border-neon-purple focus:ring-neon-purple'}`}
-                placeholder={isAdmin ? "Vložte klíč..." : "••••••••"}
-                disabled={isLoading}
-              />
             </div>
-          </motion.div>
+          </div>
             
           {error && (
-              <div className="p-3 bg-red-900/20 border border-red-800 rounded text-red-400 text-xs text-center animate-pulse">
-                  {error}
+              <div className="p-4 bg-signal-hazard/10 border border-signal-hazard/40 text-signal-hazard text-[11px] uppercase font-black tracking-widest text-center animate-pulse">
+                  <AlertTriangle className="w-4 h-4 inline mr-2 mb-0.5" /> {error}
               </div>
           )}
 
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            type="submit"
-            disabled={isLoading}
-            className={`
-              w-full flex items-center justify-center gap-2 py-4 mt-6 rounded-lg font-display font-bold text-sm tracking-widest uppercase transition-all
-              ${isLoading 
-                ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
-                : isAdmin 
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.4)]'
-                    : 'bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_20px_rgba(188,19,254,0.4)] hover:shadow-[0_0_30px_rgba(188,19,254,0.6)] active:scale-[0.98]'
-              }
-            `}
-          >
-             {isAdmin ? 'OVĚŘIT A VSTOUPIT' : 'PŘIPOJIT'} <ArrowRight className="w-4 h-4" />
-          </motion.button>
+          <button type="submit" className="w-full py-5 border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-white font-black uppercase text-xs tracking-[0.2em] rounded-xl flex items-center justify-center gap-3 transition-all active:scale-95">
+              <Cpu className="w-4 h-4 text-zinc-500" />
+              Vstoupit jako Host
+              <ArrowRight className="w-4 h-4 text-zinc-500" />
+          </button>
         </form>
 
-        <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="relative flex py-5 items-center"
-        >
-            <div className="flex-grow border-t border-zinc-800"></div>
-            <span className="flex-shrink mx-4 text-zinc-600 text-[10px] font-mono uppercase">Nebo</span>
-            <div className="flex-grow border-t border-zinc-800"></div>
-        </motion.div>
-
-        <motion.button 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            onClick={handleGuestLogin}
-            disabled={isLoading}
-            className="w-full py-3 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg font-bold uppercase tracking-widest text-xs transition-colors flex items-center justify-center gap-2"
-        >
-            <WifiOff className="w-4 h-4" /> Hrát Offline (Host)
-        </motion.button>
-
-        <div className="mt-8 text-center">
-            <div className="flex justify-center gap-4 text-[10px] text-zinc-600 uppercase tracking-widest font-bold">
-                <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3" />Server Secured</span>
-                <span>•</span>
-                <span>v0.6.1</span>
-            </div>
-        </div>
       </motion.div>
 
-      {/* CONSENT MODAL */}
+      {/* CONSENT MODAL FOR GUEST */}
       <AnimatePresence>
       {showConsentModal && (
-        <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] bg-[#0a0b0d]/95 backdrop-blur-md flex items-center justify-center p-6">
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-zinc-900 border-2 border-neon-blue/30 rounded-2xl w-full max-w-md overflow-hidden shadow-[0_0_50px_rgba(0,243,255,0.1)]"
+              {...({
+                initial: { scale: 0.96, opacity: 0 },
+                animate: { scale: 1, opacity: 1 },
+                exit: { scale: 0.96, opacity: 0 }
+              } as any)}
+              className="tactical-card w-full max-w-sm border-zinc-700 p-0 overflow-hidden bg-black/90 shadow-2xl"
             >
-                <div className="bg-black p-4 border-b border-zinc-800 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-neon-blue" />
-                    <h3 className="font-display font-bold text-white tracking-wider">SOUHLAS S PODMÍNKAMI</h3>
+                <div className="bg-zinc-900 p-8 border-b border-white/10 flex items-center gap-6">
+                    <ShieldCheck className="w-12 h-12 text-zinc-500" />
+                    <div>
+                      <h3 className="text-xl font-black text-white uppercase tracking-tighter leading-none">Lokální Profil</h3>
+                      <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-[0.4em] font-black mt-2">Database Access: OK</p>
+                    </div>
                 </div>
-                
-                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto text-sm text-zinc-400 leading-relaxed">
-                    <p className="text-white font-bold">Informace o zpracování osobních údajů</p>
-                    <p>
-                        Kliknutím na tlačítko "Souhlasím a Připojit" potvrzujete, že jste se seznámili s podmínkami užívání aplikace Nexus Companion.
-                    </p>
-                    <ul className="list-disc pl-5 space-y-2">
-                        <li>
-                            Vaše emailová adresa (<span className="text-neon-blue font-mono">{email}</span>) bude uložena v zabezpečené databázi na našem backend serveru.
-                        </li>
-                        <li>
-                            Email slouží výhradně k identifikaci vašeho herního inventáře, statistik a pro obnovení účtu.
-                        </li>
-                        <li>
-                            Údaje nejsou poskytovány třetím stranám a slouží pouze pro běh hry.
-                        </li>
-                        {isAdmin && (
-                            <li className="text-neon-purple font-bold">
-                                Upozornění: Přihlašujete se jako ADMINISTRÁTOR. Jakákoliv manipulace s databází je logována.
-                            </li>
-                        )}
+                <div className="p-8 space-y-6 text-[12px] text-white/70 leading-relaxed font-sans">
+                    <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-sm">
+                      <p className="text-blue-400 font-black uppercase tracking-widest mb-2 flex items-center gap-2 text-xs"><Database className="w-4 h-4" /> Status: Online</p>
+                      <p>Jako <span className="text-white font-bold">HOST</span> máte přístup k databázi karet a online funkcím. Váš inventář se však ukládá pouze do <span className="text-white font-bold">tohoto zařízení</span>.</p>
+                    </div>
+                    <ul className="space-y-4 font-bold text-zinc-400">
+                        <li className="flex gap-4"><Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /><span>Přístup k Master Databázi karet.</span></li>
+                        <li className="flex gap-4"><AlertTriangle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" /><span>Žádná synchronizace mezi zařízeními (Cloud Save).</span></li>
                     </ul>
                 </div>
-
-                <div className="p-4 bg-zinc-950 border-t border-zinc-800 flex flex-col gap-3">
-                    <button 
-                        onClick={handleConsentAndLogin}
-                        disabled={isLoading}
-                        className="w-full py-3 bg-neon-blue hover:bg-cyan-400 text-black font-bold uppercase rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                    >
-                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                        {isLoading ? "Ověřování..." : "Souhlasím a Připojit"}
-                    </button>
-                    <button 
-                        onClick={() => { setShowConsentModal(false); setIsLoading(false); }}
-                        disabled={isLoading}
-                        className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-500 font-bold uppercase rounded-lg transition-colors"
-                    >
-                        Odmítnout
-                    </button>
+                <div className="p-8 bg-black border-t border-white/10 flex flex-col gap-3">
+                    <button onClick={confirmGuestLogin} className="button-primary w-full py-4 text-xs !bg-zinc-200 !text-black">Rozumím, Spustit Misi</button>
+                    <button onClick={() => setShowConsentModal(false)} className="w-full py-3 text-zinc-500 hover:text-white text-[10px] uppercase font-black tracking-[0.2em] transition-colors">Zpět</button>
                 </div>
             </motion.div>
         </div>
       )}
       </AnimatePresence>
-
     </div>
   );
 };

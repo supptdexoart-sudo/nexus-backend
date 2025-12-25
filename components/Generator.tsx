@@ -1,14 +1,29 @@
 
-import React, { useState, useEffect } from 'react';
-import { GameEvent, GameEventType, Stat, DilemmaOption } from '../types'; 
-import { Plus, Minus, Save, QrCode, Download, Share2, Coins, ShoppingBag, Package, X, RotateCcw, Split, Trash2, Backpack, Lock, Unlock } from 'lucide-react'; 
-import { playSound } from '../services/soundService';
+import React, { useState, useEffect, useMemo } from 'react';
+import { GameEvent, GameEventType, PlayerClass } from '../types';
+import { Download, RotateCcw, QrCode, Trash2, Upload, AlertTriangle, Save, Skull, CheckCircle, XCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { playSound, vibrate } from '../services/soundService';
+import * as apiService from '../services/apiService';
+
+// Import modular panels
+import MerchantPanel from './generator/MerchantPanel';
+import DilemmaPanel from './generator/DilemmaPanel';
+import CombatPanel from './generator/CombatPanel';
+import ItemPanel from './generator/ItemPanel';
+import TrapPanel from './generator/TrapPanel';
+import EnemyLootPanel from './generator/EnemyLootPanel';
+import NightVariantPanel from './generator/NightVariantPanel';
+import SpaceStationPanel from './generator/SpaceStationPanel';
+import PlanetPanel from './generator/PlanetPanel';
 
 interface GeneratorProps {
   onSaveCard: (event: GameEvent) => void;
   userEmail: string;
-  initialData?: GameEvent | null; // Data for editing
-  onClearData?: () => void; // Callback to clear editing state
+  initialData?: GameEvent | null;
+  onClearData?: () => void;
+  onDelete?: (id: string) => void;
+  masterCatalog?: GameEvent[]; // Added
 }
 
 const initialEventState: GameEvent = {
@@ -20,641 +35,487 @@ const initialEventState: GameEvent = {
   flavorText: '',
   stats: [],
   isShareable: true,
-  isConsumable: false,
-  canBeSaved: true, // Default true for normal items
+  isConsumable: true, // DEFAULT TRUE FOR SAFETY
+  isSellOnly: false, // NOVÉ
+  canBeSaved: true, 
   price: 0,
-  merchantItems: [],
-  dilemmaOptions: []
+  trapConfig: { difficulty: 10, damage: 20, disarmClass: PlayerClass.ROGUE, successMessage: "Past zneškodněna.", failMessage: "Past sklapla!" },
+  enemyLoot: { goldReward: 20, dropItemChance: 0 }, // REMOVED XP
+  timeVariant: { enabled: false, nightStats: [] },
+  stationConfig: { fuelReward: 50, repairAmount: 30, refillO2: true, welcomeMessage: "Vítejte na palubě." },
+  resourceConfig: { isResourceContainer: false, resourceName: 'Surovina', resourceAmount: 1, customLabel: 'Surovina k Těžbě' },
+  craftingRecipe: { enabled: false, requiredResources: [], craftingTimeSeconds: 60 },
+  planetConfig: { planetId: 'p1', landingEventType: GameEventType.ENCOUNTER, phases: [] }
 };
 
-// Admin email constant for validation
-const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
-
-const getQrColor = (type: GameEventType): string => {
-    switch (type) {
-        case GameEventType.TRAP:
-        case GameEventType.ENCOUNTER:
-            return 'ef4444'; // Red-500
-        case GameEventType.DILEMA:
-            return 'bc13fe'; // Neon Purple
-        case GameEventType.MERCHANT:
-            return 'eab308'; // Yellow-500
-        case GameEventType.LOCATION:
-            return '10b981'; // Emerald-500
-        case GameEventType.ITEM:
-        default:
-            return '000000'; // Black
-    }
+// Mapování typů na prefixy ID (Bez diakritiky pro bezpečnost QR kódů)
+const ID_PREFIXES: Record<string, string> = {
+    [GameEventType.ITEM]: 'PRE-',        // PŘE-dmět
+    [GameEventType.ENCOUNTER]: 'SET-',   // SET-kání
+    [GameEventType.TRAP]: 'NAS-',        // NÁS-traha
+    [GameEventType.MERCHANT]: 'OBCH-',   // OBCH-odník
+    [GameEventType.DILEMA]: 'DIL-',      // DIL-ema
+    [GameEventType.BOSS]: 'BOSS-',       // BOSS
+    [GameEventType.SPACE_STATION]: 'VS-',// V-esmírná S-tanice
+    [GameEventType.PLANET]: 'PLA-',      // PLA-neta
 };
 
-const Generator: React.FC<GeneratorProps> = ({ onSaveCard, userEmail, initialData, onClearData }) => {
+const Generator: React.FC<GeneratorProps> = ({ onSaveCard, userEmail, initialData, onClearData, onDelete, masterCatalog = [] }) => {
   const [newEvent, setNewEvent] = useState<GameEvent>(initialEventState);
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: '', type: null });
-
-  // Merchant Inventory State
-  const [merchantInputId, setMerchantInputId] = useState('');
-  const [merchantInputStock, setMerchantInputStock] = useState<number>(1);
   const [isEditingMode, setIsEditingMode] = useState(false);
-  
-  // SAFETY LOCK STATE
-  const [isSafetyLocked, setIsSafetyLocked] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPurgeModal, setShowPurgeModal] = useState(false); // FOR GLOBAL PURGE
 
-  // Load initial data if provided (Edit Mode)
+  // Validace ID v reálném čase
+  const isIdDuplicate = useMemo(() => {
+      if (!newEvent.id) return false;
+      // Pokud editujeme, ignorujeme shodu s vlastní "starou" verzí (pokud se ID nezměnilo)
+      if (isEditingMode && initialData?.id === newEvent.id) return false;
+      
+      // Hledáme v katalogu
+      return masterCatalog.some(item => item.id.toLowerCase() === newEvent.id.toLowerCase());
+  }, [newEvent.id, masterCatalog, isEditingMode, initialData]);
+
   useEffect(() => {
     if (initialData) {
-      setNewEvent({
-          ...initialEventState, // Defaults
-          ...initialData,       // Overrides
-          dilemmaOptions: initialData.dilemmaOptions || [],
-          merchantItems: initialData.merchantItems || [],
-          stats: initialData.stats || []
+      setNewEvent({ 
+          ...initialEventState, 
+          ...initialData,
+          price: (initialData.price !== undefined && initialData.price !== null) ? initialData.price : initialEventState.price,
+          resourceConfig: { 
+              isResourceContainer: initialData.resourceConfig?.isResourceContainer ?? false,
+              resourceName: initialData.resourceConfig?.resourceName ?? 'Surovina',
+              resourceAmount: initialData.resourceConfig?.resourceAmount ?? 1,
+              customLabel: initialData.resourceConfig?.customLabel
+          },
+          craftingRecipe: {
+              enabled: initialData.craftingRecipe?.enabled ?? false,
+              requiredResources: initialData.craftingRecipe?.requiredResources ?? [],
+              craftingTimeSeconds: initialData.craftingRecipe?.craftingTimeSeconds ?? 60
+          },
+          planetConfig: {
+              planetId: initialData.planetConfig?.planetId ?? 'p1',
+              landingEventType: initialData.planetConfig?.landingEventType ?? GameEventType.ENCOUNTER,
+              landingEventId: initialData.planetConfig?.landingEventId,
+              phases: initialData.planetConfig?.phases ?? [] // FIX: Nyní načítáme i fáze
+          },
+          isSellOnly: initialData.isSellOnly ?? false
       });
       setIsEditingMode(true);
-      // Auto-unlock when editing existing item
-      setIsSafetyLocked(true); 
-      const scrollContainer = document.querySelector('.overflow-y-auto');
-      if (scrollContainer) scrollContainer.scrollTop = 0;
     } else {
-        setNewEvent(initialEventState);
+        // Při startu nového (pokud nejsme v editaci), vygenerujeme první ID
+        const prefix = ID_PREFIXES[GameEventType.ITEM];
+        const randomSuffix = Math.floor(Math.random() * 9000) + 1000;
+        setNewEvent({ ...initialEventState, id: `${prefix}${randomSuffix}` });
         setIsEditingMode(false);
     }
   }, [initialData]);
 
-  const toggleSafetyLock = () => {
-      if (isSafetyLocked) {
-          if(confirm("Opravdu chcete odemknout zápis do databáze?")) {
-              setIsSafetyLocked(false);
-              playSound('open');
-          }
+  const updateEvent = (updates: Partial<GameEvent>) => setNewEvent(prev => ({ ...prev, ...updates }));
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => updateEvent({ [e.target.name]: e.target.value });
+
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newType = e.target.value as GameEventType;
+      
+      // Generování nového ID při změně typu
+      // Pouze pokud NEJDE o editaci existující karty (abychom omylem nepřepsali ID existující karty při změně typu)
+      // NEBO pokud uživatel tvoří novou kartu
+      if (!isEditingMode) {
+          const prefix = ID_PREFIXES[newType] || 'GEN-';
+          const randomSuffix = Math.floor(Math.random() * 9000) + 1000;
+          updateEvent({ type: newType, id: `${prefix}${randomSuffix}` });
       } else {
-          setIsSafetyLocked(true);
-          playSound('click');
+          // V edit módu změníme jen typ
+          updateEvent({ type: newType });
       }
   };
 
-  const handleReset = () => {
-      setNewEvent(initialEventState);
-      setIsEditingMode(false);
-      setMerchantInputId('');
-      setMerchantInputStock(1);
-      if (onClearData) onClearData();
+  const handleDeleteClick = () => {
+      if (!onDelete || !newEvent.id) return;
+      playSound('error');
+      vibrate(50);
+      setShowDeleteModal(true);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setNewEvent((prev) => ({ ...prev, [name]: value }));
+  const handlePurgeClick = () => {
+      if (!newEvent.id) return;
+      playSound('siren');
+      vibrate([100, 100, 100]);
+      setShowPurgeModal(true);
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-     const { name, checked } = e.target;
-     setNewEvent((prev) => ({ ...prev, [name]: checked }));
+  const confirmDelete = () => {
+      if (onDelete && newEvent.id) {
+          onDelete(newEvent.id);
+          setShowDeleteModal(false);
+      }
   };
 
-  const handleStatChange = (index: number, field: keyof Stat, value: string) => {
-    const updatedStats: Stat[] = newEvent.stats ? [...newEvent.stats] : [];
-    if (!updatedStats[index]) {
-      updatedStats[index] = { label: '', value: '' }; 
-    }
-    updatedStats[index] = { ...(updatedStats[index] as Stat), [field]: value };
-    setNewEvent((prev) => ({ ...prev, stats: updatedStats }));
+  const confirmPurge = async () => {
+      if (!newEvent.id) return;
+      try {
+          await apiService.purgeItemFromAllUsers(newEvent.id);
+          setFeedback({ message: 'GLOBÁLNÍ VYHLAZENÍ DOKONČENO.', type: 'success' });
+          playSound('damage');
+          if (onDelete) onDelete(newEvent.id); // Also remove from local/master
+          setShowPurgeModal(false);
+      } catch (e: any) {
+          setFeedback({ message: `Chyba vyhlazení: ${e.message}`, type: 'error' });
+      }
   };
 
-  const addStat = () => {
-    setNewEvent((prev) => ({
-      ...prev,
-      stats: [...(prev.stats || []), { label: '', value: '' }],
-    }));
+  const handleBackup = async () => {
+      setIsBackingUp(true);
+      try {
+          await apiService.downloadBackup();
+          setFeedback({ message: 'Záloha stažena.', type: 'success' });
+          playSound('success');
+      } catch (e) {
+          setFeedback({ message: 'Chyba zálohování.', type: 'error' });
+          playSound('error');
+      } finally {
+          setIsBackingUp(false);
+      }
   };
 
-  const removeStat = (index: number) => {
-    setNewEvent((prev) => ({
-      ...prev,
-      stats: (prev.stats || []).filter((_, i) => i !== index),
-    }));
-  };
-
-  // --- MERCHANT INVENTORY LOGIC ---
-  const addMerchantItem = () => {
-      if(!merchantInputId.trim()) return;
-      setNewEvent(prev => ({
-          ...prev,
-          merchantItems: [...(prev.merchantItems || []), { 
-              id: merchantInputId.trim(), 
-              stock: Math.max(1, merchantInputStock) 
-          }]
-      }));
-      setMerchantInputId('');
-      setMerchantInputStock(1);
-  };
-
-  const removeMerchantItem = (index: number) => {
-      setNewEvent(prev => ({
-          ...prev,
-          merchantItems: (prev.merchantItems || []).filter((_, i) => i !== index)
-      }));
-  };
-
-  const updateMerchantItemStock = (index: number, newStock: number) => {
-      setNewEvent(prev => {
-          const items = [...(prev.merchantItems || [])];
-          if (items[index]) {
-              items[index] = { ...items[index], stock: Math.max(0, newStock) };
-          }
-          return { ...prev, merchantItems: items };
-      });
-  };
-
-  // --- DILEMMA LOGIC ---
-  const addDilemmaOption = () => {
-      setNewEvent(prev => ({
-          ...prev,
-          dilemmaOptions: [...(prev.dilemmaOptions || []), {
-              label: '',
-              consequenceText: '',
-              physicalInstruction: '',
-              effectType: 'none',
-              effectValue: 0
-          }]
-      }));
-  };
-
-  const removeDilemmaOption = (index: number) => {
-      setNewEvent(prev => ({
-          ...prev,
-          dilemmaOptions: (prev.dilemmaOptions || []).filter((_, i) => i !== index)
-      }));
-  };
-
-  const updateDilemmaOption = (index: number, field: keyof DilemmaOption, value: any) => {
-      setNewEvent(prev => {
-          const opts = [...(prev.dilemmaOptions || [])];
-          if(opts[index]) {
-              opts[index] = { ...opts[index], [field]: value };
-          }
-          return { ...prev, dilemmaOptions: opts };
-      });
-  };
-
-  // --- QR CODE GENERATION LOGIC ---
   const getQrUrl = (id: string, type: GameEventType) => {
-      const color = getQrColor(type);
-      return `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&color=${color}&bgcolor=ffffff&margin=20&data=${encodeURIComponent(id || 'NEXUS-LINK-PREVIEW')}`;
+      if (!id) return '';
+      const colorMap: Record<string, string> = {
+          [GameEventType.BOSS]: 'ff3b30', 
+          [GameEventType.TRAP]: 'f5c518', 
+          [GameEventType.ENCOUNTER]: 'ff3b30', 
+          [GameEventType.DILEMA]: '9333ea', 
+          [GameEventType.MERCHANT]: 'f5c518', 
+          [GameEventType.ITEM]: '007aff',
+          [GameEventType.SPACE_STATION]: '22d3ee',
+          [GameEventType.PLANET]: '6366f1'
+      };
+      const color = colorMap[type] || 'ffffff';
+      return `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&color=${color}&bgcolor=0a0a0c&margin=20&data=${encodeURIComponent(id)}`;
   };
-  
+
   const currentQrUrl = getQrUrl(newEvent.id, newEvent.type);
 
-  const downloadQrCode = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!newEvent.id) {
-        setFeedback({ message: 'Pro stažení QR kódu musíte zadat ID.', type: 'error' });
-        return;
-    }
-    try {
-        const response = await fetch(currentQrUrl);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        const safeTitle = newEvent.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'untitled';
-        link.download = `nexus-${newEvent.type}-${safeTitle}-${newEvent.id}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error('Download failed', error);
-        setFeedback({ message: 'Nepodařilo se stáhnout QR kód.', type: 'error' });
-    }
+  const handleDownloadQr = async () => {
+      if (!currentQrUrl || !newEvent.id) {
+          setFeedback({ message: 'Identifikátor chybí.', type: 'error' });
+          return;
+      }
+      setIsDownloading(true);
+      try {
+          const response = await fetch(currentQrUrl);
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          const safeTitle = newEvent.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'unnamed_asset';
+          link.download = `nexus_${newEvent.type.toLowerCase()}_${safeTitle}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          setFeedback({ message: 'Identifikátor stažen do lokální cache.', type: 'success' });
+      } catch (e) {
+          setFeedback({ message: 'Chyba protokolu stahování.', type: 'error' });
+      } finally {
+          setIsDownloading(false);
+      }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSafetyLocked) {
-        setFeedback({ message: 'Pro uložení musíte odemknout bezpečnostní zámek (ikona zámku nahoře).', type: 'error' });
-        playSound('error');
-        return;
-    }
-
-    if (!userEmail) {
-      setFeedback({ message: 'Pro vytvoření karty se musíte přihlásit.', type: 'error' });
-      return;
-    }
-    if (!newEvent.id.trim() || !newEvent.title.trim() || !newEvent.description.trim()) {
-      setFeedback({ message: 'ID, Název a Popis jsou povinné.', type: 'error' });
-      return;
-    }
-
-    try {
-      const eventToSave: GameEvent = { ...newEvent };
-
-      // Ensure consistency: If not consumable, save toggle implies true (always savable)
-      if (!eventToSave.isConsumable) {
-          eventToSave.canBeSaved = true;
-      }
-
-      if (userEmail === ADMIN_EMAIL) {
-          eventToSave.qrCodeUrl = getQrUrl(newEvent.id, newEvent.type);
-      }
-
-      await onSaveCard(eventToSave);
-      setFeedback({ message: `Karta "${newEvent.title}" byla úspěšně uložena!`, type: 'success' });
+      e.preventDefault();
+      if(!userEmail || !newEvent.id) { setFeedback({ message: 'Zadejte ID assetu.', type: 'error' }); return; }
+      if (isIdDuplicate) { setFeedback({ message: 'CHYBA: Toto ID již existuje!', type: 'error' }); playSound('error'); return; }
       
-      if (!isEditingMode) {
-          setNewEvent(initialEventState);
-      } else {
-          setTimeout(() => setFeedback({ message: '', type: null }), 3000);
-      }
-    } catch (error: any) {
-      setFeedback({ message: `Chyba při ukládání: ${error.message || error}`, type: 'error' });
-    }
+      try {
+          const eventToSave = { ...newEvent };
+          if (userEmail === 'zbynekbal97@gmail.com') eventToSave.qrCodeUrl = currentQrUrl;
+          await onSaveCard(eventToSave);
+          setFeedback({ message: 'Data synchronizována se serverem.', type: 'success' });
+          if(!isEditingMode) {
+              // Reset to default item
+              const prefix = ID_PREFIXES[GameEventType.ITEM];
+              const randomSuffix = Math.floor(Math.random() * 9000) + 1000;
+              setNewEvent({ ...initialEventState, id: `${prefix}${randomSuffix}` });
+          }
+      } catch (e: any) { setFeedback({ message: e.message, type: 'error' }); }
   };
 
-  const isMerchant = newEvent.type === GameEventType.MERCHANT;
-  const isDilemma = newEvent.type === GameEventType.DILEMA;
-
   return (
-    <div className="h-full overflow-y-auto p-6 pb-24 no-scrollbar">
-      {/* HEADER & SAFETY LOCK */}
-      <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4 sticky top-0 bg-zinc-950/95 backdrop-blur z-20">
-        <div>
-            <h1 className="text-3xl font-display font-bold">
-                {isEditingMode ? 'Úprava' : 'Fabrikace'} <span className="text-neon-blue">Aktiva</span>
+    <div className="h-full overflow-y-auto p-6 pb-24 no-scrollbar bg-arc-bg text-white relative">
+        {/* Background Dots */}
+        <div className="absolute inset-0 pointer-events-none opacity-5 z-0" 
+             style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+        </div>
+
+        <div className="flex items-center justify-between mb-8 sticky top-0 bg-arc-bg/95 backdrop-blur z-20 pb-4 border-b border-arc-border">
+            <h1 className="text-2xl font-bold uppercase tracking-tighter text-white">
+                {isEditingMode ? 'Editovat' : 'FABRIKACE'} <span className="text-arc-yellow">Assetu</span>
             </h1>
-            {isEditingMode && <p className="text-[10px] text-zinc-500 font-mono">Režim úpravy existující karty</p>}
-        </div>
-        <div className="flex gap-2 items-center">
-            {/* SAFETY LOCK BUTTON */}
-            <button
-                onClick={toggleSafetyLock}
-                className={`p-2 rounded-lg border transition-all duration-300 ${
-                    isSafetyLocked 
-                        ? 'bg-red-900/20 border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
-                        : 'bg-green-900/20 border-green-500 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]'
-                }`}
-                title={isSafetyLocked ? "Zápis uzamčen" : "Zápis povolen - OPATRNĚ!"}
-            >
-                {isSafetyLocked ? <Lock className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
-            </button>
-
-            {isEditingMode && (
+            <div className="flex items-center gap-2">
                 <button 
-                    onClick={handleReset}
-                    className="p-2 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-400 hover:text-white"
-                    title="Zrušit úpravy / Resetovat"
+                    type="button" 
+                    onClick={handleBackup} 
+                    className="p-2 bg-black border border-blue-500 text-blue-500 hover:bg-blue-500/10 active:scale-95 transition-all"
+                    title="Stáhnout Zálohu DB"
                 >
-                    <RotateCcw className="w-6 h-6" />
+                    {isBackingUp ? <RotateCcw className="w-5 h-5 animate-spin"/> : <Save className="w-5 h-5"/>}
                 </button>
-            )}
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {feedback.message && (
-          <div className={`p-3 rounded-lg text-center font-bold ${
-            feedback.type === 'success' ? 'bg-green-900/30 text-green-400 border border-green-700' :
-            feedback.type === 'error' ? 'bg-red-900/30 text-red-400 border border-red-700' : ''
-          }`}>
-            {feedback.message}
-          </div>
-        )}
-
-        {/* Basic Info */}
-        <div>
-          <label htmlFor="id" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">ID Aktiva (Unikátní)</label>
-          <div className="relative">
-            <input
-                type="text"
-                id="id"
-                name="id"
-                value={newEvent.id}
-                onChange={handleChange}
-                placeholder={isMerchant ? "SHOP-001" : isDilemma ? "DILEMA-01" : "ITEM-001"}
-                className={`w-full bg-zinc-900 border border-zinc-700 p-3 rounded-lg text-white font-mono uppercase focus:border-neon-blue outline-none ${isEditingMode ? 'opacity-70 cursor-not-allowed' : ''}`}
-                required
-                readOnly={isEditingMode}
-            />
-          </div>
-        </div>
-
-        {/* QR Code Section */}
-        <div className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/50">
-            <div className="flex items-center gap-2 mb-4 text-neon-blue">
-                <QrCode className="w-5 h-5" />
-                <h3 className="text-sm font-bold font-display tracking-widest uppercase">Digitální Identifikátor (QR)</h3>
+                {isEditingMode && (
+                    <button type="button" onClick={handlePurgeClick} className="p-2 bg-black border border-red-600 text-red-600 hover:bg-red-600/20 active:scale-95 transition-all animate-pulse" title="GLOBÁLNÍ VYHLAZENÍ">
+                        <Skull className="w-5 h-5"/>
+                    </button>
+                )}
+                {isEditingMode && onDelete && (
+                    <button type="button" onClick={handleDeleteClick} className="p-2 bg-black border border-red-900/50 text-red-500 hover:bg-red-900/20 active:scale-95 transition-all">
+                        <Trash2 className="w-5 h-5"/>
+                    </button>
+                )}
+                {isEditingMode && (
+                    <button type="button" onClick={onClearData} className="p-2 bg-black border border-arc-border text-arc-yellow hover:bg-arc-yellow/10 active:scale-95 transition-all">
+                        <RotateCcw className="w-5 h-5"/>
+                    </button>
+                )}
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-                <div className="bg-white p-2 rounded-lg shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                    <img src={currentQrUrl} alt="QR Code Preview" className="w-32 h-32 object-contain" />
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+            <div className="bg-arc-panel p-6 border border-arc-border space-y-6 relative bracket-tl bracket-tr">
+                <div className="grid grid-cols-2 gap-6">
+                    <div className="relative">
+                        <label className="text-[8px] text-zinc-300 uppercase font-bold tracking-widest mb-1 block">ID_KARTY (jedinečné!):</label>
+                        <div className="relative">
+                            <input 
+                                name="id" 
+                                value={newEvent.id} 
+                                onChange={handleChange} 
+                                placeholder="NXS-001" 
+                                className={`w-full bg-black border p-3 text-white font-mono uppercase outline-none text-sm transition-colors ${isIdDuplicate ? 'border-red-500 focus:border-red-600 text-red-500' : 'border-arc-border focus:border-arc-yellow'}`} 
+                                required 
+                                readOnly={isEditingMode}
+                            />
+                            {isIdDuplicate && (
+                                <div className="absolute right-3 top-3 animate-pulse">
+                                    <XCircle className="w-5 h-5 text-red-500" />
+                                </div>
+                            )}
+                        </div>
+                        {isIdDuplicate && (
+                            <p className="text-[9px] text-red-500 font-bold uppercase mt-1 tracking-widest flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" /> ID již existuje v databázi!
+                            </p>
+                        )}
+                        {!isIdDuplicate && newEvent.id.length > 3 && (
+                            <p className="text-[9px] text-green-500 font-bold uppercase mt-1 tracking-widest flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" /> ID Dostupné
+                            </p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="text-[8px] text-zinc-300 uppercase font-bold tracking-widest mb-1 block">TYP_karty:</label>
+                        <select name="type" value={newEvent.type} onChange={handleTypeChange} className="w-full bg-black border border-arc-border p-3 text-white font-mono uppercase focus:border-arc-yellow outline-none text-sm">
+                            {Object.values(GameEventType).map(t => <option key={t} value={t} className="bg-arc-panel text-white">{t}</option>)}
+                        </select>
+                    </div>
                 </div>
-                <div className="flex-1 text-center sm:text-left">
-                    <p className="text-xs text-zinc-500 mb-3 font-mono leading-relaxed">
-                        QR kód se generuje automaticky ve <span className="text-white font-bold">Vysoké Kvalitě (1000px)</span>.
-                        <br/>
-                        Barva odpovídá typu karty.
-                    </p>
-                    <button
-                        onClick={downloadQrCode}
-                        type="button"
-                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 hover:text-white text-zinc-300 rounded border border-zinc-600 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 mx-auto sm:mx-0 transition-colors"
+                <div>
+                    <label className="text-[8px] text-zinc-300 uppercase font-bold tracking-widest mb-1 block">Název_karty:</label>
+                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                        <input name="title" value={newEvent.title} onChange={handleChange} placeholder="NÁZEV ASSETU" className="bg-black border border-arc-border p-3 text-white font-bold uppercase focus:border-arc-yellow outline-none text-sm" required />
+                        <select name="rarity" value={newEvent.rarity} onChange={handleChange} className="bg-black border border-arc-border p-3 text-[10px] text-zinc-200 font-mono uppercase outline-none">
+                            {['Common', 'Rare', 'Epic', 'Legendary'].map(r => <option key={r} value={r} className="bg-arc-panel text-white">{r}</option>)}
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label className="text-[8px] text-zinc-300 uppercase font-bold tracking-widest mb-1 block">Popis_karty:</label>
+                    <textarea name="description" value={newEvent.description} onChange={handleChange} placeholder="Analýza objektu..." rows={3} className="w-full bg-black border border-arc-border p-3 text-zinc-100 text-xs font-mono focus:border-arc-yellow outline-none" required />
+                </div>
+            </div>
+
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* ITEM CONFIGURATION */}
+                {newEvent.type === GameEventType.ITEM && (
+                    <ItemPanel event={newEvent} onUpdate={updateEvent} masterCatalog={masterCatalog} />
+                )}
+
+                {/* TRAP CONFIGURATION */}
+                {newEvent.type === GameEventType.TRAP && (
+                    <TrapPanel event={newEvent} onUpdate={updateEvent} />
+                )}
+                
+                {/* COMBAT CONFIGURATION (ENCOUNTER / BOSS) */}
+                {(newEvent.type === GameEventType.ENCOUNTER || newEvent.type === GameEventType.BOSS) && (
+                    <>
+                        <CombatPanel event={newEvent} onUpdate={updateEvent} />
+                        {newEvent.type === GameEventType.ENCOUNTER && (
+                            <EnemyLootPanel event={newEvent} onUpdate={updateEvent} />
+                        )}
+                    </>
+                )}
+                
+                {/* MERCHANT CONFIGURATION */}
+                {newEvent.type === GameEventType.MERCHANT && (
+                    <MerchantPanel event={newEvent} onUpdate={updateEvent} />
+                )}
+
+                {/* SPACE STATION CONFIGURATION */}
+                {newEvent.type === GameEventType.SPACE_STATION && (
+                    <SpaceStationPanel event={newEvent} onUpdate={updateEvent} />
+                )}
+
+                {/* PLANET CONFIGURATION */}
+                {newEvent.type === GameEventType.PLANET && (
+                    <PlanetPanel event={newEvent} onUpdate={updateEvent} masterCatalog={masterCatalog} />
+                )}
+
+                {/* DILEMMA CONFIGURATION */}
+                {newEvent.type === GameEventType.DILEMA && (
+                    <DilemmaPanel event={newEvent} onUpdate={updateEvent} />
+                )}
+
+                {/* NIGHT VARIANT CONFIGURATION (Available for all types) */}
+                <NightVariantPanel event={newEvent} onUpdate={updateEvent} />
+            </div>
+
+            <div className="flex items-center gap-6 bg-black p-6 border border-arc-border relative bracket-bl bracket-br">
+                <div className="bg-white p-2 border border-zinc-800 shrink-0">
+                    {newEvent.id ? (
+                        <img src={currentQrUrl} alt="QR" className="w-24 h-24 object-contain invert" />
+                    ) : (
+                        <div className="w-24 h-24 flex items-center justify-center bg-zinc-900 border border-zinc-800">
+                            <QrCode className="w-10 h-10 text-zinc-700" />
+                        </div>
+                    )}
+                </div>
+                <div className="flex-1 space-y-4">
+                    <div>
+                        <p className="text-[8px] text-zinc-300 font-bold uppercase tracking-[0.3em] mb-1">QR kod karty!:</p>
+                        <p className="text-[10px] text-zinc-200 font-mono truncate max-w-[120px]">{newEvent.id || 'WAITING_FOR_ID'}</p>
+                    </div>
+                    
+                    <button 
+                        type="button" 
+                        onClick={handleDownloadQr}
+                        disabled={!newEvent.id || isDownloading}
+                        className={`w-full py-3 px-4 text-[10px] uppercase font-bold flex items-center justify-center gap-2 border-2 transition-all ${!newEvent.id ? 'text-zinc-700 border-zinc-800 cursor-not-allowed' : 'text-arc-yellow border-arc-yellow hover:bg-arc-yellow hover:text-black'}`}
                     >
-                        <Download className="w-4 h-4" /> Stáhnout Tisková Data (PNG)
+                        {isDownloading ? <RotateCcw className="w-3 h-3 animate-spin"/> : <Download className="w-3 h-3" />}
+                        {isDownloading ? 'Stahování...' : 'Uložit_PNG_Kód'}
                     </button>
                 </div>
             </div>
-        </div>
 
-        <div>
-          <label htmlFor="title" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Název Aktiva</label>
-          <input
-            type="text"
-            id="title"
-            name="title"
-            value={newEvent.title}
-            onChange={handleChange}
-            placeholder="Název..."
-            className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded-lg text-white font-display focus:border-neon-blue outline-none"
-            required
-          />
-        </div>
+            {feedback.message && (
+                <div className={`p-4 border font-mono text-[10px] uppercase tracking-widest text-center animate-pulse ${feedback.type === 'success' ? 'text-arc-yellow border-arc-yellow/30 bg-arc-yellow/5' : 'text-arc-red border-arc-red/30 bg-arc-red/5'}`}>
+                    {'>'} {feedback.message}
+                </div>
+            )}
 
-        <div>
-          <label htmlFor="description" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Popis / Příběh</label>
-          <textarea
-            id="description"
-            name="description"
-            value={newEvent.description}
-            onChange={handleChange}
-            rows={4}
-            placeholder="Popis..."
-            className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded-lg text-white resize-y font-serif focus:border-neon-blue outline-none"
-            required
-          />
-        </div>
-
-        {/* Type, Rarity */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="type" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Typ Aktiva</label>
-            <select
-              id="type"
-              name="type"
-              value={newEvent.type}
-              onChange={handleChange}
-              className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded-lg text-white font-mono focus:border-neon-blue outline-none"
+            <button 
+                type="submit" 
+                disabled={isIdDuplicate}
+                className={`w-full py-6 border-2 font-black uppercase text-sm tracking-[0.4em] transition-all shadow-[0_0_30px_rgba(255,157,0,0.3)] rounded-xl flex items-center justify-center gap-3 ${isIdDuplicate ? 'bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed' : 'bg-signal-amber border-signal-amber/50 text-black hover:bg-white hover:text-black'}`}
             >
-              {Object.values(GameEventType).map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="rarity" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Vzácnost</label>
-            <select
-              id="rarity"
-              name="rarity"
-              value={newEvent.rarity}
-              onChange={handleChange}
-              className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded-lg text-white font-mono focus:border-neon-blue outline-none"
-            >
-              {['Common', 'Rare', 'Epic', 'Legendary'].map((rarity) => (
-                <option key={rarity} value={rarity}>
-                  {rarity}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* PRICE & CONSUMABLE INPUT (For items only) */}
-        {!isMerchant && !isDilemma && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="price" className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                      <Coins className="w-3 h-3" /> Cena (Kredity)
-                  </label>
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    value={newEvent.price || 0}
-                    onChange={handleChange}
-                    placeholder="0"
-                    className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded-lg text-yellow-500 font-mono font-bold focus:border-yellow-500 outline-none"
-                  />
-                </div>
-                
-                {/* CONSUMABLE LOGIC CONTAINER */}
-                <div className="bg-zinc-900/50 border border-zinc-800 p-3 rounded-lg flex flex-col gap-3">
-                    {/* 1. Toggle Consumable */}
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-white flex items-center gap-1"><Trash2 className="w-3 h-3 text-red-500"/> Jednorázové?</span>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                name="isConsumable"
-                                className="sr-only peer"
-                                checked={newEvent.isConsumable ?? false}
-                                onChange={handleCheckboxChange}
-                            />
-                            <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
-                        </label>
-                    </div>
-
-                    {/* 2. Toggle Can Be Saved (Only if Consumable is checked) */}
-                    {newEvent.isConsumable && (
-                         <div className="flex items-center justify-between animate-in fade-in slide-in-from-top-2 pt-2 border-t border-zinc-800">
-                             <div>
-                                <span className="text-xs font-bold text-white flex items-center gap-1"><Backpack className="w-3 h-3 text-neon-blue"/> Povolit Uložení?</span>
-                                <p className="text-[9px] text-zinc-500 mt-0.5">Pokud zapnuto, hráč může kartu uložit do batohu a použít později. Pokud vypnuto, musí ji použít ihned po naskenování.</p>
-                             </div>
-                             <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-2">
-                                 <input 
-                                     type="checkbox" 
-                                     name="canBeSaved"
-                                     className="sr-only peer"
-                                     checked={newEvent.canBeSaved ?? true}
-                                     onChange={handleCheckboxChange}
-                                 />
-                                 <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neon-blue"></div>
-                             </label>
-                         </div>
-                    )}
-                </div>
-            </div>
-        )}
-
-        {/* Shareability Toggle */}
-        {!isDilemma && (
-            <div className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-lg flex items-center justify-between">
-                <div>
-                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        <Share2 className="w-4 h-4 text-neon-green" /> Povolit Sdílení
-                    </h4>
-                    <p className="text-[10px] text-zinc-500 mt-1">Umožňuje hráčům tuto kartu směňovat nebo darovat.</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        name="isShareable"
-                        className="sr-only peer"
-                        checked={newEvent.isShareable ?? true}
-                        onChange={handleCheckboxChange}
-                    />
-                    <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-green"></div>
-                </label>
-            </div>
-        )}
-
-        {/* CONDITIONAL SECTIONS BASED ON TYPE */}
-        {isDilemma ? (
-            <div className="space-y-4 border border-neon-purple/30 bg-neon-purple/5 rounded-lg p-4 relative">
-                {/* ... Dilemma Form Logic (Unchanged) ... */}
-                <div className="flex items-center gap-2 text-neon-purple mb-2">
-                    <Split className="w-5 h-5" />
-                    <h3 className="text-lg font-display font-bold">Volby Dilematu</h3>
-                </div>
-                {(newEvent.dilemmaOptions || []).map((option, index) => (
-                    <div key={index} className="bg-black/40 border border-zinc-700 rounded-lg p-3 space-y-3">
-                         <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-white uppercase bg-zinc-800 px-2 py-1 rounded">Možnost {index + 1}</span>
-                            <button type="button" onClick={() => removeDilemmaOption(index)} className="text-red-400 hover:text-red-300"><X className="w-4 h-4"/></button>
-                        </div>
-                        <input 
-                            type="text"
-                            placeholder="Text na tlačítku"
-                            value={option.label}
-                            onChange={(e) => updateDilemmaOption(index, 'label', e.target.value)}
-                            className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-white text-sm"
-                        />
-                        <textarea 
-                            placeholder="Výsledek příběhu"
-                            value={option.consequenceText}
-                            onChange={(e) => updateDilemmaOption(index, 'consequenceText', e.target.value)}
-                            rows={2}
-                            className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-zinc-300 text-xs font-serif"
-                        />
-                        <input 
-                            type="text"
-                            placeholder="Instrukce"
-                            value={option.physicalInstruction}
-                            onChange={(e) => updateDilemmaOption(index, 'physicalInstruction', e.target.value)}
-                            className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-yellow-500 font-bold text-xs"
-                        />
-                        <div className="flex gap-2">
-                             <select 
-                                value={option.effectType}
-                                onChange={(e) => updateDilemmaOption(index, 'effectType', e.target.value)}
-                                className="bg-zinc-900 border border-zinc-700 p-2 rounded text-white text-xs"
-                            >
-                                <option value="none">Bez efektu</option>
-                                <option value="hp">HP</option>
-                                <option value="gold">Kredity</option>
-                            </select>
-                            <input 
-                                type="number"
-                                placeholder="0"
-                                value={option.effectValue}
-                                onChange={(e) => updateDilemmaOption(index, 'effectValue', parseInt(e.target.value))}
-                                className="w-20 bg-zinc-900 border border-zinc-700 p-2 rounded text-white text-xs font-mono"
-                            />
-                        </div>
-                    </div>
-                ))}
-                <button
-                    type="button"
-                    onClick={addDilemmaOption}
-                    className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-neon-purple rounded border border-zinc-700 text-xs font-bold uppercase"
-                >
-                    + Přidat Možnost
-                </button>
-            </div>
-        ) : isMerchant ? (
-             <div className="space-y-4 border border-zinc-800 rounded-lg p-4 bg-zinc-900/50">
-                <h3 className="text-lg font-display font-bold text-white mb-2 flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5 text-neon-purple" /> Sklad Obchodníka
-                </h3>
-                {/* Merchant Logic (Unchanged) */}
-                 <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                    {(newEvent.merchantItems || []).map((entry, index) => (
-                        <div key={index} className="flex items-center gap-2 bg-zinc-800 border border-zinc-700 p-2 rounded">
-                            <div className="flex-1 text-white font-mono text-sm truncate">{entry.id}</div>
-                            <div className="flex items-center gap-1 bg-black px-2 py-1 rounded border border-zinc-700">
-                                <Package className="w-3 h-3 text-zinc-400" />
-                                <input 
-                                    type="number"
-                                    min="0"
-                                    value={entry.stock}
-                                    onChange={(e) => updateMerchantItemStock(index, parseInt(e.target.value))}
-                                    className="w-10 bg-transparent text-white font-bold text-center text-xs outline-none"
-                                />
-                            </div>
-                            <button type="button" onClick={() => removeMerchantItem(index)} className="p-1.5 bg-red-900/20 text-red-400 rounded"><X className="w-4 h-4" /></button>
-                        </div>
-                    ))}
-                    <div className="flex gap-2 pt-2 border-t border-zinc-800">
-                        <input type="text" value={merchantInputId} onChange={(e) => setMerchantInputId(e.target.value)} placeholder="ID" className="flex-1 bg-black border border-zinc-700 p-2 rounded text-white text-sm" />
-                        <input type="number" value={merchantInputStock} onChange={(e) => setMerchantInputStock(parseInt(e.target.value))} min="1" className="w-16 bg-black border border-zinc-700 p-2 rounded text-white text-sm" />
-                        <button type="button" onClick={addMerchantItem} className="px-3 bg-zinc-800 text-neon-blue rounded"><Plus className="w-5 h-5" /></button>
-                    </div>
-                </div>
-             </div>
-        ) : (
-            <div className="space-y-4 border border-zinc-800 rounded-lg p-4">
-            <h3 className="text-lg font-display font-bold text-white mb-2">Statistiky Aktiva</h3>
-            {(newEvent.stats || []).map((stat, index) => (
-                <div key={index} className="flex items-center gap-2">
-                <input
-                    type="text"
-                    value={stat.label}
-                    onChange={(e) => handleStatChange(index, 'label', e.target.value)}
-                    placeholder="Popisek (DMG, HP)"
-                    className="flex-1 bg-zinc-800 border border-zinc-700 p-2 rounded text-white text-xs uppercase font-mono outline-none"
-                />
-                <input
-                    type="text"
-                    value={stat.value}
-                    onChange={(e) => handleStatChange(index, 'value', e.target.value)}
-                    placeholder="Hodnota (20, 100)"
-                    className="flex-1 bg-zinc-800 border border-zinc-700 p-2 rounded text-white text-xs font-mono outline-none"
-                />
-                <button
-                    type="button"
-                    onClick={() => removeStat(index)}
-                    className="p-2 bg-red-900/20 text-red-400 rounded-full hover:bg-red-900/40 transition-colors"
-                >
-                    <Minus className="w-4 h-4" />
-                </button>
-                </div>
-            ))}
-            <button
-                type="button"
-                onClick={addStat}
-                className="w-full flex items-center justify-center gap-2 py-2 bg-zinc-800 hover:bg-zinc-700 text-neon-blue rounded-lg font-bold text-sm transition-colors"
-            >
-                <Plus className="w-4 h-4" /> Přidat statistiku
+                <Upload className="w-5 h-5" />
+                {isEditingMode ? 'Synchronizovat_Změny' : 'Nahrát kartu do databáze!'}
             </button>
-            </div>
-        )}
+        </form>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isSafetyLocked}
-          className={`w-full flex items-center justify-center gap-2 py-4 rounded-lg font-display font-bold text-sm tracking-widest uppercase shadow-lg transition-all ${
-              isSafetyLocked 
-              ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
-              : isEditingMode 
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]' 
-                : 'bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-[0_0_20px_rgba(188,19,254,0.4)] hover:shadow-[0_0_30px_rgba(188,19,254,0.6)] active:scale-[0.98]'
-          }`}
-        >
-          {isSafetyLocked ? <Lock className="w-5 h-5" /> : <Save className="w-5 h-5" />} 
-          {isSafetyLocked ? 'Zápis Uzamčen' : (isEditingMode ? 'Uložit Změny' : 'Vytvořit Kartu')}
-        </button>
-      </form>
+        <AnimatePresence>
+            {showDeleteModal && (
+                <motion.div 
+                    {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)}
+                    className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-sm flex items-center justify-center p-6"
+                >
+                    <motion.div 
+                        {...({ initial: { scale: 0.9, y: 20 }, animate: { scale: 1, y: 0 } } as any)}
+                        className="bg-black border-2 border-red-600 w-full max-w-xs shadow-[0_0_60px_rgba(220,38,38,0.4)] relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 left-0 w-full h-1 bg-red-600 animate-pulse"></div>
+                        <div className="p-6 text-center space-y-4">
+                            <div className="flex justify-center mb-4">
+                                <div className="p-4 bg-red-600/10 rounded-full border border-red-600/50">
+                                    <AlertTriangle className="w-12 h-12 text-red-600" />
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-red-600 uppercase tracking-tighter">Destrukce Dat</h3>
+                                <p className="text-[10px] text-red-600/60 font-mono mt-1 font-bold tracking-widest">Smazat pouze z Master DB</p>
+                            </div>
+                            <p className="text-xs text-zinc-300 font-bold leading-relaxed">
+                                Smaže kartu z katalogu. <br/>Hráči, kteří ji už mají, o ni nepřijdou.
+                            </p>
+                            <div className="grid grid-cols-2 gap-3 mt-6">
+                                <button 
+                                    onClick={() => setShowDeleteModal(false)}
+                                    className="py-3 bg-zinc-900 text-zinc-400 font-bold uppercase text-[10px] tracking-widest hover:bg-zinc-800 transition-colors border border-zinc-800"
+                                >
+                                    Zrušit
+                                </button>
+                                <button 
+                                    onClick={confirmDelete}
+                                    className="py-3 bg-red-600 text-black font-black uppercase text-[10px] tracking-widest hover:bg-red-500 transition-colors shadow-lg animate-pulse"
+                                >
+                                    Smazat
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+
+        {/* GLOBAL PURGE MODAL */}
+        <AnimatePresence>
+            {showPurgeModal && (
+                <motion.div 
+                    {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)}
+                    className="fixed inset-0 z-[250] bg-red-950/90 backdrop-blur-md flex items-center justify-center p-6"
+                >
+                    <motion.div 
+                        {...({ initial: { scale: 0.9, y: 20 }, animate: { scale: 1, y: 0 } } as any)}
+                        className="bg-black border-4 border-red-600 w-full max-w-sm shadow-[0_0_100px_rgba(220,38,38,0.8)] relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 left-0 w-full h-2 bg-red-600 animate-pulse"></div>
+                        <div className="p-8 text-center space-y-6">
+                            <div className="flex justify-center mb-4">
+                                <div className="p-6 bg-red-600 rounded-full border-4 border-black animate-bounce">
+                                    <Skull className="w-16 h-16 text-black" />
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-3xl font-black text-red-600 uppercase tracking-tighter">GLOBÁLNÍ VYHLAZENÍ</h3>
+                                <p className="text-xs text-white font-mono mt-2 font-bold tracking-[0.2em] bg-red-600 px-2 py-1 inline-block">ADMIN OVERRIDE: LEVEL 5</p>
+                            </div>
+                            <p className="text-sm text-red-200 font-bold leading-relaxed border-y border-red-900/50 py-4">
+                                TATO AKCE JE NEVRATNÁ.<br/><br/>
+                                1. Smaže kartu z Master Databáze.<br/>
+                                2. <span className="text-white underline">NÁSILÍM ODSTRANÍ</span> kartu z batohu VŠECH hráčů na serveru.
+                            </p>
+                            <div className="grid grid-cols-1 gap-3 mt-6">
+                                <button 
+                                    onClick={confirmPurge}
+                                    className="py-5 bg-red-600 text-black font-black uppercase text-sm tracking-[0.3em] hover:bg-white transition-colors shadow-xl"
+                                >
+                                    PROVÉST VYHLAZENÍ
+                                </button>
+                                <button 
+                                    onClick={() => setShowPurgeModal(false)}
+                                    className="py-4 bg-transparent text-zinc-500 font-bold uppercase text-[10px] tracking-widest hover:text-white transition-colors"
+                                >
+                                    Zrušit Protokol
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     </div>
   );
 };
