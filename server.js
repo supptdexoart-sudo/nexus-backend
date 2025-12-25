@@ -297,6 +297,19 @@ app.post('/api/rooms/:roomId/status', async (req, res) => { try { await Room.upd
 app.post('/api/rooms/:roomId/messages', async (req, res) => { try { const r = await Room.findOne({ roomId: req.params.roomId }); if (r) { r.messages.push({ id: Date.now().toString(), ...req.body }); await r.save(); } res.json({ success: true }); } catch (e) { res.status(500).json({ message: e.message }) } });
 app.get('/api/rooms/:roomId/messages', async (req, res) => { try { const r = await Room.findOne({ roomId: req.params.roomId }); res.json(r ? r.messages : []); } catch (e) { res.status(500).json({ message: e.message }) } });
 
+// NEW: Active Encounter Management for Global Events
+app.post('/api/rooms/:roomId/encounter', async (req, res) => {
+    try {
+        const { encounter } = req.body; // GameEvent or null
+        const r = await Room.findOne({ roomId: req.params.roomId });
+        if (r) {
+            r.activeEncounter = encounter;
+            await r.save();
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
 // Admin
 app.post('/api/admin/action', async (req, res) => {
     try {
