@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => {
   return {
     base: './', // Důležité pro GitHub Pages (relativní cesty)
     server: {
+      port: 5173,
+      strictPort: true,
       proxy: {
         '/api': {
           target: 'http://localhost:3001',
@@ -68,8 +70,8 @@ export default defineConfig(({ mode }) => {
       // Polyfill pro process.env, aby knihovny jako @google/genai nepadaly
       // Zároveň bezpečně předáme API klíč, pokud existuje v systému (GitHub Secrets)
       'process.env': {
-         API_KEY: JSON.stringify(env.API_KEY || env.VITE_API_KEY || ''),
-         NODE_ENV: JSON.stringify(mode)
+        API_KEY: JSON.stringify(env.API_KEY || env.VITE_API_KEY || ''),
+        NODE_ENV: JSON.stringify(mode)
       }
     },
     esbuild: {

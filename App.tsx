@@ -254,7 +254,7 @@ const App: React.FC = () => {
       </AnimatePresence>
 
       <div className="h-28 bg-zinc-950/95 border-b border-white/10 flex flex-col z-[100] shadow-[0_5px_20px_rgba(0,0,0,0.8)]">
-        <div className="flex items-center justify-between px-4 py-1 border-b border-white/5 bg-white/[0.01]">
+        <div className="flex items-center justify-between px-4 py-1 border-b border-white/5 bg-white/[0.01] relative">
           <div className="flex items-center gap-2">
             <span className="text-[7px] font-black text-signal-cyan uppercase tracking-[0.2em] opacity-80">Nexus_OS_v1.4</span>
             <div className={`w-1 h-1 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500 shadow-[0_0_8px_red] animate-ping'}`} />
@@ -269,6 +269,19 @@ const App: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* TURN INDICATOR - Center */}
+          {logic.roomState.isInRoom && logic.roomState.isGameStarted && (
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-signal-amber/10 border border-signal-amber/30 animate-pulse shadow-[0_0_10px_rgba(255,157,0,0.1)]">
+                <Loader2 className="w-2 h-2 text-signal-amber animate-spin" />
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-signal-amber">
+                  NA TAHU: {logic.roomState.turnOrder[logic.roomState.turnIndex] || '---'}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3">
             <button onClick={handleDayNightClick} className="flex items-center gap-1.5 active:scale-95 transition-transform">
               {logic.isNight ? <Moon className="w-3 h-3 text-indigo-400" /> : <Sun className="w-3 h-3 text-signal-amber" />}
@@ -297,71 +310,69 @@ const App: React.FC = () => {
       <div className="flex-1 relative overflow-hidden">
         <ModuleErrorBoundary>
           <Suspense fallback={<TabLoader />}>
-            <AnimatePresence mode="wait">
-              {logic.activeTab === Tab.SCANNER && (
-                <motion.div key="scanner" {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)} className="absolute inset-0">
-                  <Scanner onScanCode={logic.handleScanCode} isAIThinking={logic.isAIThinking} isPaused={logic.isScannerPaused} />
-                </motion.div>
-              )}
+            {logic.activeTab === Tab.SCANNER && (
+              <div className="absolute inset-0 bg-black">
+                <Scanner onScanCode={logic.handleScanCode} isAIThinking={logic.isAIThinking} isPaused={logic.isScannerPaused} />
+              </div>
+            )}
 
-              {logic.activeTab === Tab.INVENTORY && (
-                <motion.div key="inventory" {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)} className="absolute inset-0">
-                  <InventoryView
-                    inventory={logic.inventory} loadingInventory={false} isRefreshing={logic.isRefreshing}
-                    isAdmin={logic.isAdmin} isNight={logic.isNight} adminNightOverride={logic.adminNightOverride}
-                    playerClass={logic.playerClass} giftTarget={logic.giftTarget} onRefresh={logic.handleRefreshDatabase}
-                    onItemClick={logic.handleOpenInventoryItem} isTestMode={logic.isTestMode}
-                  />
-                </motion.div>
-              )}
+            {logic.activeTab === Tab.INVENTORY && (
+              <div className="absolute inset-0 bg-black">
+                <InventoryView
+                  inventory={logic.inventory} loadingInventory={false} isRefreshing={logic.isRefreshing}
+                  isAdmin={logic.isAdmin} isNight={logic.isNight} adminNightOverride={logic.adminNightOverride}
+                  playerClass={logic.playerClass} giftTarget={logic.giftTarget} onRefresh={logic.handleRefreshDatabase}
+                  onItemClick={logic.handleOpenInventoryItem} isTestMode={logic.isTestMode}
+                />
+              </div>
+            )}
 
-              {logic.activeTab === Tab.GENERATOR && (
-                <motion.div key="generator" {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)} className="absolute inset-0">
-                  <Generator
-                    onSaveCard={(e) => logic.handleSaveEvent(e, true)}
-                    userEmail={logic.userEmail || ''} initialData={logic.editingEvent}
-                    onClearData={() => logic.setEditingEvent(null)} onDelete={logic.handleDeleteEvent}
-                    masterCatalog={logic.masterCatalog}
-                  />
-                </motion.div>
-              )}
+            {logic.activeTab === Tab.GENERATOR && (
+              <div className="absolute inset-0 bg-black">
+                <Generator
+                  onSaveCard={(e) => { logic.handleSaveEvent(e, true); }}
+                  userEmail={logic.userEmail || ''} initialData={logic.editingEvent}
+                  onClearData={() => logic.setEditingEvent(null)} onDelete={(id) => { logic.handleDeleteEvent(id); }}
+                  masterCatalog={logic.masterCatalog}
+                />
+              </div>
+            )}
 
-              {logic.activeTab === Tab.ROOM && (
-                <motion.div key="room" {...({ initial: { opacity: 0 }, animate: { opacity: 1, exit: { opacity: 0 } } } as any)} className="absolute inset-0">
-                  <Room
-                    roomState={logic.roomState} inventory={logic.inventory} playerHp={logic.playerHp} scanLog={logic.scanLog}
-                    onExitToMenu={logic.handleExitToMenu} onSendMessage={logic.handleSendMessage} onStartGame={logic.handleStartGame}
-                    onInspectItem={logic.handleInspectItem} onSwapItems={logic.handleSwapItems} userEmail={logic.userEmail || undefined}
-                    playerClass={logic.playerClass} // PASSED
-                  />
-                </motion.div>
-              )}
+            {logic.activeTab === Tab.ROOM && (
+              <div className="absolute inset-0 bg-black">
+                <Room
+                  roomState={logic.roomState} inventory={logic.inventory} playerHp={logic.playerHp} scanLog={logic.scanLog}
+                  onExitToMenu={logic.handleExitToMenu} onSendMessage={logic.handleSendMessage} onStartGame={logic.handleStartGame}
+                  onInspectItem={logic.handleInspectItem} onSwapItems={logic.handleSwapItems} userEmail={logic.userEmail || undefined}
+                  playerClass={logic.playerClass} onToggleReady={logic.handleToggleReady}
+                />
+              </div>
+            )}
 
-              {logic.activeTab === Tab.SETTINGS && (
-                <motion.div key="settings" {...({ initial: { opacity: 0 }, animate: { opacity: 1, exit: { opacity: 0 } } } as any)} className="absolute inset-0">
-                  <SettingsView
-                    onBack={() => logic.setActiveTab(Tab.SCANNER)} onLogout={logic.handleLogout}
-                    soundEnabled={logic.soundEnabled} vibrationEnabled={logic.vibrationEnabled}
-                    onToggleSound={logic.handleToggleSound} onToggleVibration={logic.handleToggleVibration} userEmail={logic.userEmail}
-                    isAdmin={logic.isAdmin} isTestMode={logic.isTestMode} onToggleTestMode={logic.toggleTestMode}
-                    onHardReset={logic.handleHardReset} onWipeTestVault={logic.handleWipeTestVault}
-                  />
-                </motion.div>
-              )}
+            {logic.activeTab === Tab.SETTINGS && (
+              <div className="absolute inset-0 bg-black">
+                <SettingsView
+                  onBack={() => logic.setActiveTab(Tab.SCANNER)} onLogout={logic.handleLogout}
+                  soundEnabled={logic.soundEnabled} vibrationEnabled={logic.vibrationEnabled}
+                  onToggleSound={logic.handleToggleSound} onToggleVibration={logic.handleToggleVibration} userEmail={logic.userEmail}
+                  isAdmin={logic.isAdmin} isTestMode={logic.isTestMode} onToggleTestMode={logic.toggleTestMode}
+                  onHardReset={logic.handleHardReset} onWipeTestVault={logic.handleWipeTestVault}
+                />
+              </div>
+            )}
 
-              {logic.activeTab === Tab.SPACESHIP && (
-                <motion.div key="spaceship" {...({ initial: { opacity: 0 }, animate: { opacity: 1, exit: { opacity: 0 } } } as any)} className="absolute inset-0">
-                  <SpaceshipView
-                    playerFuel={logic.playerFuel}
-                    inventory={logic.inventory}
-                    onPlanetLand={handlePlanetLand}
-                    onFuelConsume={(amount) => logic.handleFuelChange(amount)}
-                    onProgressPlanet={logic.handlePlanetProgress}
-                    masterCatalog={logic.masterCatalog}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {logic.activeTab === Tab.SPACESHIP && (
+              <div className="absolute inset-0 bg-black">
+                <SpaceshipView
+                  playerFuel={logic.playerFuel}
+                  inventory={logic.inventory}
+                  onPlanetLand={handlePlanetLand}
+                  onFuelConsume={(amount) => logic.handleFuelChange(amount)}
+                  onProgressPlanet={(id) => { logic.handlePlanetProgress(id); }}
+                  masterCatalog={logic.masterCatalog}
+                />
+              </div>
+            )}
           </Suspense>
         </ModuleErrorBoundary>
       </div>
@@ -408,7 +419,7 @@ const App: React.FC = () => {
             onClaimRewards={logic.handleClaimStationRewards}
             inventory={logic.inventory}
             masterCatalog={logic.masterCatalog}
-            onCraft={logic.handleCraftItem}
+            onCraft={(item) => { logic.handleCraftItem(item.id, [], item); }}
             playerGold={logic.playerGold}
             playerClass={logic.playerClass}
             onInventoryUpdate={logic.handleRefreshDatabase}
@@ -424,9 +435,9 @@ const App: React.FC = () => {
           <EventCard
             event={logic.currentEvent}
             onClose={logic.closeEvent}
-            onSave={() => logic.handleSaveEvent(logic.currentEvent!, false)}
-            onUse={() => logic.handleUseEvent(logic.currentEvent!)}
-            onDiscard={() => logic.handleDeleteEvent(logic.currentEvent!.id)}
+            onSave={() => { logic.handleSaveEvent(logic.currentEvent!, false); }}
+            onUse={() => { logic.handleUseEvent(logic.currentEvent!); }}
+            onDiscard={() => { logic.handleDeleteEvent(logic.currentEvent!.id); }}
             onResolveDilemma={logic.handleResolveDilemma}
             isSaved={logic.inventory.some(i => i.id === logic.currentEvent?.id)}
             onPlayerDamage={logic.handleHpChange}

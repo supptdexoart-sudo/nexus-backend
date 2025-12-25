@@ -1,34 +1,34 @@
 
 export enum GameEventType {
-  ITEM = 'PŘEDMĚT',
-  ENCOUNTER = 'SETKÁNÍ',
-  TRAP = 'NÁSTRAHA',
-  MERCHANT = 'OBCHODNÍK',
-  DILEMA = 'DILEMA',
-  BOSS = 'BOSS',
-  SPACE_STATION = 'VESMÍRNÁ_STANICE',
-  PLANET = 'PLANETA'
+    ITEM = 'PŘEDMĚT',
+    ENCOUNTER = 'SETKÁNÍ',
+    TRAP = 'NÁSTRAHA',
+    MERCHANT = 'OBCHODNÍK',
+    DILEMA = 'DILEMA',
+    BOSS = 'BOSS',
+    SPACE_STATION = 'VESMÍRNÁ_STANICE',
+    PLANET = 'PLANETA'
 }
 
 export enum PlayerClass {
-  WARRIOR = 'Válečník',
-  MAGE = 'Mág',
-  ROGUE = 'Zloděj',
-  CLERIC = 'Kněz'
+    WARRIOR = 'Válečník',
+    MAGE = 'Mág',
+    ROGUE = 'Zloděj',
+    CLERIC = 'Kněz'
 }
 
 export interface Stat {
-  label: string;
-  value: string | number;
-  icon?: string;
+    label: string;
+    value: string | number;
+    icon?: string;
 }
 
 export interface MerchantItemEntry {
-  id: string;
-  stock: number;
-  price?: number;
-  sellPrice?: number;
-  saleChance?: number; // ADDED: Šance v % že bude item ve slevě
+    id: string;
+    stock: number;
+    price?: number;
+    sellPrice?: number;
+    saleChance?: number; // ADDED: Šance v % že bude item ve slevě
 }
 
 export interface DilemmaReward {
@@ -37,22 +37,22 @@ export interface DilemmaReward {
 }
 
 export interface DilemmaOption {
-  label: string; 
-  
-  // Success Scenarion
-  successChance: number; // 0-100
-  consequenceText: string; 
-  rewards?: DilemmaReward[]; // List of effects on success
+    label: string;
 
-  // Legacy / Simple effect support
-  effectType?: string;
-  effectValue?: number;
+    // Success Scenarion
+    successChance: number; // 0-100
+    consequenceText: string;
+    rewards?: DilemmaReward[]; // List of effects on success
 
-  // Fail Scenario
-  failMessage?: string;
-  failDamage?: number; // DMG on fail
+    // Legacy / Simple effect support
+    effectType?: string;
+    effectValue?: number;
 
-  physicalInstruction?: string; 
+    // Fail Scenario
+    failMessage?: string;
+    failDamage?: number; // DMG on fail
+
+    physicalInstruction?: string;
 }
 
 export interface BossPhase {
@@ -71,9 +71,9 @@ export interface MerchantTradeConfig {
 }
 
 export interface TrapConfig {
-    difficulty: number; 
-    damage: number; 
-    disarmClass: PlayerClass | 'ANY'; 
+    difficulty: number;
+    damage: number;
+    disarmClass: PlayerClass | 'ANY';
     successMessage: string;
     failMessage: string;
     trapType?: string; // NEW: Např. "MECHANISMUS", "MAGICKÁ", "TECH"
@@ -88,8 +88,8 @@ export interface EnemyLoot {
     lootStats?: Stat[]; // Nový systém odměn (flexibilní seznam statů)
     // Legacy support
     goldReward?: number;
-    dropItemChance?: number; 
-    dropItemId?: string; 
+    dropItemChance?: number;
+    dropItemId?: string;
     // REMOVED XP REWARD
 }
 
@@ -159,53 +159,53 @@ export interface PlanetConfig {
 }
 
 export interface GameEvent {
-  id: string;
-  title: string;
-  description: string;
-  type: GameEventType;
-  stats?: Stat[]; 
-  rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
-  flavorText?: string;
-  
-  isShareable?: boolean;
-  isConsumable?: boolean;
-  isSellOnly?: boolean; 
-  canBeSaved?: boolean;   
-  isLocked?: boolean; 
-  
-  price?: number; 
-  
-  canSellToMerchant?: boolean; 
-  tradeConfig?: MerchantTradeConfig; 
-  merchantItems?: MerchantItemEntry[]; 
-  
-  dilemmaScope?: 'INDIVIDUAL' | 'GLOBAL'; 
-  dilemmaOptions?: DilemmaOption[]; 
-  
-  bossPhases?: BossPhase[]; 
-  combatConfig?: CombatConfig; // NOVÉ
-  
-  trapConfig?: TrapConfig; 
-  enemyLoot?: EnemyLoot; 
+    id: string;
+    title: string;
+    description: string;
+    type: GameEventType;
+    stats?: Stat[];
+    rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
+    flavorText?: string;
 
-  stationConfig?: StationConfig;
-  
-  resourceConfig?: ResourceConfig; 
-  craftingRecipe?: CraftingRecipe; 
-  
-  marketConfig?: MarketConfig; 
-  
-  planetConfig?: PlanetConfig; 
-  planetProgress?: number; // Sleduje, kolikátou fázi už hráč splnil (0 = začátek)
+    isShareable?: boolean;
+    isConsumable?: boolean;
+    isSellOnly?: boolean;
+    canBeSaved?: boolean;
+    isLocked?: boolean;
 
-  timeVariant?: TimeVariant; 
-  classVariants?: Partial<Record<PlayerClass, ClassVariant>>; 
-  qrCodeUrl?: string; 
-  _merchantEntry?: MerchantItemEntry; // Temporary runtime property
+    price?: number;
+
+    canSellToMerchant?: boolean;
+    tradeConfig?: MerchantTradeConfig;
+    merchantItems?: MerchantItemEntry[];
+
+    dilemmaScope?: 'INDIVIDUAL' | 'GLOBAL';
+    dilemmaOptions?: DilemmaOption[];
+
+    bossPhases?: BossPhase[];
+    combatConfig?: CombatConfig; // NOVÉ
+
+    trapConfig?: TrapConfig;
+    enemyLoot?: EnemyLoot;
+
+    stationConfig?: StationConfig;
+
+    resourceConfig?: ResourceConfig;
+    craftingRecipe?: CraftingRecipe;
+
+    marketConfig?: MarketConfig;
+
+    planetConfig?: PlanetConfig;
+    planetProgress?: number; // Sleduje, kolikátou fázi už hráč splnil (0 = začátek)
+
+    timeVariant?: TimeVariant;
+    classVariants?: Partial<Record<PlayerClass, ClassVariant>>;
+    qrCodeUrl?: string;
+    _merchantEntry?: MerchantItemEntry; // Temporary runtime property
 }
 
 export interface ScanHistoryItem extends GameEvent {
-  timestamp: number;
+    timestamp: number;
 }
 
 export interface RaidState {
@@ -214,6 +214,39 @@ export interface RaidState {
     bossId: string;
     maxHp: number;
     currentHp: number;
-    turnIndex: number; 
+    turnIndex: number;
     combatLog: string[];
+}
+
+// NEW INTERFACES FOR MULTIPLAYER
+export interface Message {
+    id: string;
+    sender: string;
+    text: string;
+    timestamp: number;
+    isSystem?: boolean;
+}
+
+export interface RoomMember {
+    name: string;
+    email?: string;
+    hp: number;
+    lastSeen?: number;
+    isReady?: boolean;
+}
+
+export interface RoomState {
+    id: string;
+    isInRoom: boolean;
+    members: RoomMember[];
+    messages: Message[];
+    nickname: string;
+    isNicknameSet: boolean;
+    isGameStarted: boolean;
+    roundNumber: number;
+    turnIndex: number;
+    turnOrder: string[];
+    readyForNextRound: string[];
+    host: string;
+    activeEncounter?: GameEvent | null;
 }

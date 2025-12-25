@@ -127,8 +127,9 @@ export const nextTurn = async (roomId: string): Promise<any> => fetchData(`${BAS
 export const leaveRoom = async (roomId: string, userName: string): Promise<void> => { fetchData(`${BASE_API_URL}/rooms/${roomId}/leave`, { method: 'POST', body: JSON.stringify({ userName }) }, true).catch(() => { }); };
 export const sendMessage = async (roomId: string, sender: string, text: string): Promise<any> => fetchData(`${BASE_API_URL}/rooms/${roomId}/messages`, { method: 'POST', body: JSON.stringify({ sender, text }) }, true);
 export const getRoomMessages = async (roomId: string): Promise<any[]> => fetchData<any[]>(`${BASE_API_URL}/rooms/${roomId}/messages`);
-export const createRoom = async (roomId: string, hostName: string, password?: string): Promise<any> => fetchData(`${BASE_API_URL}/rooms`, { method: 'POST', body: JSON.stringify({ roomId, hostName, password }) });
+export const createRoom = async (roomId: string, hostName: string, hostEmail?: string, password?: string): Promise<any> => fetchData(`${BASE_API_URL}/rooms`, { method: 'POST', body: JSON.stringify({ roomId, hostName, hostEmail, password }) });
 export const joinRoom = async (roomId: string, userName: string, hp?: number, password?: string, email?: string): Promise<any> => fetchData(`${BASE_API_URL}/rooms/${roomId}/join`, { method: 'POST', body: JSON.stringify({ userName, email, hp: hp || 100, password }) });
+export const toggleReady = async (roomId: string, userName: string, isReady: boolean): Promise<any> => fetchData(`${BASE_API_URL}/rooms/${roomId}/ready`, { method: 'POST', body: JSON.stringify({ userName, isReady }) }, true);
 export const setRoomEncounter = async (roomId: string, encounter: GameEvent | null): Promise<void> => { await fetchData(`${BASE_API_URL}/rooms/${roomId}/encounter`, { method: 'POST', body: JSON.stringify({ encounter }) }, true).catch(() => { }); };
 
 export const attackRaidBoss = async (roomId: string, damage: number, userName: string): Promise<any> => {

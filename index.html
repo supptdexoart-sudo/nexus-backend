@@ -1,160 +1,190 @@
 <!DOCTYPE html>
 <html lang="cs">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
-    <link rel="manifest" href="./manifest.json" />
-    
-    <!-- Mobile Optimization -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#0a0b0d" />
 
-    <title>Nexus | DEXOART</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
-    <script>
-      window.tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Outfit', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="./vite.svg" />
+  <link rel="manifest" href="./manifest.json" />
+
+  <!-- Mobile Optimization -->
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0b0d" />
+
+  <title>Nexus | DEXOART</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+
+  <script>
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            signal: {
+              amber: '#ff9d00',
+              cyan: '#00f2ff',
+              hazard: '#ff3c3c',
             },
-            colors: {
-              signal: {
-                amber: '#ff9d00',
-                cyan: '#00f2ff',
-                hazard: '#ff3c3c',
-              },
-              hud: {
-                bg: '#0a0b0d',
-                glass: 'rgba(20, 22, 25, 0.85)',
-                border: 'rgba(255, 255, 255, 0.1)'
-              }
+            hud: {
+              bg: '#0a0b0d',
+              glass: 'rgba(20, 22, 25, 0.85)',
+              border: 'rgba(255, 255, 255, 0.1)'
             }
           }
         }
       }
-    </script>
-    <style>
-      :root {
-        --bg: #0a0b0d;
-        --signal-amber: #ff9d00;
-        --signal-cyan: #00f2ff;
-        --hazard-red: #ff3c3c;
-        --glass: rgba(20, 22, 25, 0.85);
-        --border-muted: rgba(255, 255, 255, 0.1);
-      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #0a0b0d;
+      --signal-amber: #ff9d00;
+      --signal-cyan: #00f2ff;
+      --hazard-red: #ff3c3c;
+      --glass: rgba(20, 22, 25, 0.85);
+      --border-muted: rgba(255, 255, 255, 0.1);
+    }
 
-      body {
-        background-color: var(--bg);
-        color: #fff;
-        overflow: hidden;
-        overscroll-behavior: none;
-        touch-action: none;
-        -webkit-tap-highlight-color: transparent;
-        font-family: 'Outfit', sans-serif;
-      }
+    body {
+      background-color: var(--bg);
+      color: #fff;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Outfit', sans-serif;
+    }
 
-      .noise-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        pointer-events: none;
-        opacity: 0.04;
-        background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-        will-change: transform;
-        transform: translateZ(0);
-      }
+    .noise-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0.04;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      will-change: transform;
+      transform: translateZ(0);
+    }
 
-      .scanlines {
-        position: fixed;
-        inset: 0;
-        z-index: 9998;
-        pointer-events: none;
-        background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.15) 50%);
-        background-size: 100% 4px;
-        will-change: transform;
-        transform: translateZ(0);
-      }
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      pointer-events: none;
+      background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.15) 50%);
+      background-size: 100% 4px;
+      will-change: transform;
+      transform: translateZ(0);
+    }
 
-      .screen-fringe {
-        position: fixed;
-        inset: 0;
-        box-shadow: inset 0 0 120px rgba(0,0,0,0.9);
-        z-index: 9997;
-        pointer-events: none;
-      }
+    .screen-fringe {
+      position: fixed;
+      inset: 0;
+      box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.9);
+      z-index: 9997;
+      pointer-events: none;
+    }
 
-      .chromatic-text {
-        text-shadow: 
-          -1.5px 0px 0px rgba(255,0,0,0.5),
-          1.5px 0px 0px rgba(0,255,255,0.5);
-      }
+    .chromatic-text {
+      text-shadow:
+        -1.5px 0px 0px rgba(255, 0, 0, 0.5),
+        1.5px 0px 0px rgba(0, 255, 255, 0.5);
+    }
 
-      .button-primary {
-        background: var(--signal-amber);
-        color: #000;
-        font-family: 'JetBrains Mono', monospace;
-        font-weight: 800;
-        text-transform: uppercase;
-        padding: 18px;
-        text-align: center;
-        clip-path: polygon(0 0, 92% 0, 100% 30%, 100% 100%, 8% 100%, 0 70%);
-        letter-spacing: 2px;
-        cursor: pointer;
-        transition: transform 0.1s, filter 0.2s;
-        display: block;
-        width: 100%;
-      }
+    .button-primary {
+      background: var(--signal-amber);
+      color: #000;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 18px;
+      text-align: center;
+      clip-path: polygon(0 0, 92% 0, 100% 30%, 100% 100%, 8% 100%, 0 70%);
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: transform 0.1s, filter 0.2s;
+      display: block;
+      width: 100%;
+    }
 
-      .tactical-card {
-        background: var(--glass);
-        border: 1px solid var(--border-muted);
-        padding: 16px;
-        position: relative;
-        overflow: hidden;
-      }
+    .tactical-card {
+      background: var(--glass);
+      border: 1px solid var(--border-muted);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
 
-      .corner-accent {
-        position: absolute;
-        width: 12px;
-        height: 12px;
-        border: 2px solid var(--signal-cyan);
-      }
-      .top-left { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
-      .bottom-right { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+    .corner-accent {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--signal-cyan);
+    }
 
-      .battery-meter {
-        width: 45px;
-        height: 5px;
-        background: rgba(255,255,255,0.1);
-        margin-top: 5px;
-        position: relative;
-      }
-      .battery-meter::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 100%;
-        width: 80%;
-        background: var(--signal-amber);
-        box-shadow: 0 0 12px var(--signal-amber);
-      }
+    .top-left {
+      top: 8px;
+      left: 8px;
+      border-right: 0;
+      border-bottom: 0;
+    }
 
-      ::-webkit-scrollbar { width: 4px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: var(--signal-cyan); opacity: 0.3; border-radius: 2px; }
+    .bottom-right {
+      bottom: 8px;
+      right: 8px;
+      border-left: 0;
+      border-top: 0;
+    }
 
-      * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    </style>
+    .battery-meter {
+      width: 45px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      margin-top: 5px;
+      position: relative;
+    }
+
+    .battery-meter::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 80%;
+      background: var(--signal-amber);
+      box-shadow: 0 0 12px var(--signal-amber);
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--signal-cyan);
+      opacity: 0.3;
+      border-radius: 2px;
+    }
+
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -184,16 +214,17 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
-    <div class="noise-overlay"></div>
-    <div class="scanlines"></div>
-    <div class="screen-fringe"></div>
-    <div id="root" class="h-screen w-screen flex items-center justify-center p-0"></div>
-    
-    <!-- Pro GitHub Pages s relativní base './' použijeme relativní cestu k index.tsx -->
-    <script type="module" src="./index.tsx"></script>
-  <script type="module" src="/index.tsx"></script>
+
+<body>
+  <div class="noise-overlay"></div>
+  <div class="scanlines"></div>
+  <div class="screen-fringe"></div>
+  <div id="root" class="h-screen w-screen flex items-center justify-center p-0"></div>
+
+  <!-- Pro GitHub Pages s relativní base './' použijeme relativní cestu k index.tsx -->
+  <script type="module" src="./index.tsx"></script>
 </body>
+
 </html>

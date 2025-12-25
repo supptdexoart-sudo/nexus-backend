@@ -1,500 +1,417 @@
-
 import { useState, useEffect, useRef } from 'react';
-import { GameEvent, DilemmaOption, PlayerClass, GameEventType } from '../types';
 import * as apiService from '../services/apiService';
-import { NEXUS_SEED_DATA } from '../services/seedData';
-import { playSound, vibrate, getSoundStatus, getVibrationStatus, toggleSoundSystem, toggleVibrationSystem } from '../services/soundService';
-import { ToastData } from '../components/Toast';
+import { GameEvent, GameEventType, PlayerClass, RoomState, DilemmaOption } from '../types';
+import { playSound, toggleSoundSystem, toggleVibrationSystem, vibrate } from '../services/soundService';
 
 const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
-const TEST_ACCOUNT_EMAIL = 'admin_test_vault@nexus.local'; // Virtuální účet pro testování
+const TEST_ACCOUNT_EMAIL = 'test1@nexus.cz'; // Pro wipe testovacích dat
 
-const MAX_PLAYER_HP = 100;
-const MAX_PLAYER_MANA = 100;
-const MAX_PLAYER_FUEL = 100;
-const INITIAL_GOLD = 100;
+// Helper to determine day/night based on real time
+const isNightTime = () => {
+    const hour = new Date().getHours();
+    return hour >= 20 || hour < 6;
+};
 
+// --- LOGIC HOOK ---
 export enum Tab {
     SCANNER = 'scanner',
     INVENTORY = 'inventory',
+    MERCHANT = 'merchant',
     GENERATOR = 'generator',
+    DATABASE = 'database',
     ROOM = 'room',
     SETTINGS = 'settings',
     SPACESHIP = 'spaceship'
 }
 
-const isNightTime = (): boolean => {
-    const hour = new Date().getHours();
-    return hour >= 20 || hour < 6;
-};
-
-const getAdjustedItem = (item: GameEvent, isNight: boolean, pClass: PlayerClass | null): GameEvent => {
-    let adjusted = { ...item };
-    if (isNight && item.timeVariant?.enabled) {
-        adjusted = {
-            ...adjusted,
-            title: item.timeVariant.nightTitle || adjusted.title,
-            description: item.timeVariant.nightDescription || adjusted.description,
-            type: item.timeVariant.nightType || adjusted.type,
-            stats: item.timeVariant.nightStats || adjusted.stats
-        };
-    }
-    if (pClass && item.classVariants && item.classVariants[pClass]) {
-        const variant = item.classVariants[pClass]!;
-        adjusted = {
-            ...adjusted,
-            title: variant.overrideTitle || adjusted.title,
-            description: variant.overrideDescription || adjusted.description,
-            type: variant.overrideType || adjusted.type,
-            stats: variant.bonusStats ? [...(adjusted.stats || []), ...variant.bonusStats] : adjusted.stats
-        };
-    }
-    return adjusted;
-};
-
 export const useGameLogic = () => {
-    const [userEmail, setUserEmail] = useState<string | null>(() => localStorage.getItem('nexus_current_user'));
-    const isAdmin = userEmail === ADMIN_EMAIL;
-    const isGuest = userEmail === 'guest';
-
-    // TEST MODE STATE
-    const [isTestMode, setIsTestMode] = useState(() => localStorage.getItem('nexus_admin_test_mode') === 'true');
-
-    // Určíme, který email se používá pro operace s BATOHEM (Inventory/Crafting/Scanning)
-    // Admin v Test Mode používá oddělený účet. Admin v normálním módu používá svůj hlavní.
-    const activeInventoryEmail = (isAdmin && isTestMode) ? TEST_ACCOUNT_EMAIL : userEmail;
+    // --- STATE ---
+    const [userEmail, setUserEmail] = useState<string | null>(localStorage.getItem('nexus_current_user'));
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [isGuest, setIsGuest] = useState(false);
+    const [isTestMode, setIsTestMode] = useState(false);
 
     const [isServerReady, setIsServerReady] = useState(false);
-    const isNight = isNightTime();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const [isNight, setIsNight] = useState(isNightTime());
     const [adminNightOverride, setAdminNightOverride] = useState<boolean | null>(null);
 
-    const [soundEnabled, setSoundEnabled] = useState(getSoundStatus());
-    const [vibrationEnabled, setVibrationEnabled] = useState(getVibrationStatus());
+    // Game Stats
+    const [playerHP, setPlayerHP] = useState(100); // Internal state
+    const [playerHp, setPlayerHp] = useState(100); // Public state (renaming consistency)
+    const [playerMana, setPlayerMana] = useState(100);
+    const [playerFuel, setPlayerFuel] = useState(100);
+    const [playerGold, setPlayerGold] = useState(0);
+    const [playerArmor, setPlayerArmor] = useState(0);
+    const [playerOxygen, setPlayerOxygen] = useState(100);
+    const [playerClass, setPlayerClass] = useState<PlayerClass | null>(null);
 
-    const [activeTab, setActiveTab] = useState<Tab>(() => (userEmail === ADMIN_EMAIL ? Tab.GENERATOR : Tab.SCANNER));
+    // UI State
 
-    const [masterCatalog, setMasterCatalog] = useState<GameEvent[]>(() => {
-        const saved = localStorage.getItem('nexus_master_catalog');
-        return saved ? JSON.parse(saved) : NEXUS_SEED_DATA;
-    });
-
-    const [currentEvent, setCurrentEvent] = useState<GameEvent | null>(null);
-    const [activeStation, setActiveStation] = useState<GameEvent | null>(null);
-    const [activeMerchant, setActiveMerchant] = useState<GameEvent | null>(null); // NEW: Merchant State
-    const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null);
-
-    const [, setEventSource] = useState<'scanner' | 'inventory' | 'inspect' | null>(null);
-    const [screenFlash, setScreenFlash] = useState<'red' | 'green' | 'blue' | 'amber' | null>(null);
-    const [isAIThinking, setIsAIThinking] = useState(false);
-
-    // Docking State
-    const [isDocking, setIsDocking] = useState(false);
-
-    // Inventory načítáme podle activeInventoryEmail
-    const [inventory, setInventory] = useState<GameEvent[]>(() => {
-        const saved = localStorage.getItem(`nexus_inv_${activeInventoryEmail || 'guest'}`);
-        return saved ? JSON.parse(saved) : [];
-    });
-
-    // Reload & AUTO-VALIDATE inventory when toggling modes or logging in
-    useEffect(() => {
-        if (activeInventoryEmail) {
-            // 1. Load cached local data immediately
-            const saved = localStorage.getItem(`nexus_inv_${activeInventoryEmail}`);
-            setInventory(saved ? JSON.parse(saved) : []);
-
-            if (!isGuest) {
-                // 2. Fetch fresh data from server
-                apiService.getInventory(activeInventoryEmail).then(async (serverInv) => {
-
-                    // 3. AUTOMATIC VALIDATION START
-                    if (serverInv.length > 0) {
-                        try {
-                            // Posíláme na server kontrolu. Server vrátí seznam ID, která jsou "validní" (základ ID existuje v master DB)
-                            const validationPayload = serverInv.map(i => ({ id: i.id, title: i.title }));
-                            const { validIds } = await apiService.validateLocalItems(validationPayload);
-
-                            // Filtrujeme inventář pouze na ty, které server potvrdil
-                            if (validIds) {
-                                // CLIENT SIDE SAFEGUARD: Include items that are in local master catalog (Seed Data)
-                                // even if server says they are invalid (because Admin didn't sync Seed to DB yet)
-                                const localSafeIds = masterCatalog.map(m => m.id);
-
-                                const cleanInventory = serverInv.filter(i => {
-                                    const baseId = i.id.split('__')[0];
-                                    return validIds.includes(i.id) || localSafeIds.includes(baseId);
-                                });
-
-                                setInventory(cleanInventory);
-                                localStorage.setItem(`nexus_inv_${activeInventoryEmail}`, JSON.stringify(cleanInventory));
-                            }
-                        } catch (validationErr) {
-                            // If validation fails, fall back to serverInv and save it locally.
-                            // This might happen if the validation endpoint is down or returns an error.
-                            setInventory(serverInv);
-                            localStorage.setItem(`nexus_inv_${activeInventoryEmail}`, JSON.stringify(serverInv));
-                        }
-                    } else {
-                        // Empty inventory
-                        setInventory([]);
-                        localStorage.setItem(`nexus_inv_${activeInventoryEmail}`, JSON.stringify([]));
-                    }
-                }).catch((error) => { console.warn("Failed to fetch inventory", error); });
-            }
-        }
-    }, [activeInventoryEmail, isGuest]);
-
+    const [activeTab, setActiveTab] = useState<string>('scanner');
+    const [notification, setNotification] = useState<{ id: string, message: string, type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
     const [scanLog, setScanLog] = useState<string[]>([]);
+    const [isAIThinking, setIsAIThinking] = useState(false);
+    const [screenFlash, setScreenFlash] = useState<'red' | 'green' | 'blue' | null>(null);
 
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [notification, setNotification] = useState<ToastData | null>(null);
+    // Settings
+    const [soundEnabled, setSoundEnabled] = useState(true);
+    const [vibrationEnabled, setVibrationEnabled] = useState(true);
 
-    const [showEndTurnPrompt, setShowEndTurnPrompt] = useState(false);
-    const [showTurnAlert] = useState(false);
-    const [showRoundEndAlert, setShowRoundEndAlert] = useState(false);
+    // Events & Inventory
+    const [currentEvent, setCurrentEvent] = useState<GameEvent | null>(null);
+    const [inventory, setInventory] = useState<GameEvent[]>([]);
+    const [masterCatalog, setMasterCatalog] = useState<GameEvent[]>([]);
+    const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null); // For Generator
 
-    // Player Stats
-    const [playerHp, setPlayerHp] = useState<number>(() => parseInt(localStorage.getItem('nexus_player_hp') || String(MAX_PLAYER_HP)));
-    const [playerMana, setPlayerMana] = useState<number>(() => parseInt(localStorage.getItem('nexus_player_mana') || String(MAX_PLAYER_MANA)));
-    const [playerFuel, setPlayerFuel] = useState<number>(() => parseInt(localStorage.getItem('nexus_player_fuel') || String(MAX_PLAYER_FUEL)));
-    const [playerGold, setPlayerGold] = useState<number>(() => parseInt(localStorage.getItem('nexus_player_gold') || String(INITIAL_GOLD)));
-    const [playerArmor, setPlayerArmor] = useState<number>(() => parseInt(localStorage.getItem('nexus_player_armor') || "0"));
-    const [playerOxygen, setPlayerOxygen] = useState<number>(() => parseInt(localStorage.getItem('nexus_player_oxygen') || "100"));
-
-    const [playerClass, setPlayerClass] = useState<PlayerClass | null>(() => {
-        const saved = localStorage.getItem(`nexus_class_${userEmail || 'guest'}`);
-        return saved ? (saved as PlayerClass) : null;
-    });
-
-    const [roomState, setRoomState] = useState<{
-        id: string;
-        isInRoom: boolean;
-        messages: any[];
-        nickname: string;
-        isNicknameSet: boolean;
-        members: { name: string, email?: string, hp: number }[];
-        turnIndex: number;
-        isGameStarted: boolean;
-        roundNumber: number;
-        turnOrder: string[];
-        readyForNextRound: string[];
-        host: string;
-    }>({
-        id: localStorage.getItem('nexus_last_room_id') || '',
-        isInRoom: localStorage.getItem('nexus_is_in_room') === 'true',
-        messages: [],
-        nickname: localStorage.getItem(`nexus_nickname_${userEmail}`) || '',
-        isNicknameSet: !!localStorage.getItem(`nexus_nickname_${userEmail}`),
+    // Multiplayer State
+    const [roomState, setRoomState] = useState<RoomState>({
+        id: '',
+        isInRoom: false,
         members: [],
-        turnIndex: 0,
+        messages: [],
+        nickname: '',
+        isNicknameSet: false,
         isGameStarted: false,
         roundNumber: 0,
+        turnIndex: 0,
         turnOrder: [],
         readyForNextRound: [],
         host: ''
     });
+    const [isSoloMode, setIsSoloMode] = useState(false);
+    const [giftTarget, setGiftTarget] = useState<string>(''); // Email receiver
 
-    const [isSoloMode, setIsSoloMode] = useState(() => localStorage.getItem('nexus_solo_mode') === 'true');
-    const [giftTarget, setGiftTarget] = useState<string | null>(null);
+    // Turn Management
+    const isMyTurn = roomState.isInRoom && roomState.isGameStarted && roomState.turnOrder[roomState.turnIndex] === roomState.nickname;
+    const isBlocked = roomState.isInRoom && (!roomState.isGameStarted || !isMyTurn);
+    const [showRoundEndAlert, setShowRoundEndAlert] = useState(false);
+    const [showEndTurnPrompt, setShowEndTurnPrompt] = useState(false);
+
+    // Complex Interactions
+    const [isDocking, setIsDocking] = useState(false);
+    const [activeStation, setActiveStation] = useState<GameEvent | null>(null);
+    const [activeMerchant, setActiveMerchant] = useState<GameEvent | null>(null);
 
     const prevMembersRef = useRef<any[]>([]);
-
-    const isMyTurn = !isSoloMode && roomState.isGameStarted && roomState.turnOrder[roomState.turnIndex] === roomState.nickname;
-    const isBlocked = !isAdmin && !isSoloMode && (!roomState.isGameStarted || !isMyTurn);
-
-    // Persistence hooks for stats that don't have explicit handlers
-    useEffect(() => {
-        localStorage.setItem('nexus_player_armor', String(playerArmor));
-    }, [playerArmor]);
+    const playerHpRef = useRef(playerHp);
+    const hasNotifiedStartRef = useRef(false);
 
     useEffect(() => {
-        localStorage.setItem('nexus_player_oxygen', String(playerOxygen));
-    }, [playerOxygen]);
+        if (!roomState.isGameStarted) {
+            hasNotifiedStartRef.current = false;
+        }
+    }, [roomState.isGameStarted]);
+
+    useEffect(() => {
+        playerHpRef.current = playerHp;
+    }, [playerHp]);
+
+    // --- INITIALIZATION ---
+    useEffect(() => {
+        const init = async () => {
+            const health = await apiService.checkHealth();
+            setIsServerReady(health);
+
+            const email = localStorage.getItem('nexus_current_user');
+            if (email) {
+                setUserEmail(email);
+                setIsAdmin(email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+                setIsGuest(!email.includes('@'));
+                if (email.includes('@')) {
+                    try {
+                        const inv = await apiService.getInventory(email);
+                        setInventory(inv);
+                    } catch (e) { console.error("Failed to load inventory", e); }
+                } else {
+                    // Load guest inventory
+                    const guestInv = localStorage.getItem('nexus_inv_guest');
+                    if (guestInv) setInventory(JSON.parse(guestInv));
+                }
+            }
+
+            // Load Test Mode
+            setIsTestMode(localStorage.getItem('nexus_test_mode') === 'true');
+
+            // Load Master Catalog (cached)
+            const cachedCatalog = localStorage.getItem('nexus_master_catalog');
+            if (cachedCatalog) {
+                setMasterCatalog(JSON.parse(cachedCatalog));
+            }
+            if (health) {
+                try {
+                    const catalog = await apiService.getMasterCatalog();
+                    setMasterCatalog(catalog);
+                    localStorage.setItem('nexus_master_catalog', JSON.stringify(catalog));
+                } catch (e) { /* ignore */ }
+            }
+
+            // Load Room State
+            const lastRoomId = localStorage.getItem('nexus_last_room_id');
+            const isInRoom = localStorage.getItem('nexus_is_in_room') === 'true';
+            const savedNick = localStorage.getItem(`nexus_nickname_${email}`);
+            const savedClass = localStorage.getItem(`nexus_class_${email || 'guest'}`) as PlayerClass;
+
+            if (savedClass) setPlayerClass(savedClass);
+
+            if (isInRoom && lastRoomId && savedNick) {
+                setRoomState(prev => ({
+                    ...prev,
+                    id: lastRoomId,
+                    isInRoom: true,
+                    nickname: savedNick,
+                    isNicknameSet: true
+                }));
+            }
+        };
+
+        init();
+
+        // Day/Night Cycle
+        const timeInterval = setInterval(() => {
+            if (adminNightOverride === null) {
+                setIsNight(isNightTime());
+            } else {
+                setIsNight(adminNightOverride);
+            }
+        }, 60000);
+
+        return () => clearInterval(timeInterval);
+    }, [adminNightOverride]);
+
+    // --- RECOVERY VALIDATION (Only once on start if online) ---
+    useEffect(() => {
+        if (isServerReady && userEmail && !isGuest && inventory.length > 0) {
+            // Validate local inventory validity against server master IDs
+            // This prevents "stuck" invalid items from older versions
+            /*
+            apiService.validateLocalItems(inventory.map(i => ({ id: i.id, title: i.title })))
+               .then(({ validIds }) => {
+                    const validInventory = inventory.filter(i => validIds.includes(i.id));
+                    if (validInventory.length !== inventory.length) {
+                        console.warn("Inventory cleaned of invalid items.");
+                        setInventory(validInventory);
+                    }
+               }).catch(e => console.error("Validation check failed", e));
+            */
+        }
+    }, [isServerReady, userEmail]);
+
+    // --- PERSISTENCE ---
+    useEffect(() => {
+        if (userEmail && !isGuest) {
+            // Online persistence is handled by direct API calls on modify
+        } else if (isGuest) {
+            localStorage.setItem('nexus_inv_guest', JSON.stringify(inventory));
+        }
+    }, [inventory, userEmail, isGuest]);
+
+    useEffect(() => { if (userEmail) setPlayerHp(playerHP); }, [playerHP]); // Sync
+
+    // --- ACTIONS ---
 
     const toggleTestMode = () => {
-        if (!isAdmin) return;
-        const newMode = !isTestMode;
-        setIsTestMode(newMode);
-        localStorage.setItem('nexus_admin_test_mode', String(newMode));
-        playSound('open');
-        setNotification({
-            id: 'mode-' + Date.now(),
-            type: 'info',
-            message: newMode ? 'AKTIVOVÁN TESTOVACÍ BATOH' : 'AKTIVOVÁNA MASTER DATABÁZE'
-        });
+        const newVal = !isTestMode;
+        setIsTestMode(newVal);
+        localStorage.setItem('nexus_test_mode', String(newVal));
+        if (newVal) {
+            setNotification({ id: 'test-mode', message: 'Testovací režim AKTIVNÍ (Editace povolena)', type: 'warning' });
+        } else {
+            setNotification({ id: 'test-mode', message: 'Testovací režim VYPNUT', type: 'info' });
+        }
     };
 
     const addToLog = (msg: string) => {
         setScanLog(prev => [msg, ...prev].slice(0, 50));
     };
 
-    const handleHpChange = (amount: number) => {
-        setPlayerHp(prev => {
-            const newValue = Math.max(0, Math.min(MAX_PLAYER_HP, prev + amount));
-            localStorage.setItem('nexus_player_hp', String(newValue));
-            return newValue;
-        });
-        if (amount < 0) {
-            setScreenFlash('red');
-            playSound('damage');
-            vibrate([200]);
-            setTimeout(() => setScreenFlash(null), 500);
-        }
-        else if (amount > 0) {
-            setScreenFlash('green');
-            playSound('heal');
-            setTimeout(() => setScreenFlash(null), 500);
-        }
-    };
+    const getAdjustedItem = (item: GameEvent, isNightCtx: boolean, pClass: PlayerClass | null): GameEvent => {
+        if (!item) return item;
+        let adjusted = { ...item };
 
-    const handleManaChange = (amount: number) => {
-        setPlayerMana(prev => {
-            const newValue = Math.max(0, Math.min(MAX_PLAYER_MANA, prev + amount));
-            localStorage.setItem('nexus_player_mana', String(newValue));
-            return newValue;
-        });
-    };
-
-    const handleFuelChange = (amount: number) => {
-        setPlayerFuel(prev => {
-            const currentFuel = Number(prev) || 0;
-            const change = Number(amount) || 0;
-            const newValue = Math.max(0, Math.min(MAX_PLAYER_FUEL, currentFuel + change));
-            localStorage.setItem('nexus_player_fuel', String(newValue));
-            return newValue;
-        });
-        if (amount < 0) {
-            setScreenFlash('amber');
-            playSound('error');
-            vibrate([50, 100, 50]);
-            setNotification({
-                id: 'fuel-' + Date.now(),
-                type: 'error',
-                message: `VAROVÁNÍ: Spotřeba Paliva ${amount}%`
-            });
-            setTimeout(() => setScreenFlash(null), 800);
-        }
-    };
-
-    const handleGoldChange = (amount: number) => {
-        setPlayerGold(prev => {
-            const newValue = Math.max(0, prev + amount);
-            localStorage.setItem('nexus_player_gold', String(newValue));
-            return newValue;
-        });
-    };
-
-    const handleSaveEvent = async (event: GameEvent, isCatalogUpdate: boolean = false) => {
-        try {
-            const itemToSave = { ...event };
-
-            if (!isCatalogUpdate && !itemToSave.resourceConfig?.isResourceContainer) {
-                const baseId = itemToSave.id.split('__')[0];
-                const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-                itemToSave.id = `${baseId}__${uniqueSuffix}`;
-            }
-
-            if (isGuest || !userEmail) {
-                setInventory(prev => {
-                    if (itemToSave.resourceConfig?.isResourceContainer) {
-                        const existsIndex = prev.findIndex(i => i.id === itemToSave.id);
-                        if (existsIndex >= 0) {
-                            const newInv = [...prev];
-                            newInv[existsIndex] = itemToSave;
-                            localStorage.setItem(`nexus_inv_guest`, JSON.stringify(newInv));
-                            return newInv;
-                        }
-                    }
-
-                    const newInv = [...prev, itemToSave];
-                    localStorage.setItem(`nexus_inv_guest`, JSON.stringify(newInv));
-                    return newInv;
-                });
-                addToLog(`Archivováno (Local): ${itemToSave.title}`);
-                setNotification({ id: 'save-local-' + Date.now(), message: 'Asset uložen lokálně.', type: 'success' });
-            } else {
-                const targetEmail = isCatalogUpdate ? ADMIN_EMAIL : activeInventoryEmail;
-                if (!targetEmail) throw new Error("No target email");
-
-                const serverResponse = await apiService.saveCard(targetEmail, itemToSave);
-                const mergedEvent: GameEvent = { ...serverResponse, ...itemToSave, id: serverResponse.id };
-
-                if (targetEmail === activeInventoryEmail) {
-                    setInventory(prev => {
-                        const existsIndex = prev.findIndex(i => i.id === mergedEvent.id);
-                        if (existsIndex >= 0) {
-                            const newInv = [...prev];
-                            newInv[existsIndex] = mergedEvent;
-                            localStorage.setItem(`nexus_inv_${activeInventoryEmail}`, JSON.stringify(newInv));
-                            return newInv;
-                        } else {
-                            const newInv = [...prev, mergedEvent];
-                            localStorage.setItem(`nexus_inv_${activeInventoryEmail}`, JSON.stringify(newInv));
-                            return newInv;
-                        }
-                    });
-                }
-
-                if (isCatalogUpdate && isAdmin) {
-                    setMasterCatalog(prev => {
-                        const exists = prev.find(i => i.id === mergedEvent.id);
-                        const newCat = exists ? prev.map(i => i.id === mergedEvent.id ? mergedEvent : i) : [...prev, mergedEvent];
-                        localStorage.setItem('nexus_master_catalog', JSON.stringify(newCat));
-                        return newCat;
-                    });
-                    addToLog(`DB UPDATE: ${itemToSave.title}`);
-                    setNotification({ id: 'db-save-' + Date.now(), message: 'Zapsáno do Master Databáze.', type: 'success' });
-                } else {
-                    addToLog(`Archivováno: ${itemToSave.title}`);
-                    setNotification({ id: 'save-' + Date.now(), message: 'Asset uložen do Batohu.', type: 'success' });
-                }
-            }
-        } catch (e) {
-            setNotification({ id: 'err-' + Date.now(), message: 'Chyba ukládání.', type: 'error' });
-        }
-    };
-
-    // NEW: Update Planet Progress
-    const handlePlanetProgress = async (navCardId: string) => {
-        const card = inventory.find(i => i.id === navCardId);
-        if (card) {
-            const updatedCard = { ...card, planetProgress: (card.planetProgress || 0) + 1 };
-
-            // Optimistic UI Update
-            setInventory(prev => prev.map(i => i.id === navCardId ? updatedCard : i));
-
-            if (isGuest || !activeInventoryEmail) {
-                localStorage.setItem(`nexus_inv_guest`, JSON.stringify(inventory.map(i => i.id === navCardId ? updatedCard : i)));
-            } else {
-                try {
-                    await apiService.saveCard(activeInventoryEmail, updatedCard);
-                    // Backup save to local
-                    localStorage.setItem(`nexus_inv_${activeInventoryEmail}`, JSON.stringify(inventory.map(i => i.id === navCardId ? updatedCard : i)));
-                } catch (e) {
-                    console.error("Failed to sync planet progress", e);
-                }
+        // 1. Class-Specific Stats
+        if (pClass && item.classVariants && item.classVariants[pClass]) {
+            const variant = item.classVariants[pClass];
+            if (variant?.overrideDescription) adjusted.description = variant.overrideDescription;
+            if (variant?.overrideTitle) adjusted.title = variant.overrideTitle;
+            if (variant?.bonusStats) {
+                // Should we merge or replace? Let's append bonus stats
+                adjusted.stats = [...(adjusted.stats || []), ...variant.bonusStats];
             }
         }
-    };
 
-    const handleSwapItems = async (makerEmail: string, takerEmail: string, makerItemId: string, takerItemId: string) => {
-        if (isGuest || !activeInventoryEmail) return;
-        setIsAIThinking(true);
-        try {
-            await apiService.swapItems(makerEmail, takerEmail, makerItemId, takerItemId);
-            const inv = await apiService.getInventory(activeInventoryEmail);
-            setInventory(inv);
-            localStorage.setItem(`nexus_inv_${activeInventoryEmail}`, JSON.stringify(inv));
-            await apiService.sendMessage(roomState.id, 'SYSTEM', `BURZA_SUCCESS: Výměna assetů byla dokončena.`);
-            setNotification({ id: 'swap-ok', type: 'success', message: 'Výměna assetů byla úspěšná!' });
-            playSound('success');
-        } catch (e: any) {
-            setNotification({ id: 'swap-err', type: 'error', message: e.message || 'Chyba při výměně dat.' });
-        } finally {
-            setIsAIThinking(false);
-        }
-    };
-
-    const handleDeleteEvent = async (id: string) => {
-        try {
-            const itemToDelete = inventory.find(i => i.id === id);
-            if (!isGuest && activeInventoryEmail) {
-                await apiService.deleteCard(activeInventoryEmail, id);
+        // 2. Night Mode
+        if (isNightCtx && item.timeVariant && item.timeVariant.enabled) {
+            const tv = item.timeVariant;
+            if (tv.nightDescription) adjusted.description = tv.nightDescription;
+            if (tv.nightTitle) adjusted.title = tv.nightTitle;
+            if (tv.nightStats) {
+                adjusted.stats = [...(adjusted.stats || []), ...tv.nightStats];
             }
-            setInventory(prev => {
-                const newInv = prev.filter(i => i.id !== id);
-                localStorage.setItem(`nexus_inv_${activeInventoryEmail || 'guest'}`, JSON.stringify(newInv));
-                return newInv;
-            });
-            if (itemToDelete) addToLog(`Zahozeno z Batohu: ${itemToDelete.title}`);
-            setNotification({ id: 'del-' + Date.now(), message: 'Asset odstraněn.', type: 'success' });
-        } catch (e) {
-            setNotification({ id: 'err-' + Date.now(), message: 'Chyba při mazání.', type: 'error' });
         }
+
+        return adjusted;
     };
 
-    const handleCraftItem = async (recipeItem: GameEvent) => {
-        // Crafting logic (unchanged) ...
-        // Keeping it brief for the patch, logic is same as before
-        if (!recipeItem.craftingRecipe?.requiredResources) return;
-        // ... same logic ...
-        // Assuming no changes needed here for this task
-    };
 
     const handleRefreshDatabase = async () => {
         setIsRefreshing(true);
-        playSound('scan');
         try {
-            let newInventory: GameEvent[] = [];
-            let newCatalog: GameEvent[] = [];
+            const catalog = await apiService.getMasterCatalog();
+            setMasterCatalog(catalog);
+            localStorage.setItem('nexus_master_catalog', JSON.stringify(catalog));
 
-            if (isGuest) {
-                newInventory = [...inventory];
-                newCatalog = await apiService.getMasterCatalog();
-            } else if (activeInventoryEmail) {
-                newInventory = await apiService.getInventory(activeInventoryEmail);
-                newCatalog = await apiService.getMasterCatalog();
+            if (userEmail && !isGuest) {
+                const inv = await apiService.getInventory(userEmail);
+                setInventory(inv);
             }
-
-            // VALIDATION & AUTO-CLEANUP
-            if (newInventory.length > 0) {
-                try {
-                    const validationPayload = newInventory.map(i => ({ id: i.id, title: i.title }));
-                    const { validIds } = await apiService.validateLocalItems(validationPayload);
-
-                    if (validIds) {
-                        // Identify items to remove from server
-                        // SAFEGUARD: If item is in local masterCatalog (Seed), do NOT consider it invalid even if server says so.
-                        const localSafeIds = masterCatalog.map(m => m.id);
-
-                        const invalidItems = newInventory.filter(i => {
-                            const baseId = i.id.split('__')[0];
-                            return !validIds.includes(i.id) && !localSafeIds.includes(baseId);
-                        });
-
-                        // Filter local inventory immediately
-                        newInventory = newInventory.filter(i => {
-                            const baseId = i.id.split('__')[0];
-                            return validIds.includes(i.id) || localSafeIds.includes(baseId);
-                        });
-
-                        // SERVER CLEANUP: Delete invalid items if user is online and not guest
-                        if (invalidItems.length > 0 && !isGuest && activeInventoryEmail) {
-                            console.log(`[AUTO-CLEANUP] Removing ${invalidItems.length} invalid items from server...`);
-                            Promise.all(invalidItems.map(item => apiService.deleteCard(activeInventoryEmail!, item.id)))
-                                .then(() => console.log('[AUTO-CLEANUP] Server clean complete.'))
-                                .catch(e => console.warn('[AUTO-CLEANUP] Partial failure', e));
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Validation check failed", e);
-                }
-            }
-
-            const storageKey = isGuest ? 'nexus_inv_guest' : `nexus_inv_${activeInventoryEmail}`;
-            localStorage.removeItem(storageKey);
-            localStorage.removeItem('nexus_master_catalog');
-
-            localStorage.setItem(storageKey, JSON.stringify(newInventory));
-            localStorage.setItem('nexus_master_catalog', JSON.stringify(newCatalog));
-
-            setInventory(newInventory);
-            setMasterCatalog(newCatalog);
-
-            setNotification({ id: 'sync-ok-' + Date.now(), message: 'Kompletní synchronizace dat.', type: 'success' });
+            setNotification({ id: 'refresh-ok', message: 'Databáze a inventář synchronizovány.', type: 'success' });
             playSound('success');
-
         } catch (e) {
-            setNotification({ id: 'sync-err-' + Date.now(), message: 'Chyba synchronizace.', type: 'error' });
+            console.error(e);
+            setNotification({ id: 'refresh-err', message: 'Chyba synchronizace.', type: 'error' });
             playSound('error');
         } finally {
             setIsRefreshing(false);
         }
     };
 
+    const handleSaveEvent = async (event: GameEvent, isNew = false): Promise<GameEvent> => {
+        setIsRefreshing(true);
+        try {
+            // Generate ID if missing (for generator)
+            const eventToSave = { ...event };
+            if (!eventToSave.id) {
+                eventToSave.id = `GEN-${Date.now()}`;
+            }
+
+            if (userEmail && !isGuest) {
+                const saved = await apiService.saveCard(userEmail, eventToSave);
+                if (isNew) {
+                    setInventory(prev => [...prev, saved]);
+                } else {
+                    setInventory(prev => prev.map(i => i.id === saved.id ? saved : i));
+                }
+                // Update Master Catalog locally if admin
+                if (isAdmin) {
+                    setMasterCatalog(prev => {
+                        const exists = prev.find(i => i.id === saved.id);
+                        return exists ? prev.map(i => i.id === saved.id ? saved : i) : [...prev, saved];
+                    });
+                }
+                return saved;
+            } else {
+                // Guest / Offline
+                const saved = eventToSave;
+                if (isNew) {
+                    setInventory(prev => [...prev, saved]);
+                } else {
+                    setInventory(prev => prev.map(i => i.id === saved.id ? saved : i));
+                }
+                // Update local catalog
+                setMasterCatalog(prev => {
+                    const exists = prev.find(i => i.id === saved.id);
+                    return exists ? prev.map(i => i.id === saved.id ? saved : i) : [...prev, saved];
+                });
+                return saved;
+            }
+        } catch (e) {
+            console.error("Save failed", e);
+            throw e;
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    const handleDeleteEvent = async (cardId: string) => {
+        setInventory(prev => prev.filter(i => i.id !== cardId));
+        if (userEmail && !isGuest) {
+            try { await apiService.deleteCard(userEmail, cardId); } catch (e) { console.error("Delete failed", e); }
+        } else {
+            // Guest local storage update handled by useEffect
+        }
+    };
+
+
+    const handleSwapItems = async (makerEmail: string, takerEmail: string, makerItemId: string, takerItemId: string) => {
+        try {
+            await apiService.swapItems(makerEmail, takerEmail, makerItemId, takerItemId);
+            setNotification({ id: 'swap-ok', message: 'Výměna úspěšná.', type: 'success' });
+            playSound('success');
+            // Refresh inventory
+            handleRefreshDatabase();
+        } catch (e) {
+            setNotification({ id: 'swap-err', message: 'Výměna selhala.', type: 'error' });
+            playSound('error');
+        }
+    }
+
+    // --- GAMEPLAY HANDLERS ---
+    const handleHpChange = (amount: number) => {
+        setPlayerHP(prev => {
+            const newVal = Math.min(100, Math.max(0, prev + amount));
+            if (newVal < prev) {
+                setScreenFlash('red');
+                vibrate(200);
+            } else if (newVal > prev) {
+                setScreenFlash('green');
+            }
+            // Sync immediately to room
+            if (roomState.isInRoom && roomState.id) {
+                apiService.updatePlayerStatus(roomState.id, roomState.nickname, newVal);
+            }
+            return newVal;
+        });
+        setTimeout(() => setScreenFlash(null), 300);
+    };
+
+    const handleManaChange = (amount: number) => setPlayerMana(prev => Math.min(100, Math.max(0, prev + amount)));
+    const handleFuelChange = (amount: number) => setPlayerFuel(prev => Math.min(100, Math.max(0, prev + amount)));
+    const handleGoldChange = (amount: number) => setPlayerGold(prev => Math.max(0, prev + amount));
+
+    // --- CRAFTING & PROGRESS ---
+    const handleCraftItem = async (_recipeId: string, ingredients: string[], result: GameEvent) => {
+        // Simple craft: remove ingredients, add result
+        // Verify ingredients existence
+        const hasAll = ingredients.every(ingId => inventory.some(i => i.id === ingId));
+        if (!hasAll && !isTestMode) {
+            setNotification({ id: 'craft-err', message: 'Chybí suroviny!', type: 'error' });
+            return;
+        }
+
+        if (!isTestMode) {
+            for (const ingId of ingredients) {
+                // Find instance to remove
+                const toRemove = inventory.find(i => i.id === ingId);
+                if (toRemove) await handleDeleteEvent(toRemove.id);
+            }
+        }
+
+        await handleSaveEvent(result, true);
+        playSound('success');
+        setNotification({ id: 'craft-ok', message: `Vyrobeno: ${result.title}`, type: 'success' });
+    };
+
+    const handlePlanetProgress = async (navCardId: string) => {
+        setIsRefreshing(true);
+        try {
+            const card = inventory.find(i => i.id === navCardId);
+            if (!card) return;
+            const nextProgress = (card.planetProgress || 0) + 1;
+            const updatedCard = { ...card, planetProgress: nextProgress };
+            await handleSaveEvent(updatedCard, false);
+            setNotification({ id: 'scan-prog-' + Date.now(), message: `Postup v sektoru: ${nextProgress}`, type: 'success' });
+        } catch (e) {
+            console.error("Planet progress failed", e);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
     const handleWipeTestVault = async () => {
-        if (!isTestMode || !isAdmin) return;
-        if (!confirm("VAROVÁNÍ: Opravdu chcete smazat CELÝ inventář v Testovacím Režimu? Tato akce je nevratná.")) return;
+        if (!isAdmin) return;
+        if (!confirm("OPRAVDU SMAZAT CELÝ TESTOVACÍ BATOH (test1@nexus.cz)? Tuto akci nelze vzít zpět.")) return;
 
         setIsRefreshing(true);
         playSound('error');
@@ -538,26 +455,37 @@ export const useGameLogic = () => {
         localStorage.setItem(`nexus_class_${userEmail || 'guest'}`, pClass);
         setPlayerClass(pClass);
 
-        if (roomId === 'solo') {
-            setIsSoloMode(true);
-            localStorage.setItem('nexus_solo_mode', 'true');
-            localStorage.setItem('nexus_is_in_room', 'false');
-            setRoomState(prev => ({ ...prev, nickname, isNicknameSet: true, isInRoom: false, id: '' }));
-            addToLog(`Systém aktivován. Batoh připraven, ${nickname}.`);
-            return;
-        }
-
         try {
-            let finalRoomId = roomId;
+            if (roomId === 'solo') {
+                setIsSoloMode(true);
+                localStorage.setItem('nexus_solo_mode', 'true');
+                localStorage.setItem('nexus_is_in_room', 'false');
+                setRoomState(prev => ({ ...prev, nickname, isNicknameSet: true, isInRoom: false, id: '' }));
+                addToLog(`Systém aktivován. Batoh připraven, ${nickname}.`);
+                return;
+            }
+
+            let finalRoomId = '';
+            let isHost = false;
+
             if (roomId === 'create' || roomId === 'solo-online') {
                 finalRoomId = (roomId === 'solo-online' ? 'SOLO-' : '') + Math.random().toString(36).substring(2, 7).toUpperCase();
-                await apiService.createRoom(finalRoomId, nickname, password);
-                setRoomState(prev => ({ ...prev, id: finalRoomId, nickname, isNicknameSet: true, isInRoom: true, host: nickname }));
-                if (roomId === 'solo-online') addToLog(`Online mise zahájena v sektoru ${finalRoomId}.`);
+                await apiService.createRoom(finalRoomId, nickname, userEmail || 'guest', password);
+                isHost = true;
             } else {
+                finalRoomId = roomId.toUpperCase();
                 await apiService.joinRoom(finalRoomId, nickname, playerHp, password, userEmail || undefined);
-                setRoomState(prev => ({ ...prev, id: finalRoomId, nickname, isNicknameSet: true, isInRoom: true }));
             }
+
+            setRoomState(prev => ({
+                ...prev,
+                id: finalRoomId,
+                nickname,
+                isNicknameSet: true,
+                isInRoom: true,
+                host: isHost ? nickname : prev.host,
+                members: isHost ? [{ name: nickname, email: userEmail || 'guest', hp: 100, isReady: false }] : prev.members
+            }));
 
             localStorage.setItem('nexus_last_room_id', finalRoomId);
             localStorage.setItem('nexus_is_in_room', 'true');
@@ -569,6 +497,9 @@ export const useGameLogic = () => {
                     try { await apiService.startGame(finalRoomId); } catch (e) { console.error("Auto-start failed", e); }
                 }, 1000);
             }
+
+            addToLog(`${roomId === 'create' ? 'Sektor založen' : 'Vstup do sektoru'}: ${finalRoomId} `);
+
         } catch (e: any) {
             setNotification({ id: 'room-err', type: 'error', message: e.message });
             throw e;
@@ -599,6 +530,23 @@ export const useGameLogic = () => {
         setScanLog([]);
     };
 
+    const handleToggleReady = async () => {
+        if (!roomState.id || !roomState.nickname) return;
+        const myMember = roomState.members.find(m => m.name === roomState.nickname);
+        const newState = !myMember?.isReady;
+        try {
+            await apiService.toggleReady(roomState.id, roomState.nickname, newState);
+            // Optimistic update
+            setRoomState(prev => ({
+                ...prev,
+                members: prev.members.map(m => m.name === prev.nickname ? { ...m, isReady: newState } : m)
+            }));
+            playSound('success');
+        } catch (e) {
+            console.error("Ready toggle failed", e);
+        }
+    };
+
     const handleSendMessage = async (text: string) => {
         if (!roomState.id || !roomState.nickname) return;
         try {
@@ -614,9 +562,8 @@ export const useGameLogic = () => {
                 item = await apiService.getCardById(ADMIN_EMAIL, itemId);
             }
             if (item) {
-                setEventSource('inspect');
                 setCurrentEvent(getAdjustedItem(item, isNight, playerClass));
-                addToLog(`Inspekce: ${item.title}`);
+                addToLog(`Inspekce: ${item.title} `);
             } else {
                 setNotification({ id: 'inspect-err', type: 'error', message: "Data assetu nelze dekódovat." });
             }
@@ -627,6 +574,23 @@ export const useGameLogic = () => {
         }
     };
 
+    // --- POLLING & SYNC ---
+    useEffect(() => {
+        if (activeTab === Tab.ROOM && roomState.isInRoom && roomState.id && isServerReady) {
+            const sync = async () => {
+                try {
+                    const status = await apiService.getRoomStatus(roomState.id);
+                    const messages = await apiService.getRoomMessages(roomState.id);
+                    setRoomState(prev => ({
+                        ...prev, members: status.members, turnIndex: status.turnIndex, messages, isGameStarted: status.isGameStarted,
+                        roundNumber: status.roundNumber, turnOrder: status.turnOrder, readyForNextRound: status.readyForNextRound, host: status.host
+                    }));
+                } catch (e) { }
+            };
+            sync();
+        }
+    }, [activeTab, roomState.isInRoom, roomState.id, isServerReady]);
+
     useEffect(() => {
         if (!roomState.isInRoom || !roomState.id || !isServerReady) return;
         const pollInterval = setInterval(async () => {
@@ -634,6 +598,24 @@ export const useGameLogic = () => {
                 const status = await apiService.getRoomStatus(roomState.id);
                 const messages = await apiService.getRoomMessages(roomState.id);
                 prevMembersRef.current = status.members;
+
+                if (status.isGameStarted && !hasNotifiedStartRef.current) {
+                    setNotification({ id: 'game-start', type: 'success', message: '🚀 MISE ZAHÁJENA! Sektor byl uzamčen.' });
+                    playSound('success');
+                    hasNotifiedStartRef.current = true;
+                }
+
+                // Check for turn change
+                const newTurnPlayer = status.turnOrder?.[status.turnIndex];
+                const oldTurnPlayer = roomState.turnOrder?.[roomState.turnIndex];
+                if (status.isGameStarted && newTurnPlayer !== oldTurnPlayer) {
+                    if (newTurnPlayer === roomState.nickname) {
+                        setNotification({ id: 'your-turn-' + Date.now(), type: 'warning', message: '⚠️ JSI NA TAHU!' });
+                        playSound('open');
+                        vibrate([100, 50, 100]);
+                    }
+                }
+
                 setRoomState(prev => ({
                     ...prev, members: status.members, turnIndex: status.turnIndex, messages, isGameStarted: status.isGameStarted,
                     roundNumber: status.roundNumber, turnOrder: status.turnOrder, readyForNextRound: status.readyForNextRound, host: status.host
@@ -645,7 +627,6 @@ export const useGameLogic = () => {
                     if (!currentEvent || currentEvent.id !== status.activeEncounter.id) {
                         const syncedEvent = getAdjustedItem(status.activeEncounter, isNight, playerClass);
                         setCurrentEvent(syncedEvent);
-                        setEventSource('scanner'); // Treat as scanner source
                         playSound('error');
                         vibrate([200, 100, 200]);
                     }
@@ -653,26 +634,33 @@ export const useGameLogic = () => {
                     // If server has cleared the encounter, but we are still looking at a GLOBAL one -> Close it
                     if (currentEvent && currentEvent.dilemmaScope === 'GLOBAL') {
                         setCurrentEvent(null);
-                        setEventSource(null);
                     }
                 }
-                await apiService.updatePlayerStatus(roomState.id, roomState.nickname, playerHp);
-            } catch (e) { /* Silent poll fail */ }
+                await apiService.updatePlayerStatus(roomState.id, roomState.nickname, playerHpRef.current);
+            } catch (e: any) {
+                if (e.message?.includes('404') || e.message?.includes('Sektor nenalezen')) {
+                    console.warn("Room lost: redirecting to setup");
+                    setRoomState(prev => ({ ...prev, isInRoom: false, id: '' }));
+                    localStorage.setItem('nexus_is_in_room', 'false');
+                }
+            }
         }, 2000);
         return () => clearInterval(pollInterval);
-    }, [roomState.isInRoom, roomState.id, roomState.nickname, playerHp, isGuest, isServerReady]);
+    }, [roomState.isInRoom, roomState.id, roomState.nickname, isGuest, isServerReady, currentEvent]);
 
     const handleStartGame = async () => {
         if (roomState.host !== roomState.nickname) return;
-        if (roomState.members.length < 1) return;
         try {
             await apiService.startGame(roomState.id);
+            // Optimistic start
+            setRoomState(prev => ({ ...prev, isGameStarted: true }));
             playSound('success');
         } catch (e) {
-            setNotification({ id: 'err', type: 'error', message: 'Nepodařilo se spustit misi.' });
+            console.error("Start game failed", e);
         }
     };
 
+    // --- MOVED OUT OF HANDLE START GAME ---
     const handleScanCode = async (code: string) => {
         if (isBlocked && !code.startsWith('friend:')) {
             const msg = !roomState.isGameStarted ? "MISE NEZAČALA: Čekejte na hostitele." : "NEMŮŽEŠ SKENOVAT: Nejseš na tahu!";
@@ -727,7 +715,7 @@ export const useGameLogic = () => {
     const handleFoundItem = (item: GameEvent, source: 'scanner' | 'inventory' | null = null) => {
         if (source === 'scanner') {
             handleFuelChange(-5);
-            addToLog(`Manévr lodi: -5% Paliva`);
+            addToLog(`Manévr lodi: -5 % Paliva`);
         }
 
         const adjusted = getAdjustedItem(item, isNight, playerClass);
@@ -736,19 +724,17 @@ export const useGameLogic = () => {
             setIsAIThinking(false);
             setIsDocking(true);
             setCurrentEvent(adjusted);
-            setEventSource(source);
             return;
         }
 
         setCurrentEvent(adjusted);
-        if (source) setEventSource(source);
 
         // NEW: Broadcast if Global Dilemma
         if (adjusted.type === GameEventType.DILEMA && adjusted.dilemmaScope === 'GLOBAL' && roomState.isInRoom) {
             apiService.setRoomEncounter(roomState.id, item); // Send RAW item to server
         }
 
-        addToLog(source === 'scanner' ? `Skenováno: ${adjusted.title}` : `Zobrazeno: ${adjusted.title}`);
+        addToLog(source === 'scanner' ? `Skenováno: ${adjusted.title} ` : `Zobrazeno: ${adjusted.title} `);
         setIsAIThinking(false);
     };
 
@@ -757,7 +743,7 @@ export const useGameLogic = () => {
         if (currentEvent && currentEvent.type === GameEventType.SPACE_STATION) {
             setActiveStation(currentEvent);
             setCurrentEvent(null);
-            addToLog(`Dokováno: ${currentEvent.title}`);
+            addToLog(`Dokováno: ${currentEvent.title} `);
             playSound('success');
         }
     };
@@ -766,11 +752,24 @@ export const useGameLogic = () => {
         if (currentEvent?.dilemmaScope === 'GLOBAL' && roomState.isInRoom) {
             apiService.setRoomEncounter(roomState.id, null);
         }
+
+        // Auto-end turn if it was my turn and I closed an event
+        const wasMyTurn = isMyTurn && roomState.isGameStarted;
+
         setCurrentEvent(null);
-        setEventSource(null);
+
+        if (wasMyTurn) {
+            handleEndTurn();
+        }
     };
 
     const handleUseEvent = async (event: GameEvent) => {
+        if (isBlocked) {
+            const msg = !roomState.isGameStarted ? "MISE NEZAČALA: Čekejte na hostitele." : "NEMŮŽEŠ HRÁT: Nejseš na tahu!";
+            setNotification({ id: 'block-use', type: 'error', message: msg });
+            return;
+        }
+
         if (event.isSellOnly) {
             setNotification({ id: 'sell-only', message: 'Tento předmět nelze použít, pouze prodat.', type: 'error' });
             return;
@@ -866,7 +865,7 @@ export const useGameLogic = () => {
         handleGoldChange(-(item.price || 0));
         await handleSaveEvent(item, false); // Save to inventory
         playSound('success');
-        setNotification({ id: 'buy-success', type: 'success', message: `Zakoupeno: ${item.title}` });
+        setNotification({ id: 'buy-success', type: 'success', message: `Zakoupeno: ${item.title} ` });
     };
 
     const handleSellItem = async (item: GameEvent, price: number) => {
@@ -882,8 +881,8 @@ export const useGameLogic = () => {
         isRefreshing, notification, setNotification, showEndTurnPrompt,
         playerHp, playerMana, playerFuel, playerGold, playerArmor, playerOxygen, playerClass,
         setPlayerArmor, setPlayerOxygen,
-        roomState, isSoloMode, giftTarget, setGiftTarget, isScannerPaused: !!currentEvent || showTurnAlert || showRoundEndAlert || isDocking || !!activeStation || !!activeMerchant,
-        isAIThinking, showTurnAlert, showRoundEndAlert, handleAcknowledgeRound,
+        roomState, isSoloMode, giftTarget, setGiftTarget, isScannerPaused: !!currentEvent || showRoundEndAlert || isDocking || !!activeStation || !!activeMerchant,
+        isAIThinking, showRoundEndAlert, handleAcknowledgeRound,
         isMyTurn, isBlocked, handleStartGame,
         isDocking, handleDockingComplete,
         activeStation, handleLeaveStation, handleClaimStationRewards,
@@ -892,11 +891,13 @@ export const useGameLogic = () => {
         handleLogin: (email: string, guestNickname?: string) => {
             localStorage.setItem('nexus_current_user', email);
             if (guestNickname) {
-                localStorage.setItem(`nexus_nickname_${email}`, guestNickname);
+                localStorage.setItem(`nexus_nickname_${email} `, guestNickname);
                 setRoomState(prev => ({ ...prev, nickname: guestNickname }));
             }
             setUserEmail(email);
-            setIsServerReady(false);
+            setIsAdmin(email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+            setIsGuest(!email.includes('@'));
+            setIsServerReady(true);
         },
         handleLogout: () => { localStorage.clear(); sessionStorage.clear(); window.location.reload(); },
         handleScanCode,
@@ -909,7 +910,6 @@ export const useGameLogic = () => {
                 setEditingEvent(item);
                 setActiveTab(Tab.GENERATOR);
             } else {
-                setEventSource('inventory');
                 setCurrentEvent(item);
             }
         },
@@ -919,9 +919,11 @@ export const useGameLogic = () => {
         handleInspectItem,
         handleCraftItem,
         handleHardReset,
+
         handleWipeTestVault, // EXPORTED FOR SETTINGS
         scanLog,
         isTestMode,
-        toggleTestMode
+        toggleTestMode,
+        handleToggleReady // EXPORT
     };
 };
