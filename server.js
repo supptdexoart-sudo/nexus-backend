@@ -83,7 +83,7 @@ app.use(cors({
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 500,
+    max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "⛔ Příliš mnoho požadavků." }
@@ -94,7 +94,10 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use(mongoSanitize());
 
 app.use((req, res, next) => {
-    console.log(`📩 ${req.method} ${req.url}`);
+    const isPolling = req.url.endsWith('/status') || req.url.endsWith('/messages');
+    if (!isPolling) {
+        console.log(`📩 ${req.method} ${req.url}`);
+    }
     next();
 });
 
@@ -117,7 +120,7 @@ const RoomSchema = new mongoose.Schema({
     turnIndex: { type: Number, default: 0 },
     turnOrder: [String],
     readyForNextRound: [String],
-    members: [{ name: String, email: String, hp: Number, lastSeen: Number }],
+    members: [{ name: String, email: String, hp: Number, lastSeen: Number, isReady: { type: Boolean, default: false } }],
     messages: [{ id: String, sender: String, text: String, timestamp: Number, isSystem: Boolean }],
     activeEncounter: Object
 }, { timestamps: true });
@@ -290,14 +293,137 @@ app.delete('/api/admin/purge/:cardId', async (req, res) => {
 });
 
 // Rooms
-app.post('/api/rooms', async (req, res) => { try { const { roomId, hostName, password } = req.body; await Room.deleteOne({ roomId }); await Room.create({ roomId, host: hostName, password, members: [{ name: hostName, email: ADMIN_EMAIL, hp: 100 }], messages: [] }); res.json({ success: true }); } catch (e) { res.status(500).json({ message: e.message }) } });
-app.post('/api/rooms/:roomId/join', async (req, res) => { try { const r = await Room.findOne({ roomId: req.params.roomId }); if (!r) return res.status(404).json({ message: "Room not found" }); if (!r.members.some(m => m.name === req.body.userName)) r.members.push({ name: req.body.userName, email: req.body.email, hp: 100 }); await r.save(); res.json({ success: true }); } catch (e) { res.status(500).json({ message: e.message }) } });
-app.get('/api/rooms/:roomId/status', async (req, res) => { try { const r = await Room.findOne({ roomId: req.params.roomId }); res.json(r || {}); } catch (e) { res.status(500).json({ message: e.message }) } });
+app.post('/api/rooms', async (req, res) => {
+    try {
+        const { roomId, hostName, hostEmail, password } = req.body;
+        await Room.deleteOne({ roomId });
+        await Room.create({
+            roomId,
+            host: hostName,
+            password,
+            members: [{ name: hostName, email: hostEmail || ADMIN_EMAIL, hp: 100, isReady: false, lastSeen: Date.now() }],
+            messages: []
+        });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+app.post('/api/rooms/:roomId/join', async (req, res) => {
+    try {
+        const r = await Room.findOne({ roomId: req.params.roomId });
+        if (!r) return res.status(404).json({ message: "Sektor nenalezen" });
+        const existing = r.members.find(m => m.name === req.body.userName);
+        if (existing) {
+            existing.lastSeen = Date.now();
+            if (req.body.email) existing.email = req.body.email;
+        } else {
+            r.members.push({ name: req.body.userName, email: req.body.email, hp: 100, lastSeen: Date.now(), isReady: false });
+        }
+        await r.save();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+app.get('/api/rooms/:roomId/status', async (req, res) => {
+    try {
+        const r = await Room.findOne({ roomId: req.params.roomId });
+        if (!r) return res.status(404).json({ message: "Sektor nenalezen" });
+        res.json(r);
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
 app.post('/api/rooms/:roomId/status', async (req, res) => { try { await Room.updateOne({ roomId: req.params.roomId, "members.name": req.body.userName }, { $set: { "members.$.hp": req.body.hp } }); res.json({ success: true }); } catch (e) { res.status(500).json({ message: e.message }) } });
 app.post('/api/rooms/:roomId/messages', async (req, res) => { try { const r = await Room.findOne({ roomId: req.params.roomId }); if (r) { r.messages.push({ id: Date.now().toString(), ...req.body }); await r.save(); } res.json({ success: true }); } catch (e) { res.status(500).json({ message: e.message }) } });
 app.get('/api/rooms/:roomId/messages', async (req, res) => { try { const r = await Room.findOne({ roomId: req.params.roomId }); res.json(r ? r.messages : []); } catch (e) { res.status(500).json({ message: e.message }) } });
 
-// NEW: Active Encounter Management for Global Events
+// NEW: Ready Check Endpoint
+app.post('/api/rooms/:roomId/ready', async (req, res) => {
+    try {
+        const { userName, isReady } = req.body;
+        const r = await Room.findOne({ roomId: req.params.roomId });
+        if (r) {
+            const member = r.members.find(m => m.name === userName);
+            if (member) member.isReady = isReady;
+            await r.save();
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
+// NEW: Game Lifecycle Endpoints
+app.post('/api/rooms/:roomId/start-game', async (req, res) => {
+    try {
+        const r = await Room.findOne({ roomId: req.params.roomId });
+        if (r) {
+            r.isGameStarted = true;
+            r.roundNumber = 1;
+            r.turnIndex = 0;
+            // Shufflování pořadí hráčů
+            r.turnOrder = r.members.map(m => m.name).sort(() => Math.random() - 0.5);
+            r.messages.push({
+                id: 'sys-' + Date.now(),
+                sender: 'SYSTEM',
+                text: '🚀 MISE ZAHÁJENA! Sektor byl uzamčen.',
+                timestamp: Date.now(),
+                isSystem: true
+            });
+            await r.save();
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
+app.post('/api/rooms/:roomId/next-turn', async (req, res) => {
+    try {
+        const r = await Room.findOne({ roomId: req.params.roomId });
+        if (r && r.isGameStarted) {
+            r.turnIndex++;
+            if (r.turnIndex >= r.turnOrder.length) {
+                // Konec kola
+                r.turnIndex = 0;
+                r.roundNumber++;
+                r.readyForNextRound = []; // Reset ready flagů pro další kolo
+                r.messages.push({
+                    id: 'sys-' + Date.now(),
+                    sender: 'SYSTEM',
+                    text: `⌛ CYKLUS ${r.roundNumber - 1} SKONČIL. Vstup do cyklu ${r.roundNumber}.`,
+                    timestamp: Date.now(),
+                    isSystem: true
+                });
+            }
+            await r.save();
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
+app.post('/api/rooms/:roomId/acknowledge-round', async (req, res) => {
+    try {
+        const { userName } = req.body;
+        const r = await Room.findOne({ roomId: req.params.roomId });
+        if (r) {
+            if (!r.readyForNextRound.includes(userName)) {
+                r.readyForNextRound.push(userName);
+            }
+            await r.save();
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
+app.post('/api/rooms/:roomId/leave', async (req, res) => {
+    try {
+        const { userName } = req.body;
+        const r = await Room.findOne({ roomId: req.params.roomId });
+        if (r) {
+            r.members = r.members.filter(m => m.name !== userName);
+            if (r.members.length === 0) {
+                await Room.deleteOne({ roomId: req.params.roomId });
+            } else {
+                if (r.host === userName) r.host = r.members[0].name; // Pass host
+                await r.save();
+            }
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
 app.post('/api/rooms/:roomId/encounter', async (req, res) => {
     try {
         const { encounter } = req.body; // GameEvent or null
