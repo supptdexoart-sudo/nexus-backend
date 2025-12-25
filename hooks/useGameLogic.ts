@@ -916,8 +916,9 @@ export const useGameLogic = () => {
             }
             setUserEmail(email);
             setIsAdmin(email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-            setIsGuest(!email.includes('@'));
-            setIsServerReady(true);
+            const gStatus = !email.includes('@');
+            setIsGuest(gStatus);
+            setIsServerReady(gStatus); // Auto-ready for guests, others wait for health check or loader
         },
         handleLogout: () => { localStorage.clear(); sessionStorage.clear(); window.location.reload(); },
         handleScanCode,
@@ -944,6 +945,11 @@ export const useGameLogic = () => {
         scanLog,
         isTestMode,
         toggleTestMode,
-        handleToggleReady // EXPORT
+        handleToggleReady, // EXPORT
+        handleSwitchToOffline: () => {
+            setIsGuest(true);
+            setIsServerReady(true); // Treat as ready for offline
+            setNotification({ id: 'offline-mode-' + Date.now(), message: 'Nouzový režim AKTIVNÍ (Offline)', type: 'warning' });
+        }
     };
 };

@@ -11,6 +11,7 @@ import EventCard from './components/EventCard';
 import DockingAnimation from './components/DockingAnimation';
 import SpaceStationView from './components/SpaceStationView';
 import MerchantScreen from './components/MerchantScreen'; // IMPORTED
+import ServerLoader from './components/ServerLoader';
 import {
   Scan, Box, Hammer, Users, Settings as SettingsIcon,
   Sun, Moon, Heart, Zap, Coins, Shield,
@@ -231,6 +232,12 @@ const App: React.FC = () => {
 
   if (!bootComplete) return <StartupBoot onComplete={handleBootComplete} />;
   if (!logic.userEmail) return <LoginScreen onLogin={logic.handleLogin} />;
+
+  // NEW: Show ServerLoader if not ready and not in guest/offline mode
+  if (!logic.isServerReady && !logic.isGuest) {
+    return <ServerLoader onConnected={() => logic.setIsServerReady(true)} onSwitchToOffline={logic.handleSwitchToOffline} />;
+  }
+
   if (!logic.roomState.isNicknameSet || !logic.playerClass) {
     return <GameSetup initialNickname={logic.roomState.nickname} onConfirmSetup={logic.handleGameSetup} isGuest={logic.isGuest} />;
   }
