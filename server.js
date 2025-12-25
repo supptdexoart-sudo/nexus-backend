@@ -233,8 +233,21 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 // GENERIC INVENTORY ROUTES
-app.get('/api/inventory/zbynekbal97@gmail.com', async (req, res) => { try { const u = await getOrCreateUser(ADMIN_EMAIL); res.json(u.inventory); } catch (e) { res.status(500).json({ message: e.message }) } });
+// REMOVED: Hardcoded route for master admin - caused all inventory requests to return master admin data
 app.get('/api/inventory/:email', async (req, res) => { try { const u = await getOrCreateUser(req.params.email); res.json(u.inventory); } catch (e) { res.status(500).json({ message: e.message }) } });
+
+// GET INDIVIDUAL CARD ROUTE
+app.get('/api/inventory/:email/:cardId', async (req, res) => {
+    try {
+        const u = await User.findOne({ email: req.params.email.toLowerCase() });
+        if (!u) return res.status(404).json({ message: 'User not found' });
+        const card = u.inventory.find(i => i.id === req.params.cardId);
+        if (!card) return res.status(404).json({ message: 'Card not found' });
+        res.json(card);
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
+});
 
 // SAVE / UPDATE ITEM ROUTE (Upraveno pro stacking)
 app.post('/api/inventory/:email', async (req, res) => {
