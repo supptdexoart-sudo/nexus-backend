@@ -16,9 +16,9 @@ import EnemyLootPanel from './generator/EnemyLootPanel';
 import NightVariantPanel from './generator/NightVariantPanel';
 import SpaceStationPanel from './generator/SpaceStationPanel';
 import PlanetPanel from './generator/PlanetPanel';
-import CharacterCreator from './generator/CharacterCreator';
-import CharacterList from './generator/CharacterList';
-import { Character } from '../types';
+// import CharacterCreator from './generator/CharacterCreator';
+// import CharacterList from './generator/CharacterList';
+// import { Character } from '../types';
 
 interface GeneratorProps {
     onSaveCard: (event: GameEvent) => void;
@@ -73,10 +73,11 @@ const Generator: React.FC<GeneratorProps> = ({ onSaveCard, userEmail, initialDat
     const [showPurgeModal, setShowPurgeModal] = useState(false); // FOR GLOBAL PURGE
 
     // Character Management State
-    const [viewMode, setViewMode] = useState<'cards' | 'characters'>('cards');
-    const [characters, setCharacters] = useState<Character[]>([]);
-    const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
-    const [showCharacterCreator, setShowCharacterCreator] = useState(false);
+    // Character Management State
+    // const [viewMode, setViewMode] = useState<'cards' | 'characters'>('cards');
+    // const [characters, setCharacters] = useState<Character[]>([]);
+    // const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+    // const [showCharacterCreator, setShowCharacterCreator] = useState(false);
 
     // Validace ID v reálném čase
     const isIdDuplicate = useMemo(() => {

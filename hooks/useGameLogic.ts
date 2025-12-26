@@ -39,7 +39,7 @@ export const useGameLogic = () => {
     const [adminNightOverride, setAdminNightOverride] = useState<boolean | null>(null);
 
     // Game Stats
-    const [playerHP, setPlayerHP] = useState(100); // Internal state
+    // const [playerHP, setPlayerHP] = useState(100); // Internal state - REMOVED (Build Fix)
     const [playerHp, setPlayerHp] = useState(100); // Public state (renaming consistency)
     const [playerMana, setPlayerMana] = useState(100);
     const [playerFuel, setPlayerFuel] = useState(100);
@@ -414,8 +414,8 @@ export const useGameLogic = () => {
 
     // --- GAMEPLAY HANDLERS ---
     const handleHpChange = (amount: number) => {
-        setPlayerHP(prev => {
-            const newVal = Math.min(100, Math.max(0, prev + amount));
+        setPlayerHp(prev => {
+            const newVal = Math.min(150, Math.max(0, prev + amount)); // Using 150 as theoretical max or logic specific
             if (newVal < prev) {
                 setScreenFlash('red');
                 vibrate(200);
