@@ -357,53 +357,49 @@ app.post('/api/inventory/transfer', async (req, res) => {
 app.post('/api/inventory/swap', async (req, res) => {
     try {
         const { player1Email, player2Email, item1Id, item2Id } = req.body;
-        console.log(`[SWAP] P1: ${player1Email} (${item1Id}) <-> P2: ${player2Email} (${item2Id})`);
+        console.log(`[SWAP] Request: ${player1Email} (${item1Id}) <-> ${player2Email} (${item2Id})`);
 
-        let item1 = null;
-        let item2 = null;
-
-        // 1. Získání a odebrání Item1
-        if (player1Email !== 'guest') {
-            const p1 = await getOrCreateUser(player1Email);
-            const idx1 = p1.inventory.findIndex(i => i.id === item1Id);
-            if (idx1 === -1) return res.status(404).json({ message: `Předmět ${item1Id} u hráče 1 nenalezen.` });
-            item1 = p1.inventory[idx1];
-            p1.inventory.splice(idx1, 1);
-            await p1.save();
-        } else {
-            // Host - simulujeme získání z Masteru pro potřeby druhého hráče
-            const admin = await getOrCreateUser(ADMIN_EMAIL);
-            item1 = admin.inventory.find(i => i.id === item1Id.split('__')[0] || i.id === item1Id);
+        if (!player1Email || !player2Email || !item1Id || !item2Id) {
+            return res.status(400).json({ message: "Invalid swap parameters." });
         }
 
-        // 2. Získání a odebrání Item2
-        if (player2Email !== 'guest') {
-            const p2 = await getOrCreateUser(player2Email);
-            const idx2 = p2.inventory.findIndex(i => i.id === item2Id);
-            if (idx2 === -1) {
-                // Rollback P1 if needed? For simplicity we assume valid IDs
-                return res.status(404).json({ message: `Předmět ${item2Id} u hráče 2 nenalezen.` });
-            }
-            item2 = p2.inventory[idx2];
-            p2.inventory.splice(idx2, 1);
-            await p2.save();
-        } else {
-            const admin = await getOrCreateUser(ADMIN_EMAIL);
-            item2 = admin.inventory.find(i => i.id === item2Id.split('__')[0] || i.id === item2Id);
-        }
+        const p1 = await getOrCreateUser(player1Email);
+        const p2 = await getOrCreateUser(player2Email);
 
-        // 3. Křížové přidání
-        if (player1Email !== 'guest') {
-            const p1 = await getOrCreateUser(player1Email);
-            p1.inventory.push(item2);
-            await p1.save();
-        }
-        if (player2Email !== 'guest') {
-            const p2 = await getOrCreateUser(player2Email);
-            p2.inventory.push(item1);
-            await p2.save();
-        }
+        if (!p1 || !p2) return res.status(404).json({ message: "Users not found." });
 
+        if (!p1.inventory) p1.inventory = [];
+        if (!p2.inventory) p2.inventory = [];
+
+        const idx1 = p1.inventory.findIndex(i => i.id === item1Id);
+        const idx2 = p2.inventory.findIndex(i => i.id === item2Id);
+
+        if (idx1 === -1) return res.status(404).json({ message: `Item ${item1Id} missing from P1.` });
+        if (idx2 === -1) return res.status(404).json({ message: `Item ${item2Id} missing from P2.` });
+
+        // Use toObject() to detach from Mongoose document array and avoid reference issues
+        const item1 = p1.inventory[idx1].toObject ? p1.inventory[idx1].toObject() : { ...p1.inventory[idx1] };
+        const item2 = p2.inventory[idx2].toObject ? p2.inventory[idx2].toObject() : { ...p2.inventory[idx2] };
+
+        // Ensure we are swapping correct items
+        console.log(`[SWAP] Executing: ${item1.title} <-> ${item2.title}`);
+
+        // Remove from inventories
+        p1.inventory.splice(idx1, 1);
+        p2.inventory.splice(idx2, 1);
+
+        // Add to inventories (cross-over)
+        p1.inventory.push(item2);
+        p2.inventory.push(item1);
+
+        // Mark modified just in case Mongoose doesn't detect array changes
+        p1.markModified('inventory');
+        p2.markModified('inventory');
+
+        await p1.save();
+        await p2.save();
+
+        console.log(`✅ [SWAP] Success. P1 Items: ${p1.inventory.length}, P2 Items: ${p2.inventory.length}`);
         res.json({ success: true, item1, item2 });
     } catch (e) {
         console.error("Swap error:", e);
