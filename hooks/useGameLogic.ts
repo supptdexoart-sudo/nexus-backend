@@ -969,14 +969,14 @@ export const useGameLogic = () => {
             apiService.setRoomEncounter(roomState.id, null);
         }
 
-        // Auto-end turn if it was my turn and I closed an event
-        const wasMyTurn = isMyTurn && roomState.isGameStarted;
+        // Auto-end turn removed: Players must manually end turn or use an item
+        // const wasMyTurn = isMyTurn && roomState.isGameStarted;
 
         setCurrentEvent(null);
 
-        if (wasMyTurn) {
-            handleEndTurn();
-        }
+        // if (wasMyTurn) {
+        //     handleEndTurn();
+        // }
     };
 
     const handleUseEvent = async (event: GameEvent) => {
