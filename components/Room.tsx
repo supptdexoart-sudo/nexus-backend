@@ -18,6 +18,8 @@ interface RoomProps {
     userEmail?: string;
     playerClass?: PlayerClass | null;
     onToggleReady?: () => void;
+    activeCharacter?: any | null;
+    isNight?: boolean;
 }
 
 const getClassIcon = (pClass: string) => {
@@ -31,12 +33,14 @@ const getClassIcon = (pClass: string) => {
 };
 
 const Room: React.FC<RoomProps> = ({
-    roomState, inventory, playerHp, scanLog = [], onExitToMenu, onSendMessage, onStartGame, onInspectItem, onSwapItems, userEmail, playerClass, onToggleReady
+    roomState, inventory, playerHp, scanLog = [], onExitToMenu, onSendMessage, onStartGame, onInspectItem, onSwapItems, userEmail, playerClass, onToggleReady,
+    activeCharacter, isNight
 }) => {
     const [activeTab, setActiveTab] = useState<'chat' | 'party' | 'trade'>('party');
     const [newMessage, setNewMessage] = useState('');
     const [isPickingForTrade, setIsPickingForTrade] = useState(false);
     const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+    const [showCharDetails, setShowCharDetails] = useState(false);
 
     const [tradeResponseContext, setTradeResponseContext] = useState<{ makerNick: string, makerEmail: string, makerItemId: string, makerItemTitle: string } | null>(null);
 
@@ -115,7 +119,7 @@ const Room: React.FC<RoomProps> = ({
             </div>
 
             <div className="bg-black/80 backdrop-blur-md border-b border-zinc-800 relative z-10">
-                <div className="flex justify-between items-center p-4 pb-2">
+                <div className="flex justify-between items-center p-3 pb-1">
                     <div className="flex items-center gap-2 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
                         <User className="w-3 h-3 text-zinc-400" />
                         <span className="text-xs font-mono text-zinc-100 font-bold">{roomState.nickname}</span>
@@ -147,8 +151,8 @@ const Room: React.FC<RoomProps> = ({
 
             <div className="flex-1 overflow-y-auto no-scrollbar relative z-10">
                 {activeTab === 'party' && (
-                    <div className="p-4 space-y-4">
-                        <div className="bg-zinc-900/50 p-5 rounded-2xl border border-zinc-800 relative overflow-hidden">
+                    <div className="p-3 space-y-3">
+                        <div className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 relative overflow-hidden">
                             {/* Status Badges */}
                             <div className="flex flex-wrap items-center gap-2 mb-6">
                                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border ${roomState.isGameStarted || isSolo ? 'border-green-500/30 text-green-500' : 'border-red-500/30 text-red-500'}`}>
@@ -222,15 +226,21 @@ const Room: React.FC<RoomProps> = ({
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex justify-between items-center mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-black text-white uppercase tracking-wider">{roomState.nickname}</span>
+                                            <button
+                                                onClick={() => {
+                                                    if (activeCharacter) setShowCharDetails(true);
+                                                    else playSound('error');
+                                                }}
+                                                className="flex items-center gap-2 hover:opacity-80 active:scale-95 transition-all group cursor-help"
+                                            >
+                                                <span className="font-black text-white uppercase tracking-wider group-hover:text-signal-cyan transition-colors">{roomState.nickname}</span>
                                                 {playerClass && (
                                                     <div className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-800 rounded border border-zinc-700">
                                                         {getClassIcon(playerClass)}
                                                         <span className="text-[8px] font-mono text-zinc-400 uppercase font-bold">{playerClass}</span>
                                                     </div>
                                                 )}
-                                            </div>
+                                            </button>
                                             <div className="flex items-center gap-1.5">
                                                 <Activity className="w-3 h-3 text-signal-hazard" />
                                                 <span className="font-mono font-black text-sm text-white">{playerHp ?? 100} HP</span>
@@ -255,14 +265,24 @@ const Room: React.FC<RoomProps> = ({
                                             </div>
                                             <div className="flex-1">
                                                 <div className="flex justify-between items-center mb-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`font-bold text-sm ${isMe ? 'text-white' : 'text-zinc-200'}`}>{member.name}</span>
-                                                        {isMe && playerClass && (
+                                                    {isMe ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                if (activeCharacter) setShowCharDetails(true);
+                                                                else playSound('error');
+                                                            }}
+                                                            className="flex items-center gap-2 hover:opacity-80 active:scale-95 transition-all group cursor-help text-left"
+                                                        >
+                                                            <span className="font-bold text-sm text-white group-hover:text-signal-cyan transition-colors">{member.name}</span>
                                                             <div className="flex items-center gap-1 px-1.5 py-0.5 bg-black/50 rounded border border-white/10">
                                                                 <span className="text-[7px] font-mono text-zinc-400 uppercase font-bold">{playerClass}</span>
                                                             </div>
-                                                        )}
-                                                    </div>
+                                                        </button>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-sm text-zinc-200">{member.name}</span>
+                                                        </div>
+                                                    )}
                                                     <div className="flex items-center gap-3">
                                                         {!roomState.isGameStarted && (
                                                             <div className={`w-3 h-3 rounded-full border ${member.isReady ? 'bg-green-500 border-green-400 shadow-[0_0_8px_lime]' : 'bg-transparent border-zinc-600'}`} />
@@ -415,6 +435,81 @@ const Room: React.FC<RoomProps> = ({
 
                             <button onClick={() => setShowLeaveConfirmation(false)} className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em] hover:text-white transition-colors">
                                 Zrušit a zůstat v misi
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showCharDetails && activeCharacter && (
+                    <motion.div {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)} className="fixed inset-0 z-[400] bg-black/98 backdrop-blur-2xl flex items-center justify-center p-6">
+                        <motion.div {...({ initial: { scale: 0.9, y: 20 }, animate: { scale: 1, y: 0 } } as any)} className="w-full max-w-sm tactical-card border-signal-cyan/30 bg-black p-6 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-signal-cyan to-transparent" />
+
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">{activeCharacter.name}</h3>
+                                    <p className="text-[10px] text-signal-cyan font-black uppercase tracking-widest opacity-80">Přehled Jednotky</p>
+                                </div>
+                                <button onClick={() => setShowCharDetails(false)} className="p-2 bg-white/5 rounded-full text-zinc-500 hover:text-white transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 mb-8">
+                                <div className="p-3 bg-zinc-900/50 rounded-xl border border-white/5">
+                                    <p className="text-[8px] text-zinc-500 uppercase font-black mb-1">Základní HP</p>
+                                    <p className="text-lg font-mono font-black text-white">{activeCharacter.baseStats?.hp || 100}</p>
+                                </div>
+                                <div className="p-3 bg-zinc-900/50 rounded-xl border border-white/5">
+                                    <p className="text-[8px] text-zinc-500 uppercase font-black mb-1">Základní Mana</p>
+                                    <p className="text-lg font-mono font-black text-white">{activeCharacter.baseStats?.mana || 0}</p>
+                                </div>
+                                <div className="p-3 bg-zinc-900/50 rounded-xl border border-white/5">
+                                    <p className="text-[8px] text-zinc-500 uppercase font-black mb-1">Základní Armor</p>
+                                    <p className="text-lg font-mono font-black text-white">{activeCharacter.baseStats?.armor || 0}</p>
+                                </div>
+                                <div className="p-3 bg-zinc-900/50 rounded-xl border border-white/5">
+                                    <p className="text-[8px] text-zinc-500 uppercase font-black mb-1">Základní DMG</p>
+                                    <p className="text-lg font-mono font-black text-white">{activeCharacter.baseStats?.damage || 0}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Instalované_Moduly_(Perky)</h4>
+                                <div className="space-y-2 max-h-[220px] overflow-y-auto no-scrollbar pr-1">
+                                    {activeCharacter.perks && activeCharacter.perks.length > 0 ? (
+                                        activeCharacter.perks.map((perk: any, i: number) => {
+                                            const cond = perk.effect.condition || 'always';
+                                            const isActive = cond === 'always' || (cond === 'night' && isNight) || (cond === 'day' && !isNight);
+                                            return (
+                                                <div key={i} className={`p-3 rounded-xl border transition-all ${isActive ? 'bg-signal-cyan/5 border-signal-cyan/20' : 'bg-zinc-900/20 border-white/5 opacity-50'}`}>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className={`text-xs font-black uppercase ${isActive ? 'text-signal-cyan' : 'text-zinc-500'}`}>{perk.name}</span>
+                                                        <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${isActive ? 'bg-signal-cyan/20 text-signal-cyan' : 'bg-zinc-800 text-zinc-600'}`}>
+                                                            {cond === 'always' ? 'Trvalý' : cond === 'night' ? 'Noční' : cond === 'day' ? 'Denní' : 'Bojový'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[10px] text-zinc-400 font-medium leading-tight">{perk.description}</p>
+                                                    <div className="mt-2 flex items-center gap-1.5 text-[9px] font-mono font-bold text-zinc-500">
+                                                        <Activity className="w-2.5 h-2.5" />
+                                                        <span>Modifikátor: {perk.effect.stat.toUpperCase()} {perk.effect.modifier > 0 ? '+' : ''}{perk.effect.modifier}{perk.effect.isPercentage ? '%' : ''}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-[10px] text-zinc-600 italic">Žádné moduly nejsou nainstalovány.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setShowCharDetails(false)}
+                                className="w-full mt-8 py-4 bg-zinc-900 border border-white/10 text-white font-black uppercase text-xs tracking-[0.2em] rounded-xl active:scale-95 transition-all"
+                            >
+                                Zavřít Diagnostiku
                             </button>
                         </motion.div>
                     </motion.div>

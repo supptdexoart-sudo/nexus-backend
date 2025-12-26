@@ -18,6 +18,7 @@ export enum Tab {
     INVENTORY = 'inventory',
     MERCHANT = 'merchant',
     GENERATOR = 'generator',
+    CHARACTERS = 'characters',
     DATABASE = 'database',
     ROOM = 'room',
     SETTINGS = 'settings',
@@ -46,11 +47,17 @@ export const useGameLogic = () => {
     const [playerArmor, setPlayerArmor] = useState(0);
     const [playerOxygen, setPlayerOxygen] = useState(100);
     const [playerClass, setPlayerClass] = useState<PlayerClass | null>(null);
+    const [activeCharacter, setActiveCharacter] = useState<any | null>(null);
 
     // UI State
 
     const [activeTab, setActiveTab] = useState<string>('scanner');
     const [notification, setNotification] = useState<{ id: string, message: string, type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
+
+    useEffect(() => {
+        if (notification) console.log("%c[NEXUS NOTIF]", "color: #00f2ff; font-weight: bold", notification.message);
+    }, [notification]);
+
     const [scanLog, setScanLog] = useState<string[]>([]);
     const [isAIThinking, setIsAIThinking] = useState(false);
     const [screenFlash, setScreenFlash] = useState<'red' | 'green' | 'blue' | null>(null);
@@ -154,8 +161,33 @@ export const useGameLogic = () => {
             const isInRoom = localStorage.getItem('nexus_is_in_room') === 'true';
             const savedNick = localStorage.getItem(`nexus_nickname_${email}`);
             const savedClass = localStorage.getItem(`nexus_class_${email || 'guest'}`) as PlayerClass;
+            const savedCharacter = localStorage.getItem(`nexus_character_${email}`);
 
             if (savedClass) setPlayerClass(savedClass);
+            if (savedCharacter) {
+                try {
+                    const charObj = JSON.parse(savedCharacter);
+                    setActiveCharacter(charObj);
+
+                    // Restore stats if in Room/Solo
+                    if (isInRoom || lastRoomId === 'solo' || localStorage.getItem('nexus_solo_mode') === 'true') {
+                        let finalHp = charObj.baseStats.hp;
+                        let finalMana = charObj.baseStats.mana;
+                        let finalArmor = charObj.baseStats.armor;
+
+                        const perkBonuses = applyCharacterPerks(charObj, isNightTime()); // Use direct time check here as state might not vary yet
+                        finalHp += perkBonuses.hp;
+                        finalMana += perkBonuses.mana;
+                        finalArmor += perkBonuses.armor;
+
+                        setPlayerHp(finalHp);
+                        setPlayerMana(finalMana);
+                        setPlayerArmor(finalArmor);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse saved character", e);
+                }
+            }
 
             if (isInRoom && lastRoomId && savedNick) {
                 setRoomState(prev => ({
@@ -209,7 +241,7 @@ export const useGameLogic = () => {
         }
     }, [inventory, userEmail, isGuest]);
 
-    useEffect(() => { if (userEmail) setPlayerHp(playerHP); }, [playerHP]); // Sync
+    // useEffect(() => { if (userEmail) setPlayerHp(playerHP); }, [playerHP]); // Sync - DISABLED: Causes overwrite of initialized stats
 
     // --- ACTIONS ---
 
@@ -478,15 +510,100 @@ export const useGameLogic = () => {
             localStorage.removeItem('nexus_master_catalog');
             setNotification({ id: 'hard-reset', message: 'Lokální data smazána.', type: 'info' });
             window.location.reload();
-            return;
         }
         await handleRefreshDatabase();
     };
 
-    const handleGameSetup = async (nickname: string, pClass: PlayerClass, roomId: string | 'create' | 'solo' | 'solo-online', password?: string) => {
+    // Apply character perks based on conditions
+    const applyCharacterPerks = (character: any, currentIsNight: boolean) => {
+        if (!character || !character.perks) return { hp: 0, mana: 0, armor: 0, damage: 0, critChance: 0 };
+
+        let bonuses = { hp: 0, mana: 0, armor: 0, damage: 0, critChance: 0 };
+
+        character.perks.forEach((perk: any) => {
+            const condition = perk.effect.condition || 'always';
+            let shouldApply = false;
+
+            switch (condition) {
+                case 'always':
+                    shouldApply = true;
+                    break;
+                case 'night':
+                    shouldApply = currentIsNight;
+                    break;
+                case 'day':
+                    shouldApply = !currentIsNight;
+                    break;
+                case 'combat':
+                    // Combat perks will be applied during combat events
+                    shouldApply = false;
+                    break;
+            }
+
+            if (shouldApply) {
+                const stat = perk.effect.stat;
+                const modifier = perk.effect.modifier;
+                const isPercentage = perk.effect.isPercentage;
+
+                if (bonuses.hasOwnProperty(stat)) {
+                    if (isPercentage) {
+                        // Percentage bonuses will be applied after base stats
+                        bonuses[stat as keyof typeof bonuses] += modifier;
+                    } else {
+                        bonuses[stat as keyof typeof bonuses] += modifier;
+                    }
+                }
+            }
+        });
+
+        return bonuses;
+    };
+
+    const handleGameSetup = async (nickname: string, pClass: PlayerClass, roomId: string | 'create' | 'solo' | 'solo-online', password?: string, character?: any) => {
         localStorage.setItem(`nexus_nickname_${userEmail}`, nickname);
         localStorage.setItem(`nexus_class_${userEmail || 'guest'}`, pClass);
         setPlayerClass(pClass);
+
+        // Apply character stats if custom character is provided
+        if (character) {
+            setActiveCharacter(character);
+
+            // Apply base stats
+            let finalHp = character.baseStats.hp;
+            let finalMana = character.baseStats.mana;
+            let finalArmor = character.baseStats.armor;
+
+            // Apply perks
+            const perkBonuses = applyCharacterPerks(character, isNight);
+            finalHp += perkBonuses.hp;
+            finalMana += perkBonuses.mana;
+            finalArmor += perkBonuses.armor;
+
+            setPlayerHp(finalHp);
+            setPlayerMana(finalMana);
+            setPlayerArmor(finalArmor);
+            // Store character for later use (perks, etc.)
+            localStorage.setItem(`nexus_character_${userEmail}`, JSON.stringify(character));
+
+            // Show perks notification for game start
+            const activePerks = character.perks?.filter((p: any) => {
+                const cond = p.effect.condition || 'always';
+                return cond === 'always' || (cond === 'night' && isNight) || (cond === 'day' && !isNight);
+            }) || [];
+
+            if (activePerks.length > 0) {
+                const perkList = activePerks.map((p: any) => p.name).join(', ');
+                // Delay notification until game transition completes
+                setTimeout(() => {
+                    setNotification({
+                        id: 'char-init-' + Date.now(),
+                        type: 'success',
+                        message: `Postava ${character.name} připravena! Aktivní perky: ${perkList}`
+                    });
+                    playSound('success');
+                }, 1500);
+            }
+        }
 
         try {
             if (roomId === 'solo') {
@@ -720,6 +837,64 @@ export const useGameLogic = () => {
         vibrate(50);
         playSound('scan');
 
+        // Check if it's a character QR code
+        if (code.toUpperCase().startsWith('CHAR-')) {
+            try {
+                const character = await apiService.getCharacterById(code.toUpperCase());
+                if (character) {
+                    setActiveCharacter(character);
+
+                    // Apply base stats
+                    let finalHp = character.baseStats.hp;
+                    let finalMana = character.baseStats.mana;
+                    let finalArmor = character.baseStats.armor;
+
+                    // Apply perks
+                    const perkBonuses = applyCharacterPerks(character, isNight);
+                    finalHp += perkBonuses.hp;
+                    finalMana += perkBonuses.mana;
+                    finalArmor += perkBonuses.armor;
+
+                    setPlayerHp(finalHp);
+                    setPlayerMana(finalMana);
+                    setPlayerArmor(finalArmor);
+                    setPlayerClass(character.name as any);
+                    localStorage.setItem(`nexus_character_${userEmail}`, JSON.stringify(character));
+
+                    // Visual feedback
+                    setScreenFlash('blue');
+
+                    // Enhanced notification with perk info
+                    const activePerks = character.perks?.filter((p: any) => {
+                        const cond = p.effect.condition || 'always';
+                        return cond === 'always' || (cond === 'night' && isNight) || (cond === 'day' && !isNight);
+                    }) || [];
+
+                    const perkList = activePerks.map((p: any) => p.name).join(', ');
+                    const message = activePerks.length > 0
+                        ? `Postava ${character.name} aktivována! Aktivní perky: ${perkList}`
+                        : `Postava ${character.name} aktivována! (Žádné aktivní perky)`;
+
+                    // Set notification and clear flash in next ticks
+                    setTimeout(() => {
+                        setScreenFlash(null);
+                        setNotification({
+                            id: `char-loaded-${Date.now()}`,
+                            type: 'success',
+                            message
+                        });
+                        playSound('success');
+                        addToLog(`Postava aktivována: ${character.name}`);
+                    }, 300);
+
+                    setIsAIThinking(false);
+                    return;
+                }
+            } catch (e) {
+                console.error('Character load failed:', e);
+            }
+        }
+
         const localItem = inventory.find(i => {
             const baseId = i.id.split('__')[0];
             return baseId.toLowerCase() === code.toLowerCase() || i.id.toLowerCase() === code.toLowerCase();
@@ -922,7 +1097,8 @@ export const useGameLogic = () => {
         isRefreshing, notification, setNotification, showEndTurnPrompt,
         playerHp, playerMana, playerFuel, playerGold, playerArmor, playerOxygen, playerClass,
         setPlayerArmor, setPlayerOxygen,
-        roomState, isSoloMode, giftTarget, setGiftTarget, isScannerPaused: !!currentEvent || showRoundEndAlert || isDocking || !!activeStation || !!activeMerchant,
+        roomState, isSoloMode, giftTarget, setGiftTarget, activeCharacter,
+        isScannerPaused: !!currentEvent || showRoundEndAlert || isDocking || !!activeStation || !!activeMerchant,
         isAIThinking, showRoundEndAlert, handleAcknowledgeRound,
         isMyTurn, isBlocked, handleStartGame,
         isDocking, handleDockingComplete,

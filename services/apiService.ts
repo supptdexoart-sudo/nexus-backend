@@ -142,3 +142,9 @@ export const attackRaidBoss = async (roomId: string, damage: number, userName: s
 export const endRaid = async (roomId: string): Promise<any> => {
   return fetchData(`${BASE_API_URL}/rooms/${roomId}/end-raid`, { method: 'POST' });
 };
+
+// CHARACTER API
+export const getCharacters = async (adminEmail: string): Promise<any[]> => fetchData<any[]>(`${BASE_API_URL}/characters/${adminEmail}`);
+export const getCharacterById = async (characterId: string): Promise<any | null> => { try { return await fetchData<any>(`${BASE_API_URL}/characters/by-id/${encodeURIComponent(characterId)}`, undefined, true); } catch { return null; } };
+export const saveCharacter = async (adminEmail: string, character: any): Promise<any> => fetchData<any>(`${BASE_API_URL}/characters/${adminEmail}`, { method: 'POST', body: JSON.stringify(character) });
+export const deleteCharacter = async (adminEmail: string, characterId: string): Promise<void> => fetchData<void>(`${BASE_API_URL}/characters/${adminEmail}/${encodeURIComponent(characterId)}`, { method: 'DELETE' });

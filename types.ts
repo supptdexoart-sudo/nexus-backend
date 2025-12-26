@@ -252,3 +252,45 @@ export interface RoomState {
     host: string;
     activeEncounter?: GameEvent | null;
 }
+
+// CHARACTER CREATOR INTERFACES
+export interface CharacterPerk {
+    name: string;
+    description: string;
+    effect: {
+        stat: string;              // např. "damage", "hp", "armor"
+        modifier: number;          // např. 5 pro +5, nebo 1.1 pro +10%
+        isPercentage: boolean;     // true = procenta, false = absolutní hodnota
+        condition?: 'night' | 'day' | 'combat' | 'always';
+    };
+}
+
+export interface Character {
+    characterId: string;           // Unikátní ID (např. "CHAR-001")
+    adminEmail: string;
+    name: string;
+    description: string;
+    imageUrl?: string;
+    baseStats: {
+        hp: number;
+        mana: number;
+        armor: number;
+        damage: number;
+        critChance: number;
+        speed: number;
+    };
+    perks: CharacterPerk[];
+    timeVariant?: {
+        enabled: boolean;
+        nightModifiers: {
+            statChanges: Array<{
+                stat: string;
+                modifier: number;
+                isPercentage: boolean;
+            }>;
+            additionalPerks?: CharacterPerk[];
+        };
+    };
+    createdAt?: number;
+    updatedAt?: number;
+}

@@ -257,7 +257,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
     };
 
     return (
-        <div className="w-full h-full flex flex-col p-6 bg-[#0a0b0d] overflow-hidden relative">
+        <div className="w-full h-full flex flex-col p-4 pt-2 bg-[#0a0b0d] overflow-hidden relative">
             {/* Background Dots */}
             <div className="absolute inset-0 pointer-events-none opacity-5 z-0"
                 style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
@@ -265,7 +265,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
             <div className="flex justify-between items-start mb-4 relative z-20">
                 <div className="flex flex-col">
-                    <h2 className="text-3xl font-black uppercase tracking-tighter text-white font-sans chromatic-text leading-none">MŮJ BATOH</h2>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter text-white font-sans chromatic-text leading-none">MŮJ BATOH</h2>
                     <div className="flex items-center gap-3 mt-1.5">
                         {isTestMode ? (
                             <>
@@ -328,8 +328,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                             playSound('click');
                         }}
                         className={`px-4 py-2.5 rounded-lg flex items-center gap-2 border transition-all whitespace-nowrap ${selectedCategory === opt.id
-                                ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                                : 'bg-white/5 border-white/10 text-zinc-500 hover:text-white hover:border-white/30'
+                            ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                            : 'bg-white/5 border-white/10 text-zinc-500 hover:text-white hover:border-white/30'
                             }`}
                     >
                         <opt.icon className="w-3 h-3" />
@@ -348,8 +348,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                             playSound('click');
                         }}
                         className={`flex-1 py-2 flex flex-col items-center justify-center gap-1 border rounded transition-all ${sortMode === opt.id
-                                ? 'bg-signal-cyan/20 border-signal-cyan text-signal-cyan shadow-[0_0_10px_rgba(0,242,255,0.2)]'
-                                : 'bg-white/5 border-white/10 text-white/40'
+                            ? 'bg-signal-cyan/20 border-signal-cyan text-signal-cyan shadow-[0_0_10px_rgba(0,242,255,0.2)]'
+                            : 'bg-white/5 border-white/10 text-white/40'
                             }`}
                     >
                         <opt.icon className="w-3.5 h-3.5" />

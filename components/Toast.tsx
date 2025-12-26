@@ -45,7 +45,7 @@ const Toast: React.FC<ToastProps> = ({ data, onClose }) => {
         exit: { opacity: 0, scale: 0.9, transition: { duration: 0.1 } }
       } as any)}
       key={data.id}
-      className={`fixed top-4 left-4 right-4 z-[10000] shadow-[0_10px_40px_rgba(0,0,0,0.6)] border-l-8 border-black font-mono overflow-hidden ${style.bg} rounded-l-lg mx-auto max-w-sm`}
+      className={`fixed top-4 left-4 right-4 z-[10000] pointer-events-auto shadow-[0_10px_40px_rgba(0,0,0,0.6)] border-l-8 border-black font-mono overflow-hidden ${style.bg} rounded-l-lg mx-auto max-w-sm`}
     >
       <div className="p-4 flex flex-col gap-2 relative">
         <div className="flex items-center justify-between border-b border-black/10 pb-1">
@@ -55,7 +55,7 @@ const Toast: React.FC<ToastProps> = ({ data, onClose }) => {
           </div>
           <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="opacity-40 hover:opacity-100 transition-opacity p-1"><X className="w-4 h-4" /></button>
         </div>
-        <p className="text-[12px] font-bold uppercase leading-tight py-1">{data.message}</p>
+        <p className="text-[12px] font-bold uppercase leading-tight py-1 break-words">{data.message}</p>
 
         <motion.div
           {...({

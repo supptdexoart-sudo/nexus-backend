@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
-import { User, Hash, ArrowRight, Gamepad2, Loader2, Users, Sword, Wand2, Footprints, Cross, Lock, Eye, EyeOff, AlertTriangle, Globe } from 'lucide-react';
+import { User, Hash, ArrowRight, Gamepad2, Loader2, Users, Sword, Wand2, Footprints, Cross, Lock, Eye, EyeOff, AlertTriangle, Globe, Camera } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { PlayerClass } from '../types';
+import { PlayerClass, Character } from '../types';
+import * as apiService from '../services/apiService';
+import Scanner from './Scanner';
 
 interface GameSetupProps {
     initialNickname: string;
-    onConfirmSetup: (nickname: string, playerClass: PlayerClass, roomId: string | 'create' | 'solo' | 'solo-online', password?: string) => Promise<void>;
+    onConfirmSetup: (nickname: string, playerClass: PlayerClass, roomId: string | 'create' | 'solo' | 'solo-online', password?: string, character?: Character | null) => Promise<void>;
     isGuest: boolean;
 }
 
@@ -18,6 +20,13 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
     const [roomId, setRoomId] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Character Selection State
+    const [characterId, setCharacterId] = useState('');
+    const [loadedCharacter, setLoadedCharacter] = useState<Character | null>(null);
+    const [isLoadingCharacter, setIsLoadingCharacter] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     // Password State
     const [password, setPassword] = useState('');
@@ -52,7 +61,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
         setError(null);
         try {
             const pass = (action === 'create' && isPrivateRoom) ? password : undefined;
-            await onConfirmSetup(nickname, selectedClass, action, pass);
+            await onConfirmSetup(nickname, selectedClass, action, pass, loadedCharacter);
         } catch (e: any) {
             setIsLoading(false);
         }
@@ -65,7 +74,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
         setIsLoading(true);
         setError(null);
         try {
-            await onConfirmSetup(nickname, selectedClass, roomId.toUpperCase().trim(), password || undefined);
+            await onConfirmSetup(nickname, selectedClass, roomId.toUpperCase().trim(), password || undefined, loadedCharacter);
         } catch (err: any) {
             console.error("Join failed:", err);
             setError(err.message || "Nepodařilo se připojit. Zkontrolujte ID místnosti.");
@@ -167,6 +176,106 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                                 </button>
                             ))}
                         </div>
+
+                        {/* Custom Character Input */}
+                        <div className="mt-6 pt-6 border-t border-zinc-800">
+                            <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-3 text-center">Nebo zadejte ID vlastní postavy</p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={characterId}
+                                    onChange={(e) => setCharacterId(e.target.value.toUpperCase())}
+                                    placeholder="CHAR-001"
+                                    className="flex-1 bg-black border border-zinc-700 px-4 py-3 rounded-lg text-white font-mono uppercase text-sm focus:border-signal-cyan outline-none"
+                                    maxLength={10}
+                                />
+                                <button
+                                    onClick={async () => {
+                                        if (!characterId.trim()) return;
+                                        setIsLoadingCharacter(true);
+                                        setError(null);
+                                        try {
+                                            const char = await apiService.getCharacterById(characterId.trim());
+                                            if (char) {
+                                                setLoadedCharacter(char);
+                                                setSelectedClass(char.name as any);
+                                                // Visual feedback
+                                                setError('');
+                                                setShowSuccess(true);
+                                                setTimeout(() => {
+                                                    setShowSuccess(false);
+                                                    setStep('action');
+                                                }, 2500);
+                                            } else {
+                                                setError('Postava nenalezena!');
+                                            }
+                                        } catch (e) {
+                                            setError('Chyba při načítání postavy.');
+                                        } finally {
+                                            setIsLoadingCharacter(false);
+                                        }
+                                    }}
+                                    disabled={!characterId.trim() || isLoadingCharacter}
+                                    className="px-6 py-3 bg-signal-cyan text-black rounded-lg font-bold uppercase text-xs hover:bg-white transition-colors disabled:opacity-50"
+                                >
+                                    {isLoadingCharacter ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Načíst'}
+                                </button>
+                            </div>
+                            {error && (
+                                <p className="text-xs text-red-500 mt-2 text-center font-bold">{error}</p>
+                            )}
+                            <button
+                                onClick={() => setShowScanner(true)}
+                                className="mt-3 w-full py-3 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-lg font-bold uppercase text-xs hover:bg-purple-500/20 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Camera className="w-4 h-4" />
+                                Skenovat QR kód
+                            </button>
+                        </div>
+
+                        {/* Scanner Modal */}
+                        {showScanner && (
+                            <div className="fixed inset-0 z-50 bg-black">
+                                <Scanner
+                                    onScanCode={async (code) => {
+                                        if (code.toUpperCase().startsWith('CHAR-')) {
+                                            setShowScanner(false);
+                                            setCharacterId(code.toUpperCase());
+                                            setIsLoadingCharacter(true);
+                                            setError(null);
+                                            try {
+                                                const char = await apiService.getCharacterById(code.toUpperCase());
+                                                if (char) {
+                                                    setLoadedCharacter(char);
+                                                    setSelectedClass(char.name as any);
+                                                    setShowSuccess(true);
+                                                    setTimeout(() => {
+                                                        setShowSuccess(false);
+                                                        setStep('action');
+                                                    }, 2500);
+                                                } else {
+                                                    setError('Postava nenalezena!');
+                                                }
+                                            } catch (e) {
+                                                setError('Chyba při načítání postavy.');
+                                            } finally {
+                                                setIsLoadingCharacter(false);
+                                            }
+                                        } else {
+                                            setError('Neplatný QR kód postavy!');
+                                        }
+                                    }}
+                                    isAIThinking={isLoadingCharacter}
+                                    isPaused={false}
+                                />
+                                <button
+                                    onClick={() => setShowScanner(false)}
+                                    className="absolute top-6 right-6 z-50 px-4 py-2 bg-red-500 text-white rounded-lg font-bold uppercase text-xs hover:bg-red-600 transition-colors"
+                                >
+                                    Zavřít
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -174,13 +283,33 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                 {step === 'action' && (
                     <div className="flex flex-col gap-4">
                         <div className="text-center mb-6">
-                            <button onClick={() => setStep('class')} className="text-[10px] text-zinc-500 uppercase tracking-widest hover:text-white mb-2 font-bold underline underline-offset-4">Změnit Třídu</button>
+                            <button onClick={() => { setStep('class'); setLoadedCharacter(null); setCharacterId(''); }} className="text-[10px] text-zinc-500 uppercase tracking-widest hover:text-white mb-2 font-bold underline underline-offset-4">Změnit {loadedCharacter ? 'Postavu' : 'Třídu'}</button>
                             <h2 className="text-3xl font-black text-white uppercase tracking-wider">PŘÍPRAVA</h2>
                             <div className="flex justify-center items-center gap-2 mt-2">
                                 <span className="text-white font-bold tracking-tight">{nickname}</span>
                                 <span className="text-zinc-600">•</span>
                                 <span className={`text-[10px] px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-signal-cyan uppercase font-black tracking-widest`}>{selectedClass}</span>
                             </div>
+                            {loadedCharacter && (
+                                <div className="mt-4 p-4 bg-zinc-900/50 border border-signal-cyan/30 rounded-xl">
+                                    <p className="text-xs text-signal-cyan uppercase font-bold mb-2">Vlastní postava</p>
+                                    <p className="text-sm text-zinc-400 mb-3">{loadedCharacter.description}</p>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="bg-black/50 rounded p-2 text-center">
+                                            <div className="text-[10px] text-zinc-500 uppercase">HP</div>
+                                            <div className="text-sm font-bold text-white">{loadedCharacter.baseStats.hp}</div>
+                                        </div>
+                                        <div className="bg-black/50 rounded p-2 text-center">
+                                            <div className="text-[10px] text-zinc-500 uppercase">DMG</div>
+                                            <div className="text-sm font-bold text-white">{loadedCharacter.baseStats.damage}</div>
+                                        </div>
+                                        <div className="bg-black/50 rounded p-2 text-center">
+                                            <div className="text-[10px] text-zinc-500 uppercase">Armor</div>
+                                            <div className="text-sm font-bold text-white">{loadedCharacter.baseStats.armor}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* CREATE ROOM */}
@@ -330,6 +459,44 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                 )}
 
             </motion.div>
+
+            {/* Success Overlay */}
+            {showSuccess && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-50 bg-blue-500/20 backdrop-blur-sm flex items-center justify-center"
+                >
+                    <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-zinc-900 border-2 border-signal-cyan rounded-2xl p-8 text-center shadow-2xl"
+                    >
+                        <div className="w-16 h-16 bg-signal-cyan rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                            <svg className="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">Postava načtena!</h3>
+                        <p className="text-sm text-signal-cyan font-bold mb-4">{loadedCharacter?.name}</p>
+
+                        {loadedCharacter?.perks && loadedCharacter.perks.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-white/10 text-left">
+                                <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">Aktivní bonusy:</p>
+                                <div className="space-y-1">
+                                    {loadedCharacter.perks.map((p: any, i: number) => (
+                                        <div key={i} className="flex items-center gap-2 text-[11px]">
+                                            <div className="w-1 h-1 bg-signal-cyan rounded-full" />
+                                            <span className="text-white font-bold">{p.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                </motion.div>
+            )}
         </div>
     );
 };
