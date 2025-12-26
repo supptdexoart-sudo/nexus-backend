@@ -351,11 +351,29 @@ export const useGameLogic = () => {
 
     const handleSwapItems = async (makerEmail: string, takerEmail: string, makerItemId: string, takerItemId: string) => {
         try {
-            await apiService.swapItems(makerEmail, takerEmail, makerItemId, takerItemId);
+            const result = await apiService.swapItems(makerEmail, takerEmail, makerItemId, takerItemId);
             setNotification({ id: 'swap-ok', message: 'Výměna úspěšná.', type: 'success' });
             playSound('success');
-            // Refresh inventory
-            handleRefreshDatabase();
+
+            // Pokud jsem host, musím si inventář aktualizovat lokálně
+            if (isGuest) {
+                if (userEmail === makerEmail || (isGuest && makerEmail === 'guest')) {
+                    // Já jsem nabízel (maker)
+                    setInventory(prev => {
+                        const filtered = prev.filter(i => i.id !== makerItemId);
+                        return [...filtered, result.item2];
+                    });
+                } else if (userEmail === takerEmail || (isGuest && takerEmail === 'guest')) {
+                    // Já jsem přijímal (taker)
+                    setInventory(prev => {
+                        const filtered = prev.filter(i => i.id !== takerItemId);
+                        return [...filtered, result.item1];
+                    });
+                }
+            } else {
+                // Online uživatelé se synchronizují s DB
+                handleRefreshDatabase();
+            }
         } catch (e) {
             setNotification({ id: 'swap-err', message: 'Výměna selhala.', type: 'error' });
             playSound('error');
@@ -914,7 +932,7 @@ export const useGameLogic = () => {
         handleLogin: (email: string, guestNickname?: string) => {
             localStorage.setItem('nexus_current_user', email);
             if (guestNickname) {
-                localStorage.setItem(`nexus_nickname_${email} `, guestNickname);
+                localStorage.setItem(`nexus_nickname_${email}`, guestNickname);
                 setRoomState(prev => ({ ...prev, nickname: guestNickname }));
             }
             setUserEmail(email);
