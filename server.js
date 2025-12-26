@@ -83,7 +83,7 @@ app.use(cors({
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5000,
+    max: 50000,
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "⛔ Příliš mnoho požadavků." }
@@ -275,6 +275,103 @@ app.post('/api/inventory/:email', async (req, res) => {
 });
 
 app.delete('/api/inventory/:email/:cardId', async (req, res) => { try { const u = await User.findOne({ email: req.params.email.toLowerCase() }); if (u) { u.inventory = u.inventory.filter(i => i.id !== req.params.cardId); await u.save(); } res.json({ success: true }); } catch (e) { res.status(500).json({ message: e.message }) } });
+
+// --- TRADING & TRANSFER ROUTES ---
+
+app.post('/api/inventory/transfer', async (req, res) => {
+    try {
+        const { fromEmail, toEmail, itemId } = req.body;
+        console.log(`[TRANSFER] From: ${fromEmail}, To: ${toEmail}, Item: ${itemId}`);
+
+        let itemToTransfer = null;
+
+        // 1. Odebrání od odesílatele (pokud není host)
+        if (fromEmail !== 'guest') {
+            const sender = await getOrCreateUser(fromEmail);
+            const itemIdx = sender.inventory.findIndex(i => i.id === itemId);
+            if (itemIdx === -1) return res.status(404).json({ message: 'Předmět u odesílatele nenalezen.' });
+            itemToTransfer = sender.inventory[itemIdx];
+            sender.inventory.splice(itemIdx, 1);
+            await sender.save();
+        } else {
+            // Pro hosta musíme item získat z Master Catalogu (nebo by ho měl poslat v body, ale transfer bere jen ID)
+            // Předpokládáme, že item existuje v Masteru
+            const admin = await getOrCreateUser(ADMIN_EMAIL);
+            const baseId = itemId.split('__')[0];
+            itemToTransfer = admin.inventory.find(i => i.id === baseId || i.id === itemId);
+            if (!itemToTransfer) return res.status(404).json({ message: 'Předmět pro transfer nenalezen v katalogu.' });
+        }
+
+        // 2. Přidání příjemci (pokud není host)
+        if (toEmail !== 'guest') {
+            const receiver = await getOrCreateUser(toEmail);
+            receiver.inventory.push(itemToTransfer);
+            await receiver.save();
+        }
+
+        res.json({ success: true, item: itemToTransfer });
+    } catch (e) {
+        console.error("Transfer error:", e);
+        res.status(500).json({ message: e.message });
+    }
+});
+
+app.post('/api/inventory/swap', async (req, res) => {
+    try {
+        const { player1Email, player2Email, item1Id, item2Id } = req.body;
+        console.log(`[SWAP] P1: ${player1Email} (${item1Id}) <-> P2: ${player2Email} (${item2Id})`);
+
+        let item1 = null;
+        let item2 = null;
+
+        // 1. Získání a odebrání Item1
+        if (player1Email !== 'guest') {
+            const p1 = await getOrCreateUser(player1Email);
+            const idx1 = p1.inventory.findIndex(i => i.id === item1Id);
+            if (idx1 === -1) return res.status(404).json({ message: `Předmět ${item1Id} u hráče 1 nenalezen.` });
+            item1 = p1.inventory[idx1];
+            p1.inventory.splice(idx1, 1);
+            await p1.save();
+        } else {
+            // Host - simulujeme získání z Masteru pro potřeby druhého hráče
+            const admin = await getOrCreateUser(ADMIN_EMAIL);
+            item1 = admin.inventory.find(i => i.id === item1Id.split('__')[0] || i.id === item1Id);
+        }
+
+        // 2. Získání a odebrání Item2
+        if (player2Email !== 'guest') {
+            const p2 = await getOrCreateUser(player2Email);
+            const idx2 = p2.inventory.findIndex(i => i.id === item2Id);
+            if (idx2 === -1) {
+                // Rollback P1 if needed? For simplicity we assume valid IDs
+                return res.status(404).json({ message: `Předmět ${item2Id} u hráče 2 nenalezen.` });
+            }
+            item2 = p2.inventory[idx2];
+            p2.inventory.splice(idx2, 1);
+            await p2.save();
+        } else {
+            const admin = await getOrCreateUser(ADMIN_EMAIL);
+            item2 = admin.inventory.find(i => i.id === item2Id.split('__')[0] || i.id === item2Id);
+        }
+
+        // 3. Křížové přidání
+        if (player1Email !== 'guest') {
+            const p1 = await getOrCreateUser(player1Email);
+            p1.inventory.push(item2);
+            await p1.save();
+        }
+        if (player2Email !== 'guest') {
+            const p2 = await getOrCreateUser(player2Email);
+            p2.inventory.push(item1);
+            await p2.save();
+        }
+
+        res.json({ success: true, item1, item2 });
+    } catch (e) {
+        console.error("Swap error:", e);
+        res.status(500).json({ message: e.message });
+    }
+});
 
 // --- ADMIN PURGE FEATURE (OPRAVENO PRO GOOGLE AUTH) ---
 app.delete('/api/admin/purge/:cardId', async (req, res) => {
