@@ -973,7 +973,7 @@ export const useGameLogic = () => {
 
         setCurrentEvent(null);
 
-        if (forceEndTurn && wasMyTurn) {
+        if (forceEndTurn === true && wasMyTurn) {
             handleEndTurn();
         }
     };

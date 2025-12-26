@@ -467,7 +467,7 @@ const App: React.FC = () => {
             {logic.currentEvent && !logic.isDocking && !logic.activeStation && !logic.activeMerchant && (
               <EventCard
                 event={logic.currentEvent}
-                onClose={logic.closeEvent}
+                onClose={() => logic.closeEvent()}
                 onSave={() => { logic.handleSaveEvent(logic.currentEvent!, false); }}
                 onUse={() => { logic.handleUseEvent(logic.currentEvent!); }}
                 onDiscard={() => { logic.handleDeleteEvent(logic.currentEvent!.id); }}
