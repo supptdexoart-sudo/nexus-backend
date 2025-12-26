@@ -964,19 +964,18 @@ export const useGameLogic = () => {
         }
     };
 
-    const closeEvent = () => {
+    const closeEvent = (forceEndTurn = false) => {
         if (currentEvent?.dilemmaScope === 'GLOBAL' && roomState.isInRoom) {
             apiService.setRoomEncounter(roomState.id, null);
         }
 
-        // Auto-end turn removed: Players must manually end turn or use an item
-        // const wasMyTurn = isMyTurn && roomState.isGameStarted;
+        const wasMyTurn = isMyTurn && roomState.isGameStarted;
 
         setCurrentEvent(null);
 
-        // if (wasMyTurn) {
-        //     handleEndTurn();
-        // }
+        if (forceEndTurn && wasMyTurn) {
+            handleEndTurn();
+        }
     };
 
     const handleUseEvent = async (event: GameEvent) => {
@@ -1022,13 +1021,15 @@ export const useGameLogic = () => {
         if (effectApplied) {
             playSound('heal');
             setNotification({ id: 'use-success-' + Date.now(), message: 'Předmět použit.', type: 'success' });
-            if (event.isConsumable) await handleDeleteEvent(event.id);
-            else closeEvent();
+            if (event.isConsumable) {
+                await handleDeleteEvent(event.id);
+            }
+            closeEvent(true); // End turn for used items
         } else {
             if (event.isConsumable) {
                 await handleDeleteEvent(event.id);
                 setNotification({ id: 'consumed', message: 'Předmět spotřebován.', type: 'info' });
-                closeEvent();
+                closeEvent(true); // End turn for consumed items
             } else {
                 setNotification({ id: 'no-effect', message: 'Tento předmět nemá žádný okamžitý efekt.', type: 'info' });
                 vibrate(50);
