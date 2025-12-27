@@ -111,6 +111,22 @@ const UserSchema = new mongoose.Schema({
     requests: [{ fromEmail: String, timestamp: Number }]
 }, { timestamps: true });
 
+const TransactionSchema = new mongoose.Schema({
+    transactionId: { type: String, required: true, unique: true },
+    roomId: String,
+    timestamp: Number,
+    participants: [{
+        email: String,
+        nickname: String
+    }],
+    items: [{
+        originalOwnerEmail: String,
+        itemId: String,
+        itemTitle: String
+    }],
+    status: { type: String, enum: ['COMPLETED', 'CANCELLED', 'FAILED'], default: 'COMPLETED' }
+}, { timestamps: true });
+
 const RoomSchema = new mongoose.Schema({
     roomId: { type: String, required: true, unique: true, uppercase: true },
     password: { type: String, default: null },
@@ -122,7 +138,20 @@ const RoomSchema = new mongoose.Schema({
     readyForNextRound: [String],
     members: [{ name: String, email: String, hp: Number, lastSeen: Number, isReady: { type: Boolean, default: false } }],
     messages: [{ id: String, sender: String, text: String, timestamp: Number, isSystem: Boolean }],
-    activeEncounter: Object
+    activeEncounter: Object,
+    activeTrades: [{
+        id: String,
+        participants: [ // Array of 2
+            {
+                email: String,
+                nickname: String,
+                offeredItem: Object, // GameEvent or null
+                isConfirmed: Boolean
+            }
+        ],
+        status: { type: String, enum: ['WAITING', 'CONFIRMED'], default: 'WAITING' },
+        createdAt: Number
+    }]
 }, { timestamps: true });
 
 const CharacterSchema = new mongoose.Schema({
@@ -165,6 +194,7 @@ const CharacterSchema = new mongoose.Schema({
 const User = mongoose.model('User', UserSchema);
 const Room = mongoose.model('Room', RoomSchema);
 const Character = mongoose.model('Character', CharacterSchema);
+const Transaction = mongoose.model('Transaction', TransactionSchema);
 
 const getOrCreateUser = async (rawEmail) => {
     if (!rawEmail || typeof rawEmail !== 'string') return null;
@@ -314,6 +344,178 @@ app.post('/api/inventory/:email', async (req, res) => {
 
 app.delete('/api/inventory/:email/:cardId', async (req, res) => { try { const u = await User.findOne({ email: req.params.email.toLowerCase() }); if (u) { u.inventory = u.inventory.filter(i => i.id !== req.params.cardId); await u.save(); } res.json({ success: true }); } catch (e) { res.status(500).json({ message: e.message }) } });
 
+// --- TRADE SYSTEM V2 (SECURE) ---
+
+// Získání historie transakcí (Admin view)
+app.get('/api/admin/transactions', async (req, res) => {
+    try {
+        const history = await Transaction.find().sort({ createdAt: -1 }).limit(50);
+        res.json(history);
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
+app.post('/api/trade/init', async (req, res) => {
+    try {
+        const { roomId, initiatorEmail, initiatorNick, targetNick, item } = req.body;
+        const r = await Room.findOne({ roomId });
+        if (!r) return res.status(404).json({ message: "Sektor nenalezen" });
+
+        // Find participants
+        const initiator = r.members.find(m => m.name === initiatorNick);
+        const target = r.members.find(m => m.name === targetNick);
+
+        if (!initiator || !target) return res.status(404).json({ message: "Účastníci obchodu nenalezeni v sektoru." });
+
+        // Create new active trade
+        const tradeId = `TRADE-${Date.now()}`;
+        // Ensure activeTrades array exists
+        if (!r.activeTrades) r.activeTrades = [];
+
+        r.activeTrades.push({
+            id: tradeId,
+            participants: [
+                { email: initiator.email, nickname: initiatorNick, offeredItem: item, isConfirmed: false },
+                { email: target.email, nickname: targetNick, offeredItem: null, isConfirmed: false }
+            ],
+            status: 'WAITING',
+            createdAt: Date.now()
+        });
+
+        // Broadcast Info
+        r.messages.push({
+            id: 'sys-' + Date.now(),
+            sender: 'SYSTEM',
+            text: `🔄 ${initiatorNick} ZAHÁJIL OBCHODNÍ SPOJENÍ S ${targetNick}.`,
+            timestamp: Date.now(),
+            isSystem: true
+        });
+
+        await r.save();
+        res.json({ success: true, tradeId });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
+app.post('/api/trade/cancel', async (req, res) => {
+    try {
+        const { roomId, tradeId } = req.body;
+        const r = await Room.findOne({ roomId });
+        if (r && r.activeTrades) {
+            r.activeTrades = r.activeTrades.filter(t => t.id !== tradeId);
+            await r.save();
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
+app.post('/api/trade/update', async (req, res) => {
+    try {
+        const { roomId, tradeId, userEmail, item } = req.body;
+        const r = await Room.findOne({ roomId });
+        if (!r) return res.status(404).json({ message: "Room not found" });
+
+        const trade = r.activeTrades ? r.activeTrades.find(t => t.id === tradeId) : null;
+        if (!trade) return res.status(404).json({ message: "Trade inactive" });
+
+        const participant = trade.participants.find(p => p.email === userEmail);
+        if (participant) {
+            participant.offeredItem = item;
+            participant.isConfirmed = false; // Reset confirm on change
+            // Also reset partner confirm? Usually yes for safety
+            const partner = trade.participants.find(p => p.email !== userEmail);
+            if (partner) partner.isConfirmed = false;
+        }
+
+        await r.save();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
+app.post('/api/trade/confirm', async (req, res) => {
+    try {
+        const { roomId, tradeId, userEmail, isConfirmed } = req.body;
+        const r = await Room.findOne({ roomId });
+        if (!r) return res.status(404).json({ message: "Room not found" });
+
+        const trade = r.activeTrades ? r.activeTrades.find(t => t.id === tradeId) : null;
+        if (!trade) return res.status(404).json({ message: "Trade inactive" });
+
+        const p = trade.participants.find(p => p.email === userEmail);
+        if (p) p.isConfirmed = isConfirmed;
+
+        // CHECK EXECUTION
+        if (trade.participants.every(p => p.isConfirmed)) {
+            // EXECUTE TRADE
+            const p1 = trade.participants[0];
+            const p2 = trade.participants[1];
+
+            // DO EXCHANGE
+            try {
+                // Fetch Users
+                const u1 = await getOrCreateUser(p1.email);
+                const u2 = await getOrCreateUser(p2.email);
+
+                // ITEMS to remove/add. Note: offeredItem might be null (claiming for free? or just nothing)
+                // Assuming items MUST exist if offered
+                if (p1.offeredItem) {
+                    const idx = u1.inventory.findIndex(i => i.id === p1.offeredItem.id);
+                    if (idx !== -1) {
+                        u1.inventory.splice(idx, 1);
+                        u2.inventory.push(p1.offeredItem);
+                    }
+                }
+                if (p2.offeredItem) {
+                    const idx = u2.inventory.findIndex(i => i.id === p2.offeredItem.id);
+                    if (idx !== -1) {
+                        u2.inventory.splice(idx, 1);
+                        u1.inventory.push(p2.offeredItem);
+                    }
+                }
+
+                u1.markModified('inventory');
+                u2.markModified('inventory');
+                await u1.save();
+                await u2.save();
+
+                // LOG TRANSACTION
+                await Transaction.create({
+                    transactionId: `TX-${Date.now()}`,
+                    roomId,
+                    timestamp: Date.now(),
+                    participants: [
+                        { email: p1.email, nickname: p1.nickname },
+                        { email: p2.email, nickname: p2.nickname }
+                    ],
+                    items: [
+                        { originalOwnerEmail: p1.email, itemId: p1.offeredItem?.id, itemTitle: p1.offeredItem?.title },
+                        { originalOwnerEmail: p2.email, itemId: p2.offeredItem?.id, itemTitle: p2.offeredItem?.title }
+                    ],
+                    status: 'COMPLETED'
+                });
+
+                // CLEANUP TRADE
+                r.activeTrades = r.activeTrades.filter(t => t.id !== tradeId);
+                r.messages.push({
+                    id: 'sys-trade-ok-' + Date.now(),
+                    sender: 'SYSTEM',
+                    text: `✅ VÝMĚNA POTVRZENA: ${p1.nickname} <-> ${p2.nickname}`,
+                    timestamp: Date.now(),
+                    isSystem: true
+                });
+
+                await r.save();
+                return res.json({ success: true, status: 'COMPLETED' });
+
+            } catch (err) {
+                console.error("Trade execution failed", err);
+                return res.status(500).json({ message: "Trade execution failed" });
+            }
+        }
+
+        await r.save();
+        res.json({ success: true, status: 'WAITING' });
+    } catch (e) { res.status(500).json({ message: e.message }) }
+});
+
 // --- TRADING & TRANSFER ROUTES ---
 
 app.post('/api/inventory/transfer', async (req, res) => {
@@ -363,6 +565,27 @@ app.post('/api/inventory/swap', async (req, res) => {
             return res.status(400).json({ message: "Invalid swap parameters." });
         }
 
+        // Check for Self-Trade (Same Email)
+        if (player1Email.toLowerCase().trim() === player2Email.toLowerCase().trim()) {
+            console.log(`[SWAP] Detected Self-Trade for ${player1Email}`);
+            const user = await getOrCreateUser(player1Email);
+
+            const idx1 = user.inventory.findIndex(i => i.id === item1Id);
+            const idx2 = user.inventory.findIndex(i => i.id === item2Id);
+
+            if (idx1 === -1 || idx2 === -1) return res.status(404).json({ message: "Items not found in user inventory." });
+
+            const temp = user.inventory[idx1];
+            user.inventory[idx1] = user.inventory[idx2];
+            user.inventory[idx2] = temp;
+
+            user.markModified('inventory');
+            await user.save();
+
+            return res.json({ success: true, item1: user.inventory[idx2], item2: user.inventory[idx1] });
+        }
+
+        // Standard Trade (Two Different Users)
         const p1 = await getOrCreateUser(player1Email);
         const p2 = await getOrCreateUser(player2Email);
 
@@ -377,22 +600,18 @@ app.post('/api/inventory/swap', async (req, res) => {
         if (idx1 === -1) return res.status(404).json({ message: `Item ${item1Id} missing from P1.` });
         if (idx2 === -1) return res.status(404).json({ message: `Item ${item2Id} missing from P2.` });
 
-        // Use toObject() to detach from Mongoose document array and avoid reference issues
+        // Clone items to prevent reference issues
         const item1 = p1.inventory[idx1].toObject ? p1.inventory[idx1].toObject() : { ...p1.inventory[idx1] };
         const item2 = p2.inventory[idx2].toObject ? p2.inventory[idx2].toObject() : { ...p2.inventory[idx2] };
 
-        // Ensure we are swapping correct items
         console.log(`[SWAP] Executing: ${item1.title} <-> ${item2.title}`);
 
-        // Remove from inventories
         p1.inventory.splice(idx1, 1);
         p2.inventory.splice(idx2, 1);
 
-        // Add to inventories (cross-over)
         p1.inventory.push(item2);
         p2.inventory.push(item1);
 
-        // Mark modified just in case Mongoose doesn't detect array changes
         p1.markModified('inventory');
         p2.markModified('inventory');
 
