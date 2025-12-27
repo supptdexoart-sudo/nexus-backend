@@ -635,17 +635,74 @@ app.post('/api/rooms/:roomId/acknowledge-round', async (req, res) => {
     } catch (e) { res.status(500).json({ message: e.message }) }
 });
 
+const removePlayerFromRoom = (room, userName) => {
+    // 1. Remove from members
+    const initialMemberCount = room.members.length;
+    room.members = room.members.filter(m => m.name !== userName);
+    const wasRemoved = room.members.length < initialMemberCount;
+
+    if (!wasRemoved) return false;
+
+    // 2. Remove from ready checks
+    room.readyForNextRound = room.readyForNextRound.filter(name => name !== userName);
+
+    // 3. Handle turn order and turn index if game started
+    if (room.isGameStarted && room.turnOrder && room.turnOrder.length > 0) {
+        const actingPlayer = room.turnOrder[room.turnIndex];
+        const isRemovingActivePlayer = actingPlayer === userName;
+
+        // Remove from turn order
+        room.turnOrder = room.turnOrder.filter(name => name !== userName);
+
+        if (room.turnOrder.length === 0) {
+            room.isGameStarted = false;
+            room.turnIndex = 0;
+        } else if (isRemovingActivePlayer) {
+            // If we removed the player who was on turn, the next player (at the same index) is now active
+            // We just need to ensure index doesn't overshoot
+            if (room.turnIndex >= room.turnOrder.length) {
+                room.turnIndex = 0;
+            }
+        } else {
+            // If we removed someone else, we might need to adjust index if they were BEFORE the current active player
+            // But if we just find the new index of the guy who WAS acting, it's safer
+            const newIndex = room.turnOrder.indexOf(actingPlayer);
+            if (newIndex !== -1) {
+                room.turnIndex = newIndex;
+            } else {
+                // Should not happen if actingPlayer wasn't the removed one
+                if (room.turnIndex >= room.turnOrder.length) room.turnIndex = 0;
+            }
+        }
+    }
+
+    // 4. Pass host if needed
+    if (room.host === userName && room.members.length > 0) {
+        room.host = room.members[0].name;
+    }
+
+    return true;
+};
+
 app.post('/api/rooms/:roomId/leave', async (req, res) => {
     try {
         const { userName } = req.body;
         const r = await Room.findOne({ roomId: req.params.roomId });
         if (r) {
-            r.members = r.members.filter(m => m.name !== userName);
+            const removed = removePlayerFromRoom(r, userName);
             if (r.members.length === 0) {
                 await Room.deleteOne({ roomId: req.params.roomId });
             } else {
-                if (r.host === userName) r.host = r.members[0].name; // Pass host
-                await r.save();
+                if (removed) {
+                    r.messages.push({
+                        id: 'sys-' + Date.now(),
+                        sender: 'SYSTEM',
+                        text: `🚪 ${userName} opustil sektor.`,
+                        timestamp: Date.now(),
+                        isSystem: true
+                    });
+                    await r.save();
+                }
             }
         }
         res.json({ success: true });
@@ -674,7 +731,10 @@ app.post('/api/admin/action', async (req, res) => {
         if (actionType === 'broadcast') msg = `📢 SYSTEM: ${value}`;
         else if (actionType === 'damage') { const m = r.members.find(m => m.name === targetName); if (m) m.hp = Math.max(0, m.hp + value); msg = `⚠️ ADMIN: ${targetName} -${Math.abs(value)} HP`; }
         else if (actionType === 'heal') { const m = r.members.find(m => m.name === targetName); if (m) m.hp = Math.min(100, m.hp + value); msg = `✨ ADMIN: ${targetName} +${value} HP`; }
-        else if (actionType === 'kick') { r.members = r.members.filter(m => m.name !== targetName); msg = `🚫 ADMIN: ${targetName} vyhozen.`; }
+        else if (actionType === 'kick') {
+            const removed = removePlayerFromRoom(r, targetName);
+            if (removed) msg = `🚫 ADMIN: ${targetName} byl vyhozen ze sektoru.`;
+        }
 
         if (msg) r.messages.push({ id: 'adm-' + Date.now(), sender: 'SYSTEM', text: msg, timestamp: Date.now(), isSystem: true });
         await r.save(); res.json({ success: true });
