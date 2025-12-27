@@ -165,6 +165,7 @@ export interface GameEvent {
     title: string;
     description: string;
     type: GameEventType;
+    imageUrl?: string; // Added for item images
     stats?: Stat[];
     rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
     flavorText?: string;
@@ -251,6 +252,7 @@ export interface RoomState {
     readyForNextRound: string[];
     host: string;
     activeEncounter?: GameEvent | null;
+    activeTrades?: any[]; // Array of active trade sessions
 }
 
 // CHARACTER CREATOR INTERFACES

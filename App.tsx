@@ -372,6 +372,11 @@ const App: React.FC = () => {
                       onKickPlayer={logic.handleKickPlayer}
                       activeCharacter={logic.activeCharacter}
                       isNight={logic.isNight}
+                      activeTrade={logic.activeTrade}
+                      onInitTrade={logic.handleInitTrade}
+                      onCancelTrade={logic.handleCancelTrade}
+                      onConfirmTrade={logic.handleConfirmTrade}
+                      onTradeSelectOffer={logic.handleTradeSelectOffer}
                     />
                   </div>
                 )}

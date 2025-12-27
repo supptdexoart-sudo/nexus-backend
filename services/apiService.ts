@@ -102,6 +102,22 @@ export const swapItems = async (player1Email: string, player2Email: string, item
   return fetchData(`${BASE_API_URL}/inventory/swap`, { method: 'POST', body: JSON.stringify({ player1Email, player2Email, item1Id, item2Id }) });
 };
 
+// TRADE V2
+export const initTrade = async (roomId: string, initiatorEmail: string, initiatorNick: string, targetNick: string, item: any) =>
+  fetchData<{ success: true, tradeId: string }>(`${BASE_API_URL}/trade/init`, { method: 'POST', body: JSON.stringify({ roomId, initiatorEmail, initiatorNick, targetNick, item }) });
+
+export const cancelTrade = async (roomId: string, tradeId: string) =>
+  fetchData(`${BASE_API_URL}/trade/cancel`, { method: 'POST', body: JSON.stringify({ roomId, tradeId }) });
+
+export const updateTrade = async (roomId: string, tradeId: string, userEmail: string, item: any) =>
+  fetchData(`${BASE_API_URL}/trade/update`, { method: 'POST', body: JSON.stringify({ roomId, tradeId, userEmail, item }) });
+
+export const confirmTrade = async (roomId: string, tradeId: string, userEmail: string, isConfirmed: boolean) =>
+  fetchData<{ success: true, status: string }>(`${BASE_API_URL}/trade/confirm`, { method: 'POST', body: JSON.stringify({ roomId, tradeId, userEmail, isConfirmed }) });
+
+// Admin Transactions
+export const getTransactions = async () => fetchData<any[]>(`${BASE_API_URL}/admin/transactions`);
+
 export const startGame = async (roomId: string): Promise<void> => { await fetchData(`${BASE_API_URL}/rooms/${roomId}/start-game`, { method: 'POST' }); };
 export const acknowledgeRoundEnd = async (roomId: string, userName: string): Promise<void> => { await fetchData(`${BASE_API_URL}/rooms/${roomId}/acknowledge-round`, { method: 'POST', body: JSON.stringify({ userName }) }); };
 
