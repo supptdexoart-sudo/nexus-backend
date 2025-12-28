@@ -80,28 +80,28 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
                     <Zap className="w-5 h-5" />
                 </div>
                 <div>
-                    <span className="text-[9px] font-mono text-red-800 uppercase tracking-widest block mb-0.5">HAZARD_PROTOCOL</span>
-                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Trap Specs</h3>
+                    <span className="text-[9px] font-mono text-red-800 uppercase tracking-widest block mb-0.5">PROTOKOL_NEBEZPEČÍ</span>
+                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Specifikace Pasti</h3>
                 </div>
             </div>
 
             {/* TYPE SPECIFICATION */}
             <div className="p-4 bg-zinc-900/30 border-l-2 border-arc-red mb-6">
                 <label className="text-[9px] text-zinc-400 uppercase font-black tracking-widest flex items-center gap-2 mb-2">
-                    <Tag className="w-3 h-3" /> Hazard Classification
+                    <Tag className="w-3 h-3" /> Klasifikace Nebezpečí
                 </label>
                 <input
                     type="text"
                     value={event.trapConfig?.trapType ?? ''}
                     onChange={(e) => updateTrapConfig('trapType', e.target.value)}
-                    placeholder="e.g. MECHANICAL, BIOLOGICAL, DIGITAL..."
+                    placeholder="např. MECHANICKÁ, BIOLOGICKÁ, DIGITÁLNÍ..."
                     className="w-full bg-black border-b border-zinc-700 py-2 text-white text-sm font-mono outline-none focus:border-arc-red placeholder-zinc-800 uppercase"
                 />
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-6">
                 <div className="bg-black border border-zinc-800 p-3 hover:border-white transition-colors">
-                    <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">DISARM DIFFICULTY (D20)</label>
+                    <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">OBTÍŽNOST ODSTRANĚNÍ (D20)</label>
                     <input
                         type="number"
                         value={event.trapConfig?.difficulty ?? 10}
@@ -110,7 +110,7 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
                     />
                 </div>
                 <div className="bg-black border border-zinc-800 p-3 hover:border-red-500 transition-colors">
-                    <label className="text-[9px] text-red-500 uppercase font-black tracking-widest block mb-2">FAILURE DAMAGE</label>
+                    <label className="text-[9px] text-red-500 uppercase font-black tracking-widest block mb-2">POŠKOZENÍ PŘI SELHÁNÍ</label>
                     <input
                         type="number"
                         value={event.trapConfig?.damage ?? 20}
@@ -121,14 +121,14 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
             </div>
 
             <div className="mb-6">
-                <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">SPECIALIST (BONUS CLASS)</label>
+                <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">SPECIALISTA (BONUSOVÁ TŘÍDA)</label>
                 <div className="bg-black border border-zinc-800 p-1">
                     <select
                         value={event.trapConfig?.disarmClass ?? 'ANY'}
                         onChange={(e) => updateTrapConfig('disarmClass', e.target.value)}
                         className="w-full bg-black text-white text-xs font-mono uppercase p-2 outline-none"
                     >
-                        <option value="ANY">NONE (STANDARD DIFFICULTY)</option>
+                        <option value="ANY">ŽÁDNÁ (STANDARDNÍ OBTÍŽNOST)</option>
                         {Object.values(PlayerClass).map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                 </div>
@@ -137,7 +137,7 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
             {/* MESSAGES CONFIG */}
             <div className="space-y-4 mb-6">
                 <div className="bg-green-950/10 border-l-2 border-green-500 pl-3 py-2">
-                    <label className="text-[9px] text-green-500 uppercase font-bold tracking-widest block mb-1">SUCCESS MESSAGE</label>
+                    <label className="text-[9px] text-green-500 uppercase font-bold tracking-widest block mb-1">ZPRÁVA PŘI ÚSPĚCHU</label>
                     <input
                         type="text"
                         value={event.trapConfig?.successMessage ?? "Past zneškodněna."}
@@ -146,7 +146,7 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
                     />
                 </div>
                 <div className="bg-red-950/10 border-l-2 border-red-500 pl-3 py-2">
-                    <label className="text-[9px] text-red-500 uppercase font-bold tracking-widest block mb-1">FAILURE MESSAGE</label>
+                    <label className="text-[9px] text-red-500 uppercase font-bold tracking-widest block mb-1">ZPRÁVA PŘI SELHÁNÍ</label>
                     <input
                         type="text"
                         value={event.trapConfig?.failMessage ?? "Past sklapla!"}
@@ -160,7 +160,7 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
             <div className="bg-arc-yellow/5 border border-arc-yellow/20 p-4 relative">
                 <div className="flex justify-between items-center mb-4">
                     <label className="text-[9px] text-arc-yellow uppercase font-black tracking-widest flex items-center gap-2">
-                        <Coins className="w-3 h-3" /> DISARM REWARD (LOOT)
+                        <Coins className="w-3 h-3" /> ODMĚNA ZA ODSTRANĚNÍ (LOOT)
                     </label>
                 </div>
 
@@ -189,7 +189,7 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
 
                 <div className="space-y-2">
                     {(!event.trapConfig?.loot || event.trapConfig.loot.length === 0) && (
-                        <p className="text-[9px] text-zinc-600 italic text-center py-2 uppercase">NO REWARDS CONFIGURED</p>
+                        <p className="text-[9px] text-zinc-600 italic text-center py-2 uppercase">NEJSOU KONFIGUROVÁNY ŽÁDNÉ ODMĚNY</p>
                     )}
                     {event.trapConfig?.loot?.map((stat, idx) => (
                         <div key={idx} className="flex gap-0 items-center bg-black border border-zinc-700 hover:border-arc-yellow transition-colors">

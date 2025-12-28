@@ -50,13 +50,13 @@ const EnemyLootPanel: React.FC<EnemyLootPanelProps> = ({ event, onUpdate }) => {
             </div>
 
             <h4 className="text-[10px] font-black text-arc-yellow uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-arc-yellow/20 pb-2">
-                <Coins className="w-4 h-4" /> VICTORY REWARDS (LOOT)
+                <Coins className="w-4 h-4" /> ODMĚNY ZA VÍTĚZSTVÍ (LOOT)
             </h4>
 
             <div className="space-y-4">
                 {/* Legacy Drop Chance */}
                 <div className="flex items-center justify-between bg-zinc-900/30 p-3 border-l-2 border-arc-yellow">
-                    <label className="text-[8px] text-zinc-400 uppercase font-black tracking-widest">ITEM DROP PROBABILITY %</label>
+                    <label className="text-[8px] text-zinc-400 uppercase font-black tracking-widest">PRAVDĚPODOBNOST DROPŮ %</label>
                     <input
                         type="number"
                         min="0" max="100"
@@ -84,13 +84,13 @@ const EnemyLootPanel: React.FC<EnemyLootPanelProps> = ({ event, onUpdate }) => {
                         className={`flex items-center gap-1.5 px-3 py-1.5 border border-zinc-800 hover:border-white transition-all active:scale-95 bg-black group`}
                     >
                         <Plus className="w-3 h-3 text-zinc-400 group-hover:text-white" />
-                        <span className="text-[8px] font-black uppercase tracking-wider text-zinc-400 group-hover:text-white">CUSTOM</span>
+                        <span className="text-[8px] font-black uppercase tracking-wider text-zinc-400 group-hover:text-white">VLASTNÍ</span>
                     </button>
                 </div>
 
                 <div className="space-y-1 max-h-60 overflow-y-auto no-scrollbar">
                     {lootStats.length === 0 && (
-                        <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest text-center py-4 border border-dashed border-zinc-900">NO REWARDS CONFIGURED</p>
+                        <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest text-center py-4 border border-dashed border-zinc-900">NEJSOU KONFIGUROVÁNY ŽÁDNÉ ODMĚNY</p>
                     )}
 
                     {lootStats.map((stat, idx) => {

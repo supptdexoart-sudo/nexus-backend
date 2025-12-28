@@ -35,20 +35,20 @@ const SpaceStationPanel: React.FC<SpaceStationPanelProps> = ({ event, onUpdate }
                     <Satellite className="w-6 h-6" />
                 </div>
                 <div>
-                    <span className="text-[9px] font-mono text-cyan-700 uppercase tracking-widest block mb-0.5">DOCKING_INTERFACE</span>
-                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Station Config</h3>
+                    <span className="text-[9px] font-mono text-cyan-700 uppercase tracking-widest block mb-0.5">DOKOVACÍ_ROZHRANÍ</span>
+                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Konf. Stanice</h3>
                 </div>
             </div>
 
             <div className="mb-6">
-                <label className="text-[9px] text-zinc-400 uppercase font-black tracking-widest flex items-center gap-2 mb-2"><Radio className="w-3 h-3" /> WELCOME MESSAGE</label>
+                <label className="text-[9px] text-zinc-400 uppercase font-black tracking-widest flex items-center gap-2 mb-2"><Radio className="w-3 h-3" /> UVÍTACÍ ZPRÁVA</label>
                 <div className="relative">
                     <input
                         type="text"
                         value={event.stationConfig?.welcomeMessage ?? "Vítejte na palubě."}
                         onChange={(e) => updateConfig('welcomeMessage', e.target.value)}
                         className="w-full bg-black border border-cyan-500/30 p-3 text-cyan-400 text-xs font-mono focus:border-cyan-400 outline-none pl-8"
-                        placeholder="Systems online..."
+                        placeholder="Systémy online..."
                     />
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
                 </div>
@@ -57,7 +57,7 @@ const SpaceStationPanel: React.FC<SpaceStationPanelProps> = ({ event, onUpdate }
             <div className="grid grid-cols-2 gap-6 mb-6">
                 <div className="bg-black border border-zinc-800 p-3 hover:border-orange-500 transition-colors group">
                     <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-2 mb-2 group-hover:text-orange-500">
-                        <Fuel className="w-3 h-3 text-orange-500" /> FUEL REWARD
+                        <Fuel className="w-3 h-3 text-orange-500" /> ODMĚNA PALIVA
                     </label>
                     <input
                         type="number"
@@ -68,7 +68,7 @@ const SpaceStationPanel: React.FC<SpaceStationPanelProps> = ({ event, onUpdate }
                 </div>
                 <div className="bg-black border border-zinc-800 p-3 hover:border-blue-500 transition-colors group">
                     <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-2 mb-2 group-hover:text-blue-500">
-                        <Shield className="w-3 h-3 text-blue-500" /> HULL REPAIR (+HP)
+                        <Shield className="w-3 h-3 text-blue-500" /> OPRAVA TRUPU (+HP)
                     </label>
                     <input
                         type="number"
@@ -85,8 +85,8 @@ const SpaceStationPanel: React.FC<SpaceStationPanelProps> = ({ event, onUpdate }
                         <Wind className="w-4 h-4 text-cyan-400" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-black text-cyan-300 tracking-widest">OXYGEN REFILL SERVICE</span>
-                        <span className="text-[9px] font-mono text-cyan-600">Restores player O2 to 100%</span>
+                        <span className="text-[10px] uppercase font-black text-cyan-300 tracking-widest">SERVIS DOPLNĚNÍ KYSLÍKU</span>
+                        <span className="text-[9px] font-mono text-cyan-600">Obnoví kyslík hráčů na 100%</span>
                     </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">

@@ -63,8 +63,8 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                 <div className="flex items-center gap-3 mb-6 text-red-500 border-b border-red-900/50 pb-4">
                     <Crown className="w-8 h-8" />
                     <div>
-                        <span className="text-[10px] font-mono text-red-800 uppercase tracking-widest block mb-0.5">ELITE_THREAT_DETECTED</span>
-                        <h3 className="text-xl font-display font-black uppercase tracking-widest">Ultimate Boss</h3>
+                        <span className="text-[10px] font-mono text-red-800 uppercase tracking-widest block mb-0.5">DETEKCE_ELITNÍ_HROZBY</span>
+                        <h3 className="text-xl font-display font-black uppercase tracking-widest">Ultimátní Boss</h3>
                     </div>
                 </div>
 
@@ -72,39 +72,39 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                 <div className="grid grid-cols-3 gap-0 border border-red-900/50 mb-6 bg-red-950/10">
                     <div className="p-4 text-center border-r border-red-900/50">
                         <Heart className="w-5 h-5 text-red-500 mx-auto mb-2" />
-                        <label className="block text-[9px] font-black uppercase text-red-900 mb-1">HEALTH_POOL</label>
+                        <label className="block text-[9px] font-black uppercase text-red-900 mb-1">ZÁSOBA_ŽIVOTA</label>
                         <input type="number" value={getSpecificStatValue('HP')} onChange={(e) => setSpecificStat('HP', e.target.value)} placeholder="HP" className="w-full bg-transparent text-center text-white font-black font-mono text-2xl outline-none" />
                     </div>
                     <div className="p-4 text-center border-r border-red-900/50">
                         <Swords className="w-5 h-5 text-orange-500 mx-auto mb-2" />
-                        <label className="block text-[9px] font-black uppercase text-orange-900 mb-1">STRIKE_FORCE</label>
+                        <label className="block text-[9px] font-black uppercase text-orange-900 mb-1">ÚTOČNÁ_SÍLA</label>
                         <input type="number" value={getSpecificStatValue('ATK')} onChange={(e) => setSpecificStat('ATK', e.target.value)} placeholder="ATK" className="w-full bg-transparent text-center text-white font-black font-mono text-2xl outline-none" />
                     </div>
                     <div className="p-4 text-center">
                         <Shield className="w-5 h-5 text-blue-500 mx-auto mb-2" />
-                        <label className="block text-[9px] font-black uppercase text-blue-900 mb-1">MITIGATION</label>
+                        <label className="block text-[9px] font-black uppercase text-blue-900 mb-1">ZMÍRNĚNÍ</label>
                         <input type="number" value={getSpecificStatValue('DEF')} onChange={(e) => setSpecificStat('DEF', e.target.value)} placeholder="DEF" className="w-full bg-transparent text-center text-white font-black font-mono text-2xl outline-none" />
                     </div>
                 </div>
 
                 {/* Phases */}
                 <div className="space-y-4">
-                    <h4 className="text-xs font-black text-red-500 uppercase tracking-[0.2em] flex items-center gap-2 border-b border-red-900/30 pb-2"><Zap className="w-4 h-4" /> COMBAT_PHASES</h4>
+                    <h4 className="text-xs font-black text-red-500 uppercase tracking-[0.2em] flex items-center gap-2 border-b border-red-900/30 pb-2"><Zap className="w-4 h-4" /> BOJOVÉ_FÁZE</h4>
                     {event.bossPhases?.map((phase, idx) => (
                         <div key={idx} className="bg-black border-l-2 border-red-500 pl-4 py-2 pr-2 relative group hover:bg-white/5 transition-colors">
                             <button type="button" onClick={() => removeBossPhase(idx)} className="absolute top-2 right-2 text-zinc-600 hover:text-red-500"><X className="w-4 h-4" /></button>
                             <div className="grid grid-cols-[2fr_1fr] gap-4 mb-2">
                                 <div>
-                                    <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">PHASE NAME</label>
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">NÁZEV FÁZE</label>
                                     <input
-                                        placeholder="Enter Phase Name"
+                                        placeholder="Zadejte název fáze"
                                         value={phase.name}
                                         onChange={(e) => updateBossPhase(idx, 'name', e.target.value)}
                                         className="bg-transparent border-b border-zinc-800 w-full text-white text-sm font-bold uppercase outline-none focus:border-red-500"
                                     />
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] text-zinc-500 uppercase font-bold mb-1">TRIGGER @ HP%</span>
+                                    <span className="text-[9px] text-zinc-500 uppercase font-bold mb-1">SPUŠTĚNÍ @ HP%</span>
                                     <input
                                         type="number"
                                         value={phase.triggerValue}
@@ -114,9 +114,9 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                                 </div>
                             </div>
                             <div className="mb-2">
-                                <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">TACTICAL DESCRIPTION</label>
+                                <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">TAKTICKÝ POPIS</label>
                                 <textarea
-                                    placeholder="Describe boss behavior..."
+                                    placeholder="Popište chování bosse..."
                                     value={phase.description}
                                     onChange={(e) => updateBossPhase(idx, 'description', e.target.value)}
                                     className="w-full bg-transparent text-zinc-400 text-xs font-mono outline-none resize-none"
@@ -124,7 +124,7 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                                 />
                             </div>
                             <div className="flex items-center gap-2 bg-red-950/20 p-2 inline-block border border-red-900/30">
-                                <span className="text-[9px] text-red-400 uppercase font-bold">ENRAGE BONUS DMG:</span>
+                                <span className="text-[9px] text-red-400 uppercase font-bold">BONUS KO ŽIVOTNOSTI:</span>
                                 <input
                                     type="number"
                                     value={phase.damageBonus}
@@ -135,7 +135,7 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                         </div>
                     ))}
                     <button type="button" onClick={addBossPhase} className="w-full py-3 bg-red-950/20 border border-red-900 text-red-500 font-black uppercase text-xs tracking-widest hover:bg-red-900/40 transition-colors clip-path-button">
-                        + INITIALIZE NEW PHASE
+                        + INICIALIZOVAT NOVOU FÁZI
                     </button>
                 </div>
             </div>
@@ -153,8 +153,8 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                     <Skull className="w-6 h-6" />
                 </div>
                 <div>
-                    <span className={`text-[9px] font-mono uppercase tracking-widest block mb-0.5 ${isTrap ? 'text-arc-yellow' : 'text-red-500'}`}>{isTrap ? 'HAZARD_CONFIG' : 'HOSTILE_CONFIG'}</span>
-                    <h3 className="text-xl font-display font-black uppercase tracking-widest">{isTrap ? "Trap Parameters" : "Enemy Stats"}</h3>
+                    <span className={`text-[9px] font-mono uppercase tracking-widest block mb-0.5 ${isTrap ? 'text-arc-yellow' : 'text-red-500'}`}>{isTrap ? 'KONFIGURACE_NEBEZPEČÍ' : 'KONFIGURACE_NEPŘÍTELE'}</span>
+                    <h3 className="text-xl font-display font-black uppercase tracking-widest">{isTrap ? "Parametry Pasti" : "Statistiky Nepřítele"}</h3>
                 </div>
             </div>
 
@@ -162,7 +162,7 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                 {/* HP */}
                 <div className="bg-black border border-zinc-800 p-2 flex flex-col group hover:border-red-500 transition-colors">
                     <label className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1 flex items-center gap-1 group-hover:text-red-500">
-                        <Heart className="w-3 h-3" /> {isTrap ? "DIFFICULTY" : "HP"}
+                        <Heart className="w-3 h-3" /> {isTrap ? "OBTÍŽNOST" : "HP"}
                     </label>
                     <input
                         type="number"
@@ -176,7 +176,7 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                 {/* ATK */}
                 <div className="bg-black border border-zinc-800 p-2 flex flex-col group hover:border-orange-500 transition-colors">
                     <label className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1 flex items-center gap-1 group-hover:text-orange-500">
-                        <Swords className="w-3 h-3" /> {isTrap ? "DMG" : "ATK"}
+                        <Swords className="w-3 h-3" /> {isTrap ? "POŠKOZENÍ" : "ÚTOK"}
                     </label>
                     <input
                         type="number"
@@ -190,7 +190,7 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
                 {/* DEF */}
                 <div className="bg-black border border-zinc-800 p-2 flex flex-col group hover:border-blue-500 transition-colors">
                     <label className="text-[9px] uppercase font-black text-zinc-500 tracking-widest mb-1 flex items-center gap-1 group-hover:text-blue-500">
-                        <Shield className="w-3 h-3" /> {isTrap ? "RESIST" : "DEF"}
+                        <Shield className="w-3 h-3" /> {isTrap ? "ODOLNOST" : "OBRANA"}
                     </label>
                     <input
                         type="number"
@@ -206,7 +206,7 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
             {!isTrap && (
                 <div className="mb-6 bg-green-950/10 border-l-2 border-green-500 p-4">
                     <label className="text-[10px] uppercase font-bold text-green-500 flex items-center gap-2 mb-2 tracking-widest">
-                        <Target className="w-4 h-4" /> WEAKNESS PROBABILITY
+                        <Target className="w-4 h-4" /> PRAVDĚPODOBNOST SLABINY
                     </label>
                     <div className="flex items-center gap-4">
                         <input
@@ -226,18 +226,18 @@ const CombatPanel: React.FC<CombatPanelProps> = ({ event, onUpdate }) => {
             {/* HELP TEXT */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-zinc-800 pt-4">
                 <div>
-                    <h4 className="font-bold text-zinc-500 text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2"><Dice5 className="w-3 h-3" /> COMBAT MECHANICS</h4>
+                    <h4 className="font-bold text-zinc-500 text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2"><Dice5 className="w-3 h-3" /> BOJOVÉ MECHANIKY</h4>
                     <ul className="text-zinc-600 space-y-1 text-[10px] font-mono border-l border-zinc-800 pl-2">
-                        <li>ARMOR absorbs damage first.</li>
-                        <li>DEF reduces incoming damage.</li>
-                        <li>Weakness ignores Enemy DEF.</li>
+                        <li>BRNĚNÍ absorbuje poškození jako první.</li>
+                        <li>OBRANA snižuje příchozí poškození.</li>
+                        <li>Slabina ignoruje OBRANU nepřítele.</li>
                     </ul>
                 </div>
                 {!isTrap && (
                     <div>
-                        <h4 className="font-bold text-zinc-500 text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2"><Wind className="w-3 h-3" /> ESCAPE PROBABILITY</h4>
+                        <h4 className="font-bold text-zinc-500 text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2"><Wind className="w-3 h-3" /> PRAVDĚPODOBNOST ÚTĚKU</h4>
                         <div className="flex items-center justify-between bg-black border border-zinc-900 p-2">
-                            <span className="text-zinc-600 text-[10px] uppercase">Based on <span className="text-white">{event.rarity}</span> rarity</span>
+                            <span className="text-zinc-600 text-[10px] uppercase">Založeno na <span className="text-white">{event.rarity}</span> raritě</span>
                             <span className={`font-mono font-bold ${fleeChance < 30 ? 'text-red-500' : 'text-green-500'}`}>{fleeChance}%</span>
                         </div>
                     </div>

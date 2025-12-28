@@ -71,8 +71,8 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                     <ShoppingBag className="w-6 h-6" />
                 </div>
                 <div>
-                    <span className="text-[9px] font-mono text-yellow-800 uppercase tracking-widest block mb-0.5">COMMERCE_MODULE</span>
-                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Merchant Stock</h3>
+                    <span className="text-[9px] font-mono text-yellow-800 uppercase tracking-widest block mb-0.5">MODUL_OBCHODU</span>
+                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Zásoby Obchodníka</h3>
                 </div>
             </div>
 
@@ -81,7 +81,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                 {/* Toggle Buying from players */}
                 <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-arc-yellow uppercase tracking-widest flex items-center gap-2">
-                        <Coins className="w-4 h-4" /> ENABLE PLAYER SELLING
+                        <Coins className="w-4 h-4" /> POVOLIT PRODEJ HRÁČŮ
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -97,12 +97,12 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
 
                 {/* Class Bonuses Config */}
                 <div className="border-t border-yellow-900/30 pt-4">
-                    <h4 className="text-[9px] font-bold text-zinc-500 uppercase mb-3 tracking-widest">CLASS AFFINITY ADJUSTMENTS</h4>
+                    <h4 className="text-[9px] font-bold text-zinc-500 uppercase mb-3 tracking-widest">ÚPRAVA AFINITY TŘÍD</h4>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-black border border-zinc-800 p-2 flex items-center gap-2 group hover:border-red-500 transition-colors">
                             <Swords className="w-4 h-4 text-red-500" />
                             <div className="flex-1">
-                                <label className="text-[8px] text-zinc-500 block uppercase font-bold group-hover:text-red-500">WARRIOR DISCOUNT %</label>
+                                <label className="text-[8px] text-zinc-500 block uppercase font-bold group-hover:text-red-500">SLEVA PRO WARRIORA %</label>
                                 <input
                                     type="number"
                                     value={event.tradeConfig?.warriorDiscount ?? 10}
@@ -114,7 +114,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                         <div className="bg-black border border-zinc-800 p-2 flex items-center gap-2 group hover:border-yellow-500 transition-colors">
                             <Cross className="w-4 h-4 text-yellow-500" />
                             <div className="flex-1">
-                                <label className="text-[8px] text-zinc-500 block uppercase font-bold group-hover:text-yellow-500">CLERIC DISCOUNT %</label>
+                                <label className="text-[8px] text-zinc-500 block uppercase font-bold group-hover:text-yellow-500">SLEVA PRO CLERICA %</label>
                                 <input
                                     type="number"
                                     value={event.tradeConfig?.clericDiscount ?? 45}
@@ -126,7 +126,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                         <div className="bg-black border border-zinc-800 p-2 flex items-center gap-2 group hover:border-blue-400 transition-colors">
                             <Wand2 className="w-4 h-4 text-blue-400" />
                             <div className="flex-1">
-                                <label className="text-[8px] text-zinc-500 block uppercase font-bold group-hover:text-blue-400">MAGE DISCOUNT %</label>
+                                <label className="text-[8px] text-zinc-500 block uppercase font-bold group-hover:text-blue-400">SLEVA PRO MAGA %</label>
                                 <input
                                     type="number"
                                     value={event.tradeConfig?.mageDiscount ?? 25}
@@ -138,7 +138,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                         <div className="bg-black border border-zinc-800 p-2 flex items-center gap-2 group hover:border-green-500 transition-colors">
                             <Footprints className="w-4 h-4 text-green-500" />
                             <div className="flex-1">
-                                <label className="text-[8px] text-zinc-500 block uppercase font-bold group-hover:text-green-500">ROGUE STEAL CHANCE %</label>
+                                <label className="text-[8px] text-zinc-500 block uppercase font-bold group-hover:text-green-500">ŠANCE ROGUE NA KRÁDEŽ %</label>
                                 <input
                                     type="number"
                                     value={event.tradeConfig?.rogueStealChance ?? 30}
@@ -153,7 +153,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
 
             <div className="flex gap-2 mb-4 flex-wrap items-end bg-black border border-zinc-800 p-4 relative group hover:border-arc-yellow transition-colors">
                 <div className="flex-[2] min-w-[150px]">
-                    <label className="text-[8px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest group-hover:text-arc-yellow">ITEM ID (e.g. ITEM-001)</label>
+                    <label className="text-[8px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest group-hover:text-arc-yellow">ID PŘEDMĚTU (např. ITEM-001)</label>
                     <input
                         type="text"
                         value={merchantItemId}
@@ -163,7 +163,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                     />
                 </div>
                 <div className="w-20">
-                    <label className="text-[8px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">STOCK</label>
+                    <label className="text-[8px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">SKLAD</label>
                     <input
                         type="number"
                         value={merchantItemStock}
@@ -172,7 +172,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                     />
                 </div>
                 <div className="w-24">
-                    <label className="text-[8px] text-arc-yellow uppercase block mb-1 font-bold tracking-widest">BUY PRICE</label>
+                    <label className="text-[8px] text-arc-yellow uppercase block mb-1 font-bold tracking-widest">CENA NÁKUPU</label>
                     <input
                         type="number"
                         value={merchantItemPrice}
@@ -181,7 +181,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                     />
                 </div>
                 <div className="w-24">
-                    <label className="text-[8px] text-green-500 uppercase block mb-1 font-bold tracking-widest">SELL PRICE</label>
+                    <label className="text-[8px] text-green-500 uppercase block mb-1 font-bold tracking-widest">CENA PRODEJE</label>
                     <input
                         type="number"
                         value={merchantItemSellPrice}
@@ -190,7 +190,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                     />
                 </div>
                 <div className="w-20">
-                    <label className="text-[8px] text-pink-500 uppercase block mb-1 font-bold tracking-widest flex gap-1"><Percent className="w-3 h-3" /> SALE %</label>
+                    <label className="text-[8px] text-pink-500 uppercase block mb-1 font-bold tracking-widest flex gap-1"><Percent className="w-3 h-3" /> SLEVA %</label>
                     <input
                         type="number"
                         min="0" max="100"
@@ -201,7 +201,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                     />
                 </div>
                 <button type="button" onClick={addMerchantItem} className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-black font-black uppercase text-xs tracking-widest transition-colors h-10">
-                    ADD
+                    PŘIDAT
                 </button>
             </div>
 
@@ -210,10 +210,10 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                     <div key={idx} className="flex justify-between items-center bg-zinc-900/50 p-2 border border-zinc-800 hover:border-white transition-colors">
                         <div className="flex-1 flex items-center gap-4">
                             <span className="text-white font-mono font-bold text-xs">{item.id}</span>
-                            <span className="text-zinc-500 text-[9px] font-mono bg-black border border-zinc-800 px-1.5 py-0.5">STOCK: {item.stock}</span>
+                            <span className="text-zinc-500 text-[9px] font-mono bg-black border border-zinc-800 px-1.5 py-0.5">SKLAD: {item.stock}</span>
                             <div className="flex gap-4 border-l border-zinc-800 pl-4">
-                                <span className="text-arc-yellow text-[9px] font-mono font-bold uppercase">BUY: {item.price || 0} G</span>
-                                <span className="text-green-500 text-[9px] font-mono font-bold uppercase">SELL: {item.sellPrice || 0} G</span>
+                                <span className="text-arc-yellow text-[9px] font-mono font-bold uppercase">NÁKUP: {item.price || 0} G</span>
+                                <span className="text-green-500 text-[9px] font-mono font-bold uppercase">PRODEJ: {item.sellPrice || 0} G</span>
                                 {item.saleChance && item.saleChance > 0 && (
                                     <span className="text-pink-500 text-[9px] font-mono font-bold flex items-center gap-1 uppercase"><Percent className="w-3 h-3" /> {item.saleChance}%</span>
                                 )}
@@ -224,7 +224,7 @@ const MerchantPanel: React.FC<MerchantPanelProps> = ({ event, onUpdate }) => {
                 ))}
                 {(!event.merchantItems || event.merchantItems.length === 0) && (
                     <div className="text-zinc-600 text-[10px] uppercase font-bold text-center py-6 border border-dashed border-zinc-800">
-                        INVENTORY EMPTY
+                        INVENTÁŘ JE PRÁZDNÝ
                     </div>
                 )}
             </div>

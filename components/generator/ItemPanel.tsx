@@ -158,8 +158,8 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                     <Box className="w-5 h-5 text-arc-cyan" />
                 </div>
                 <div>
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest block mb-0.5">CONFIGURATION_PANEL</span>
-                    <h3 className="text-xl font-display font-black uppercase tracking-wider text-white">Asset Parameters</h3>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest block mb-0.5">KONFIGURAČNÍ_PANEL</span>
+                    <h3 className="text-xl font-display font-black uppercase tracking-wider text-white">Parametry Majetku</h3>
                 </div>
             </div>
 
@@ -171,8 +171,8 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                             {event.isConsumable && <Check className="w-4 h-4" />}
                         </div>
                         <div className="flex flex-col">
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${event.isConsumable ? 'text-arc-yellow' : 'text-zinc-400'}`}>CONSUMABLE</span>
-                            <span className="text-[8px] font-mono text-zinc-600 uppercase">One-time use item</span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${event.isConsumable ? 'text-arc-yellow' : 'text-zinc-400'}`}>SPOTŘEBNÍ</span>
+                            <span className="text-[8px] font-mono text-zinc-600 uppercase">Předmět na jedno použití</span>
                         </div>
                     </div>
                     <input type="checkbox" checked={event.isConsumable} onChange={(e) => onUpdate({ isConsumable: e.target.checked })} className="hidden" />
@@ -184,8 +184,8 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                             {event.isSellOnly && <Ban className="w-4 h-4" />}
                         </div>
                         <div className="flex flex-col">
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${event.isSellOnly ? 'text-red-500' : 'text-zinc-400'}`}>TRADE_ONLY</span>
-                            <span className="text-[8px] font-mono text-zinc-600 uppercase">No functional utility</span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${event.isSellOnly ? 'text-red-500' : 'text-zinc-400'}`}>POUZE_K_PRODEJI</span>
+                            <span className="text-[8px] font-mono text-zinc-600 uppercase">Nemá žádné funkční využití</span>
                         </div>
                     </div>
                     <input type="checkbox" checked={event.isSellOnly} onChange={(e) => onUpdate({ isSellOnly: e.target.checked })} className="hidden" />
@@ -197,7 +197,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                 <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-arc-yellow/50"></div>
                 <div className="flex items-center gap-2 mb-3 text-arc-yellow">
                     <Coins className="w-4 h-4" />
-                    <label className="text-[10px] font-black uppercase tracking-widest">MARKET_VALUE</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest">TRŽNÍ_HODNOTA</label>
                 </div>
                 <div className="relative">
                     <input
@@ -206,7 +206,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                         onChange={(e) => onUpdate({ price: parseInt(e.target.value) })}
                         className="w-full bg-black border border-zinc-800 p-3 text-white font-mono text-lg font-bold outline-none focus:border-arc-yellow transition-all"
                     />
-                    <span className="absolute right-4 top-4 text-[10px] text-zinc-600 font-bold uppercase tracking-widest pointer-events-none">CREDITS</span>
+                    <span className="absolute right-4 top-4 text-[10px] text-zinc-600 font-bold uppercase tracking-widest pointer-events-none">KREDITY</span>
                 </div>
             </div>
 
@@ -215,7 +215,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
                         <ShoppingCart className={`w-4 h-4 ${event.marketConfig?.enabled ? 'text-indigo-400' : 'text-zinc-600'}`} />
-                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.marketConfig?.enabled ? 'text-indigo-400' : 'text-zinc-600'}`}>MARKET_MODULE</h3>
+                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.marketConfig?.enabled ? 'text-indigo-400' : 'text-zinc-600'}`}>TRŽNÍ_MODUL</h3>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" checked={event.marketConfig?.enabled || false} onChange={(e) => updateMarketConfig('enabled', e.target.checked)} className="sr-only peer" />
@@ -229,17 +229,17 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                         {/* 1. Market Specifics */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-[9px] text-indigo-400/70 uppercase font-bold tracking-widest mb-2 block">Fixed Price Override</label>
+                                <label className="text-[9px] text-indigo-400/70 uppercase font-bold tracking-widest mb-2 block">Přebití pevné ceny</label>
                                 <input
                                     type="number"
-                                    placeholder="DEFAULT"
+                                    placeholder="VÝCHOZÍ"
                                     value={event.marketConfig.marketPrice || ''}
                                     onChange={(e) => updateMarketConfig('marketPrice', e.target.value ? parseInt(e.target.value) : undefined)}
                                     className="w-full bg-black border border-indigo-500/30 p-2 text-white text-xs font-mono outline-none focus:border-indigo-500"
                                 />
                             </div>
                             <div>
-                                <label className="text-[9px] text-indigo-400/70 uppercase font-bold tracking-widest mb-2 flex items-center gap-1"><Tags className="w-3 h-3" /> Sale Chance</label>
+                                <label className="text-[9px] text-indigo-400/70 uppercase font-bold tracking-widest mb-2 flex items-center gap-1"><Tags className="w-3 h-3" /> Šance na slevu</label>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="range"
@@ -255,7 +255,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
 
                         {/* 2. Class Modifiers */}
                         <div className="bg-black/40 p-4 border border-indigo-500/20 relative">
-                            <label className="text-[9px] text-indigo-400 uppercase font-bold tracking-widest mb-3 flex items-center gap-2"><Users className="w-3 h-3" /> Class Adjustments</label>
+                            <label className="text-[9px] text-indigo-400 uppercase font-bold tracking-widest mb-3 flex items-center gap-2"><Users className="w-3 h-3" /> Úpravy tříd</label>
 
                             <div className="flex gap-0 mb-4 items-center border border-zinc-700">
                                 <select
@@ -263,7 +263,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                                     onChange={(e) => setSelectedMarketClass(e.target.value as PlayerClass)}
                                     className="flex-[2] bg-black text-zinc-300 text-xs font-mono p-2 outline-none border-r border-zinc-700"
                                 >
-                                    <option value="">-- SELECT CLASS --</option>
+                                    <option value="">-- VYBERTE TŘÍDU --</option>
                                     {Object.values(PlayerClass).map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                                 <select
@@ -296,7 +296,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
 
                         {/* 3. Recycling Configuration */}
                         <div className="bg-black/40 p-4 border border-orange-500/20 relative">
-                            <label className="text-[9px] text-orange-400 uppercase font-bold tracking-widest mb-3 flex items-center gap-2"><Recycle className="w-3 h-3" /> Recycling Output</label>
+                            <label className="text-[9px] text-orange-400 uppercase font-bold tracking-widest mb-3 flex items-center gap-2"><Recycle className="w-3 h-3" /> Výstup recyklace</label>
 
                             <div className="flex gap-0 mb-4 items-center border border-zinc-700">
                                 <select
@@ -304,7 +304,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                                     onChange={(e) => setSelectedRecycleRes(e.target.value)}
                                     className="flex-[2] bg-black text-zinc-300 text-xs font-mono p-2 outline-none border-r border-zinc-700"
                                 >
-                                    <option value="">-- SELECT RESOURCE --</option>
+                                    <option value="">-- VYBERTE SUROVINU --</option>
                                     {availableResources.map(res => (
                                         <option key={res.id} value={res.resourceConfig?.resourceName || res.title}>
                                             {res.resourceConfig?.resourceName || res.title}
@@ -342,7 +342,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
                         <Hammer className={`w-4 h-4 ${event.resourceConfig?.isResourceContainer ? 'text-orange-500' : 'text-zinc-600'}`} />
-                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.resourceConfig?.isResourceContainer ? 'text-orange-500' : 'text-zinc-600'}`}>RESOURCE_TYPE</h3>
+                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.resourceConfig?.isResourceContainer ? 'text-orange-500' : 'text-zinc-600'}`}>TYP_SUROVINY</h3>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" checked={event.resourceConfig?.isResourceContainer || false} onChange={(e) => updateResourceConfig('isResourceContainer', e.target.checked)} className="sr-only peer" />
@@ -354,17 +354,17 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                     <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2">
                         <div className="grid grid-cols-[2fr_1fr] gap-4">
                             <div>
-                                <label className="text-[9px] text-orange-400/70 uppercase font-bold tracking-widest mb-2 block">Resource ID</label>
+                                <label className="text-[9px] text-orange-400/70 uppercase font-bold tracking-widest mb-2 block">ID Suroviny</label>
                                 <input
                                     type="text"
                                     value={event.resourceConfig.resourceName || ''}
                                     onChange={(e) => updateResourceConfig('resourceName', e.target.value)}
                                     className="w-full bg-black border border-orange-500/30 p-2 text-white text-xs font-mono outline-none focus:border-orange-500"
-                                    placeholder="SCRAP_METAL"
+                                    placeholder="KOVOVÝ_ŠROT"
                                 />
                             </div>
                             <div>
-                                <label className="text-[9px] text-orange-400/70 uppercase font-bold tracking-widest mb-2 block">Amount</label>
+                                <label className="text-[9px] text-orange-400/70 uppercase font-bold tracking-widest mb-2 block">Množství</label>
                                 <input
                                     type="number"
                                     value={event.resourceConfig.resourceAmount || 1}
@@ -392,7 +392,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
                         <Scroll className={`w-4 h-4 ${event.craftingRecipe?.enabled ? 'text-teal-400' : 'text-zinc-600'}`} />
-                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.craftingRecipe?.enabled ? 'text-teal-400' : 'text-zinc-600'}`}>BLUEPRINT_MODULE</h3>
+                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.craftingRecipe?.enabled ? 'text-teal-400' : 'text-zinc-600'}`}>MODUL_PLÁNKŮ</h3>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" checked={event.craftingRecipe?.enabled || false} onChange={(e) => updateCraftingConfig('enabled', e.target.checked)} className="sr-only peer" />
@@ -407,7 +407,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                         <div className="bg-black/40 p-3 border border-teal-500/20 flex justify-between items-center">
                             <div className="flex items-center gap-2 text-teal-400">
                                 <Clock className="w-4 h-4" />
-                                <label className="text-[9px] uppercase font-bold tracking-widest">PRODUCTION_TIME (SEC)</label>
+                                <label className="text-[9px] uppercase font-bold tracking-widest">DOBA_PRODUKCE (SEC)</label>
                             </div>
                             <input
                                 type="number"
@@ -419,14 +419,14 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
 
                         {/* 2. Add Ingredient Form */}
                         <div className="p-3 bg-zinc-900/30 border border-zinc-700">
-                            <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">ADD COMPONENT</label>
+                            <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">PŘIDAT KOMPONENT</label>
                             <div className="flex gap-0 mb-4 items-center border border-zinc-700">
                                 <select
                                     value={selectedIngredient}
                                     onChange={(e) => setSelectedIngredient(e.target.value)}
                                     className="flex-[2] bg-black text-zinc-300 text-xs font-mono p-2 outline-none border-r border-zinc-700"
                                 >
-                                    <option value="">-- SELECT --</option>
+                                    <option value="">-- VYBERTE --</option>
                                     {availableResources.map(res => (
                                         <option key={res.id} value={res.resourceConfig?.resourceName || res.title}>
                                             {res.resourceConfig?.resourceName || res.title}
@@ -452,16 +452,16 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
                         {/* 3. Ingredients List Table */}
                         <div className="space-y-2">
                             {event.craftingRecipe.requiredResources?.length === 0 && (
-                                <p className="text-[10px] text-zinc-600 italic text-center py-2 uppercase">NO COMPONENTS REQUIRED</p>
+                                <p className="text-[10px] text-zinc-600 italic text-center py-2 uppercase">ŽÁDNÉ KOMPONENTY NEJSOU VYŽADOVÁNY</p>
                             )}
                             {event.craftingRecipe.requiredResources?.map((ing, idx) => (
                                 <div key={idx} className="flex gap-4 items-center bg-black p-2 border border-teal-500/20 hover:border-teal-500/50 transition-colors">
                                     <div className="flex-1">
-                                        <span className="text-[8px] font-bold text-zinc-500 block uppercase tracking-widest">COMPONENT</span>
+                                        <span className="text-[8px] font-bold text-zinc-500 block uppercase tracking-widest">KOMPONENT</span>
                                         <span className="text-xs text-white font-mono">{ing.resourceName}</span>
                                     </div>
                                     <div className="px-3 border-l border-zinc-800">
-                                        <span className="text-[8px] font-bold text-zinc-500 block uppercase tracking-widest">QTY</span>
+                                        <span className="text-[8px] font-bold text-zinc-500 block uppercase tracking-widest">MNŽ</span>
                                         <span className="text-xs text-teal-400 font-mono font-bold">x{ing.amount}</span>
                                     </div>
                                     <button
@@ -480,7 +480,7 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
 
             {/* STATS CONFIG */}
             <div className="bg-arc-panel/30 border border-white/5 p-4">
-                <label className="text-[9px] text-zinc-400 uppercase font-black tracking-widest mb-4 block">ACTIVE_MODIFIERS</label>
+                <label className="text-[9px] text-zinc-400 uppercase font-black tracking-widest mb-4 block">AKTIVNÍ_MODIFIKÁTORY</label>
 
                 <div className="flex flex-wrap gap-2 mb-4">
                     {quickOptions.map(opt => (

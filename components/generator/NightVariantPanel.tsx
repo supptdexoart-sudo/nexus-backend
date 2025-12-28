@@ -46,8 +46,8 @@ const NightVariantPanel: React.FC<NightVariantPanelProps> = ({ event, onUpdate }
                         <Moon className="w-4 h-4" />
                     </div>
                     <div>
-                        <span className={`text-[8px] font-mono uppercase tracking-widest block mb-0.5 ${event.timeVariant?.enabled ? 'text-indigo-500' : 'text-zinc-500'}`}>TEMPORAL_SHIFT</span>
-                        <h3 className={`text-sm font-black uppercase tracking-widest ${event.timeVariant?.enabled ? 'text-white' : 'text-zinc-400'}`}>Night Protocol v2.0</h3>
+                        <span className={`text-[8px] font-mono uppercase tracking-widest block mb-0.5 ${event.timeVariant?.enabled ? 'text-indigo-500' : 'text-zinc-500'}`}>TEMPORÁLNÍ_POSUN</span>
+                        <h3 className={`text-sm font-black uppercase tracking-widest ${event.timeVariant?.enabled ? 'text-white' : 'text-zinc-400'}`}>Noční Protokol v2.0</h3>
                     </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -65,22 +65,22 @@ const NightVariantPanel: React.FC<NightVariantPanelProps> = ({ event, onUpdate }
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2 border-t border-indigo-500/10 pt-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-black border border-zinc-800 p-2 group hover:border-indigo-500 transition-colors">
-                            <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">TITLE OVERRIDE</label>
+                            <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">PŘEBITÍ NÁZVU</label>
                             <input
                                 value={event.timeVariant.nightTitle || ''}
                                 onChange={(e) => updateNightConfig({ nightTitle: e.target.value })}
-                                placeholder="UNCHANGED"
+                                placeholder="BEZE ZMĚNY"
                                 className="w-full bg-transparent text-white text-xs font-bold outline-none placeholder-zinc-800"
                             />
                         </div>
                         <div className="bg-black border border-zinc-800 p-2 group hover:border-indigo-500 transition-colors">
-                            <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">TYPE OVERRIDE</label>
+                            <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">PŘEBITÍ TYPU</label>
                             <select
                                 value={event.timeVariant.nightType || ''}
                                 onChange={(e) => updateNightConfig({ nightType: e.target.value ? e.target.value as any : undefined })}
                                 className="w-full bg-transparent text-white text-xs font-mono uppercase outline-none"
                             >
-                                <option value="">UNCHANGED</option>
+                                <option value="">BEZE ZMĚNY</option>
                                 {Object.values(GameEventType).map((t) => (
                                     <option key={t} value={t} className="bg-black">{t}</option>
                                 ))}
@@ -90,7 +90,7 @@ const NightVariantPanel: React.FC<NightVariantPanelProps> = ({ event, onUpdate }
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-black border border-zinc-800 p-2 group hover:border-indigo-500 transition-colors">
-                            <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">FLAVOR TEXT OVERRIDE</label>
+                            <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">PŘEBITÍ DOPLŇKOVÉHO TEXTU</label>
                             <input
                                 value={event.timeVariant.nightFlavorText || ''}
                                 onChange={(e) => updateNightConfig({ nightFlavorText: e.target.value })}
@@ -99,13 +99,13 @@ const NightVariantPanel: React.FC<NightVariantPanelProps> = ({ event, onUpdate }
                             />
                         </div>
                         <div className="bg-black border border-zinc-800 p-2 group hover:border-indigo-500 transition-colors">
-                            <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">RARITY OVERRIDE</label>
+                            <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">PŘEBITÍ RARITY</label>
                             <select
                                 value={event.timeVariant.nightRarity || ''}
                                 onChange={(e) => updateNightConfig({ nightRarity: e.target.value ? e.target.value as any : undefined })}
                                 className="w-full bg-transparent text-white text-xs font-mono outline-none"
                             >
-                                <option value="">UNCHANGED</option>
+                                <option value="">BEZE ZMĚNY</option>
                                 {['Common', 'Rare', 'Epic', 'Legendary'].map(r => (
                                     <option key={r} value={r} className="bg-black">{r.toUpperCase()}</option>
                                 ))}
@@ -114,11 +114,11 @@ const NightVariantPanel: React.FC<NightVariantPanelProps> = ({ event, onUpdate }
                     </div>
 
                     <div className="bg-black border border-zinc-800 p-2 group hover:border-indigo-500 transition-colors">
-                        <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">DESCRIPTION OVERRIDE</label>
+                        <label className="text-[8px] text-zinc-500 group-hover:text-indigo-400 uppercase font-black tracking-widest mb-1 block">PŘEBITÍ POPISU</label>
                         <textarea
                             value={event.timeVariant.nightDescription || ''}
                             onChange={(e) => updateNightConfig({ nightDescription: e.target.value })}
-                            placeholder="UNCHANGED"
+                            placeholder="BEZE ZMĚNY"
                             className="w-full bg-transparent text-zinc-300 text-xs font-mono outline-none resize-none placeholder-zinc-800"
                             rows={2}
                         />
@@ -127,20 +127,20 @@ const NightVariantPanel: React.FC<NightVariantPanelProps> = ({ event, onUpdate }
                     <div className="space-y-1">
                         <div className="flex justify-between items-center mb-2">
                             <label className="text-[8px] text-indigo-300 uppercase font-black tracking-widest flex items-center gap-2">
-                                <Clock className="w-3 h-3" /> NIGHT STATS (REPLACES ORIGINALS)
+                                <Clock className="w-3 h-3" /> NOČNÍ STATISTIKY (NAHRAZUJÍ PŮVODNÍ)
                             </label>
                             <button
                                 type="button"
                                 onClick={addNightStat}
                                 className="text-[8px] bg-indigo-900/30 hover:bg-indigo-900/50 text-indigo-300 px-2 py-1 border border-indigo-500/30 font-bold uppercase transition-colors"
                             >
-                                + ADD STAT
+                                + PŘIDAT STAT
                             </button>
                         </div>
 
                         {event.timeVariant.nightStats?.length === 0 && (
                             <div className="text-zinc-700 text-[9px] uppercase font-bold text-center py-2 border border-dashed border-zinc-800">
-                                NO NIGHT STATS
+                                ŽÁDNÉ NOČNÍ STATISTIKY
                             </div>
                         )}
 

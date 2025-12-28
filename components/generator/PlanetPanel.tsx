@@ -54,14 +54,14 @@ const PlanetPanel: React.FC<PlanetPanelProps> = ({ event, onUpdate, masterCatalo
                     <Globe className="w-6 h-6" />
                 </div>
                 <div>
-                    <span className="text-[9px] font-mono text-indigo-300 uppercase tracking-widest block mb-0.5">PLANETARY_SURVEY</span>
-                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Campaign Config</h3>
+                    <span className="text-[9px] font-mono text-indigo-300 uppercase tracking-widest block mb-0.5">PLANETÁRNÍ_PRŮZKUM</span>
+                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Konf. Kampaně</h3>
                 </div>
             </div>
 
             <div className="mb-6 p-4 bg-indigo-950/10 border-l-2 border-indigo-500">
                 <label className="text-[9px] text-indigo-300 uppercase font-black tracking-widest flex items-center gap-2 mb-2">
-                    <MapPin className="w-3 h-3" /> TARGET PLANET (UI OVERRIDE)
+                    <MapPin className="w-3 h-3" /> CÍLOVÁ PLANETA (PŘEBITÍ UI)
                 </label>
                 <select
                     value={event.planetConfig?.planetId ?? 'p1'}
@@ -79,9 +79,9 @@ const PlanetPanel: React.FC<PlanetPanelProps> = ({ event, onUpdate, masterCatalo
             <div className="bg-black border border-indigo-500/20 p-4 relative">
                 <div className="flex items-center justify-between mb-4 border-b border-zinc-800 pb-2">
                     <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest flex items-center gap-2">
-                        <Layers className="w-4 h-4" /> MISSION PHASES (STAGES)
+                        <Layers className="w-4 h-4" /> FÁZE MISE (STÁDIA)
                     </label>
-                    <span className="text-[10px] font-mono font-bold text-white bg-indigo-900/50 px-2 py-0.5 border border-indigo-500/30">{event.planetConfig?.phases?.length || 0} PHASES</span>
+                    <span className="text-[10px] font-mono font-bold text-white bg-indigo-900/50 px-2 py-0.5 border border-indigo-500/30">{event.planetConfig?.phases?.length || 0} FÁZÍ</span>
                 </div>
 
                 <div className="space-y-2">
@@ -96,7 +96,7 @@ const PlanetPanel: React.FC<PlanetPanelProps> = ({ event, onUpdate, masterCatalo
                                     onChange={(e) => updatePhase(idx, e.target.value)}
                                     className="w-full h-10 bg-black border-y border-zinc-800 p-2 text-white text-xs font-mono uppercase outline-none focus:border-indigo-500 focus:border-x appearance-none pl-3 cursor-pointer hover:bg-zinc-900"
                                 >
-                                    <option value="">-- SELECT ENCOUNTER --</option>
+                                    <option value="">-- VYBERTE STŘETNUTÍ --</option>
                                     {availableCards.map(item => (
                                         <option key={item.id} value={item.id}>
                                             [{item.type}] {item.title}
@@ -118,7 +118,7 @@ const PlanetPanel: React.FC<PlanetPanelProps> = ({ event, onUpdate, masterCatalo
 
                     {(!event.planetConfig?.phases || event.planetConfig.phases.length === 0) && (
                         <div className="text-center p-6 border border-dashed border-zinc-800 text-zinc-600 text-[10px] uppercase font-bold tracking-widest">
-                            NO PHASES DEFINED. PLANET INACTIVE.
+                            NEJSOU DEFINOVÁNY ŽÁDNÉ FÁZE. PLANETA NEAKTIVNÍ.
                         </div>
                     )}
                 </div>
@@ -128,12 +128,12 @@ const PlanetPanel: React.FC<PlanetPanelProps> = ({ event, onUpdate, masterCatalo
                     onClick={addPhase}
                     className="w-full mt-4 py-3 bg-indigo-900/20 border border-indigo-500/30 hover:bg-indigo-900/40 text-indigo-300 font-black uppercase text-[10px] tracking-[0.2em] transition-all clip-path-button"
                 >
-                    + ADD PHASE STEP
+                    + PŘIDAT KROK FÁZE
                 </button>
             </div>
 
             <p className="text-[10px] font-mono text-zinc-600 mt-4 border-t border-zinc-800 pt-3 leading-relaxed">
-                <span className="text-indigo-500 font-bold">NOTE:</span> Each "Jump" consumes fuel and advances player to the next phase index. Completing all phases conquers the planet.
+                <span className="text-indigo-500 font-bold">POZNÁMKA:</span> Každý "Skok" spotřebovává palivo a posouvá hráče na další index fáze. Dokončení všech fází znamená dobytí planety.
             </p>
         </div>
     );
