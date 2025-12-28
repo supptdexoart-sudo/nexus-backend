@@ -26,7 +26,7 @@ interface RoomProps {
 
 const Room: React.FC<RoomProps> = ({
     roomState, inventory, scanLog = [], onExitToMenu, onSendMessage, onStartGame, userEmail, onToggleReady,
-    onKickPlayer, activeCharacter, isNight,
+    onKickPlayer, activeCharacter, isNight: _isNight,
     activeTrade, onInitTrade, onCancelTrade, onConfirmTrade, onTradeSelectOffer
 }) => {
     const [activeTab, setActiveTab] = useState<'chat' | 'party'>('party');
