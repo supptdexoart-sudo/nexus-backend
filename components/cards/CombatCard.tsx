@@ -10,11 +10,12 @@ interface CombatCardProps {
     onClose: () => void;
     onPlayerDamage?: (amount: number) => void;
     playerHp?: number;
-    playerArmor?: number; // ADDED
-    onArmorChange?: (amount: number) => void; // ADDED
+    playerArmor?: number;
+    onArmorChange?: (amount: number) => void;
     inventory?: GameEvent[];
     onUseItem?: (item: GameEvent) => void;
     onClaimLoot?: (stats: Stat[]) => void;
+    activeCharacter?: any | null; // ADDED for combat perks
 }
 
 export const CombatCard: React.FC<CombatCardProps> = ({
@@ -26,7 +27,8 @@ export const CombatCard: React.FC<CombatCardProps> = ({
     onArmorChange,
     inventory,
     onUseItem,
-    onClaimLoot
+    onClaimLoot,
+    activeCharacter
 }) => {
     // --- STATE ---
     const [combatLog, setCombatLog] = useState<string[]>(["Nepřítel detekován. Připravte se k boji."]);
@@ -51,6 +53,38 @@ export const CombatCard: React.FC<CombatCardProps> = ({
     const [isLootClaimed, setIsLootClaimed] = useState(false);
 
     const logEndRef = useRef<HTMLDivElement>(null);
+
+    // --- COMBAT PERKS ---
+    const getCombatPerks = () => {
+        if (!activeCharacter?.perks) return { flatDamage: 0, percentDamage: 0, critBonus: 0, armorBonus: 0 };
+
+        let flatDamage = 0;
+        let percentDamage = 0;
+        let critBonus = 0;
+        let armorBonus = 0;
+
+        activeCharacter.perks.forEach((perk: any) => {
+            if (perk.effect.condition === 'combat') {
+                const stat = perk.effect.stat;
+                const modifier = perk.effect.modifier;
+                const isPercentage = perk.effect.isPercentage;
+
+                if (stat === 'damage') {
+                    if (isPercentage) {
+                        percentDamage += modifier;
+                    } else {
+                        flatDamage += modifier;
+                    }
+                }
+                if (stat === 'critChance') critBonus += modifier;
+                if (stat === 'armor') armorBonus += modifier;
+            }
+        });
+
+        return { flatDamage, percentDamage, critBonus, armorBonus };
+    };
+
+    const combatPerks = getCombatPerks();
 
     // --- INIT ---
     useEffect(() => {
@@ -185,7 +219,19 @@ export const CombatCard: React.FC<CombatCardProps> = ({
         // If defense is broken, ignore enemy DEF
         const effectiveDef = enemyDefBroken ? 0 : def;
 
-        let playerDmg = Math.max(0, totalRoll - effectiveDef);
+        // Calculate base damage
+        let baseDamage = Math.max(0, totalRoll - effectiveDef);
+
+        // Apply flat combat perks
+        let playerDmg = baseDamage + combatPerks.flatDamage;
+
+        // Apply percentage combat perks (from base damage)
+        if (combatPerks.percentDamage > 0) {
+            const percentBonus = Math.floor((baseDamage * combatPerks.percentDamage) / 100);
+            playerDmg += percentBonus;
+        }
+
+        // Apply crit multiplier AFTER all bonuses
         if (isCrit) playerDmg *= 2;
         if (isMiss) playerDmg = 0;
 
@@ -431,6 +477,38 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* --- COMBAT PERKS DISPLAY --- */}
+            {(combatPerks.flatDamage > 0 || combatPerks.percentDamage > 0 || combatPerks.critBonus > 0 || combatPerks.armorBonus > 0) && (
+                <div className="bg-green-950/20 border border-green-500/30 p-2 rounded-xl">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Swords className="w-3 h-3 text-green-500" />
+                        <span className="text-[8px] font-black uppercase text-green-400 tracking-widest">Bojové Perky Aktivní</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                        {combatPerks.flatDamage > 0 && (
+                            <span className="text-[9px] bg-green-900/50 border border-green-500/30 px-2 py-0.5 rounded text-green-300 font-mono">
+                                +{combatPerks.flatDamage} DMG
+                            </span>
+                        )}
+                        {combatPerks.percentDamage > 0 && (
+                            <span className="text-[9px] bg-green-900/50 border border-green-500/30 px-2 py-0.5 rounded text-green-300 font-mono">
+                                +{combatPerks.percentDamage}% DMG
+                            </span>
+                        )}
+                        {combatPerks.critBonus > 0 && (
+                            <span className="text-[9px] bg-yellow-900/50 border border-yellow-500/30 px-2 py-0.5 rounded text-yellow-300 font-mono">
+                                +{combatPerks.critBonus}% CRIT
+                            </span>
+                        )}
+                        {combatPerks.armorBonus > 0 && (
+                            <span className="text-[9px] bg-zinc-700/50 border border-zinc-500/30 px-2 py-0.5 rounded text-zinc-300 font-mono">
+                                +{combatPerks.armorBonus} ARMOR
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* --- MAIN COMBAT AREA --- */}
             <div className="bg-black border border-white/10 rounded-xl p-4 relative overflow-hidden">

@@ -365,10 +365,10 @@ const App: React.FC = () => {
                 {logic.activeTab === Tab.ROOM && (
                   <div className="absolute inset-0 bg-black">
                     <Room
-                      roomState={logic.roomState} inventory={logic.inventory} playerHp={logic.playerHp} scanLog={logic.scanLog}
+                      roomState={logic.roomState} inventory={logic.inventory} scanLog={logic.scanLog}
                       onExitToMenu={logic.handleExitToMenu} onSendMessage={logic.handleSendMessage} onStartGame={logic.handleStartGame}
-                      onInspectItem={logic.handleInspectItem} onSwapItems={logic.handleSwapItems} userEmail={logic.userEmail || undefined}
-                      playerClass={logic.playerClass} onToggleReady={logic.handleToggleReady}
+                      userEmail={logic.userEmail || undefined}
+                      onToggleReady={logic.handleToggleReady}
                       onKickPlayer={logic.handleKickPlayer}
                       activeCharacter={logic.activeCharacter}
                       isNight={logic.isNight}
@@ -481,12 +481,13 @@ const App: React.FC = () => {
                 isSaved={logic.inventory.some(i => i.id === logic.currentEvent?.id)}
                 onPlayerDamage={logic.handleHpChange}
                 playerHp={logic.playerHp}
-                playerArmor={logic.playerArmor} // Added
-                onArmorChange={handleArmorChange} // Added 
-                playerClass={logic.playerClass} // PASSED HERE
+                playerArmor={logic.playerArmor}
+                onArmorChange={handleArmorChange}
+                playerClass={logic.playerClass}
                 inventory={logic.inventory}
                 onUseItem={(item) => logic.handleUseEvent(item)}
                 onClaimLoot={handleClaimLoot}
+                activeCharacter={logic.activeCharacter}
               />
             )}
           </AnimatePresence>

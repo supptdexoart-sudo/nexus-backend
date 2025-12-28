@@ -24,6 +24,7 @@ interface EventCardProps {
     inventory?: GameEvent[];
     onUseItem?: (item: GameEvent) => void;
     onClaimLoot?: (stats: Stat[]) => void;
+    activeCharacter?: any | null; // ADDED for combat perks
 }
 
 const EventCard: React.FC<EventCardProps> = ({
@@ -41,7 +42,8 @@ const EventCard: React.FC<EventCardProps> = ({
     playerClass,
     inventory,
     onUseItem,
-    onClaimLoot
+    onClaimLoot,
+    activeCharacter
 }) => {
     const [dilemmaStep, setDilemmaStep] = useState<'CHOICE' | 'RESULT'>('CHOICE');
     const [selectedOption, setSelectedOption] = useState<DilemmaOption | null>(null);
@@ -427,6 +429,7 @@ const EventCard: React.FC<EventCardProps> = ({
                                     inventory={inventory}
                                     onUseItem={onUseItem}
                                     onClaimLoot={onClaimLoot}
+                                    activeCharacter={activeCharacter}
                                 />
                             )}
 

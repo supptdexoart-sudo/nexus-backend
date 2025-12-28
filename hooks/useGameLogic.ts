@@ -35,7 +35,7 @@ export const useGameLogic = () => {
     const [isServerReady, setIsServerReady] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const [isNight, setIsNight] = useState(isNightTime());
+    const [isNight, _setIsNight] = useState(isNightTime());
     const [adminNightOverride, setAdminNightOverride] = useState<boolean | null>(null);
 
     // Game Stats
@@ -98,7 +98,7 @@ export const useGameLogic = () => {
     const isMyTurn = roomState.isInRoom && roomState.isGameStarted && roomState.turnOrder[roomState.turnIndex] === roomState.nickname;
     const isBlocked = roomState.isInRoom && (!roomState.isGameStarted || !isMyTurn);
     const [showRoundEndAlert, setShowRoundEndAlert] = useState(false);
-    const [showEndTurnPrompt, setShowEndTurnPrompt] = useState(false);
+    const [_showEndTurnPrompt, setShowEndTurnPrompt] = useState(false);
 
     // Complex Interactions
     const [isDocking, setIsDocking] = useState(false);
@@ -124,7 +124,7 @@ export const useGameLogic = () => {
     // OLD SWAP (Deprecated but kept for manual local test or fallback)
     const handleSwapItems = async (makerEmail: string, takerEmail: string, makerItemId: string, takerItemId: string) => {
         try {
-            const result = await apiService.swapItems(makerEmail, takerEmail, makerItemId, takerItemId);
+            await apiService.swapItems(makerEmail, takerEmail, makerItemId, takerItemId);
             setNotification({ id: 'swap-ok', message: 'Výměna úspěšná.', type: 'success' });
             playSound('success');
             if (isGuest) { /* Guest Logic kept as is in old impl */ }
@@ -858,11 +858,7 @@ export const useGameLogic = () => {
         }
     };
 
-    const handleAcknowledgeRound = async () => {
-        if (roomState.id && roomState.nickname) {
-            try { await apiService.acknowledgeRoundEnd(roomState.id, roomState.nickname); setShowRoundEndAlert(false); } catch (e) { console.warn("Ack round fail", e); }
-        }
-    };
+
 
     // --- MERCHANT ACTIONS ---
     const handleBuyItem = async (item: GameEvent) => {
@@ -879,41 +875,260 @@ export const useGameLogic = () => {
         setNotification({ id: 'sell-success', type: 'success', message: `Prodáno: ${item.title} (+${price} G)` });
     };
 
-    return {
+    // --- UTILITIES RESTORED ---
+
+    const addToLog = (msg: string) => {
+        setScanLog(prev => [msg, ...prev].slice(0, 50));
+    };
+
+    const handleLogin = (email: string) => {
+        setUserEmail(email);
+        localStorage.setItem('nexus_current_user', email);
         const gStatus = !email.includes('@');
         setIsGuest(gStatus);
-            setIsServerReady(gStatus); // Auto-ready for guests, others wait for health check or loader
-    },
-        handleLogout: () => { localStorage.clear(); sessionStorage.clear(); window.location.reload(); },
-            handleScanCode,
-            handleSaveEvent, handlePlanetProgress,
-            handleDeleteEvent, handleUseEvent, handleRefreshDatabase, handleGameSetup, handleLeaveRoom, handleKickPlayer, handleExitToMenu,
-            handleResolveDilemma,
-            handleEndTurn, handleSendMessage, closeEvent, handleHpChange, handleManaChange, handleGoldChange, handleFuelChange,
-            handleOpenInventoryItem: (item: GameEvent) => {
-                if (isAdmin && !isTestMode) {
-                    setEditingEvent(item);
-                    setActiveTab(Tab.GENERATOR);
-                } else {
-                    setCurrentEvent(item);
-                }
-            },
-                getAdjustedItem, handleSwapItems, soundEnabled, vibrationEnabled,
-                handleToggleSound: () => { toggleSoundSystem(!soundEnabled); setSoundEnabled(!soundEnabled); },
-                    handleToggleVibration: () => { toggleVibrationSystem(!vibrationEnabled); setVibrationEnabled(!vibrationEnabled); },
-                        handleInspectItem,
-                        handleCraftItem,
-                        handleHardReset,
+        setIsServerReady(gStatus);
+    };
 
-                        handleWipeTestVault, // EXPORTED FOR SETTINGS
-                        scanLog,
-                        isTestMode,
-                        toggleTestMode,
-                        handleToggleReady, // EXPORT
-                        handleSwitchToOffline: () => {
-                            setIsGuest(true);
-                            setIsServerReady(true); // Treat as ready for offline
-                            setNotification({ id: 'offline-mode-' + Date.now(), message: 'Nouzový režim AKTIVNÍ (Offline)', type: 'warning' });
-                        }
-};
+    // Admin Detection
+    useEffect(() => {
+        const adminEmails = ['zbynekbal97@gmail.com', 'test1@nexus.cz'];
+        setIsAdmin(userEmail ? adminEmails.includes(userEmail) : false);
+    }, [userEmail]);
+
+    // Dynamic Day/Night Perk Updates
+    useEffect(() => {
+        if (!activeCharacter) return;
+
+        // Recalculate stats with current day/night perks
+        const perkBonuses = applyCharacterPerks(activeCharacter, isNight);
+
+        // Apply base stats + perks
+        const newHp = activeCharacter.baseStats.hp + perkBonuses.hp;
+        const newMana = activeCharacter.baseStats.mana + perkBonuses.mana;
+        const newArmor = activeCharacter.baseStats.armor + perkBonuses.armor;
+
+        setPlayerHp(newHp);
+        setPlayerMana(newMana);
+        setPlayerArmor(newArmor);
+
+        // Show notification about perk changes
+        const activePerks = activeCharacter.perks?.filter((p: any) => {
+            const cond = p.effect.condition || 'always';
+            return cond === 'always' || (cond === 'night' && isNight) || (cond === 'day' && !isNight);
+        }) || [];
+
+        if (activePerks.length > 0) {
+            const perkList = activePerks.map((p: any) => p.name).join(', ');
+            setNotification({
+                id: 'day-night-' + Date.now(),
+                type: 'info',
+                message: `${isNight ? '🌙 Noc' : '☀️ Den'} - Aktivní perky: ${perkList}`
+            });
+            playSound('scan');
+        }
+    }, [isNight, activeCharacter]);
+
+    const toggleTestMode = () => setIsTestMode(p => !p);
+
+    const getAdjustedItem = (item: GameEvent, isNightNow: boolean, pClass: PlayerClass | null): GameEvent => {
+        let adjusted = { ...item };
+        // Night Variant
+        if (isNightNow && item.timeVariant?.enabled) {
+            if (item.timeVariant.nightTitle) adjusted.title = item.timeVariant.nightTitle;
+            if (item.timeVariant.nightDescription) adjusted.description = item.timeVariant.nightDescription;
+            if (item.timeVariant.nightType) adjusted.type = item.timeVariant.nightType;
+            if (item.timeVariant.nightStats) adjusted.stats = item.timeVariant.nightStats;
+        }
+        // Class Variant
+        if (pClass && item.classVariants && item.classVariants[pClass]) {
+            const variant = item.classVariants[pClass]!;
+            if (variant.overrideTitle) adjusted.title = variant.overrideTitle;
+            if (variant.overrideDescription) adjusted.description = variant.overrideDescription;
+            if (variant.overrideType) adjusted.type = variant.overrideType;
+            if (variant.bonusStats) adjusted.stats = [...(adjusted.stats || []), ...variant.bonusStats];
+        }
+        return adjusted;
+    };
+
+    const handleRefreshDatabase = async () => {
+        setIsRefreshing(true);
+        try {
+            const target = userEmail || 'guest';
+            const inv = await apiService.getInventory(target);
+            setInventory(inv);
+            localStorage.setItem(`nexus_inv_${target}`, JSON.stringify(inv));
+            if (isAdmin && !isTestMode) {
+                const catalog = await apiService.getMasterCatalog();
+                setMasterCatalog(catalog);
+            }
+        } catch (e) { console.error(e); }
+        finally { setIsRefreshing(false); }
+    };
+
+    const handleDeleteEvent = async (id: string) => {
+        const target = userEmail || 'guest';
+        // Optimistic
+        setInventory(prev => {
+            const next = prev.filter(i => i.id !== id);
+            localStorage.setItem(`nexus_inv_${target}`, JSON.stringify(next));
+            return next;
+        });
+        if (!isGuest && navigator.onLine) {
+            try { await apiService.deleteCard(target, id); } catch (e) { }
+        }
+    };
+
+    const handleSaveEvent = async (event: GameEvent, isNew: boolean) => {
+        const target = userEmail || 'guest';
+        setInventory(prev => {
+            const next = isNew ? [...prev, event] : prev.map(i => i.id === event.id ? event : i);
+            localStorage.setItem(`nexus_inv_${target}`, JSON.stringify(next));
+            return next;
+        });
+        if (!isGuest && navigator.onLine) {
+            try { await apiService.saveCard(target, event); } catch (e) { }
+        }
+    };
+
+
+
+    // POLLING & SYNC
+    useEffect(() => {
+        if (!roomState.isInRoom || !roomState.id || !isServerReady) return;
+        const pollInterval = setInterval(async () => {
+            try {
+                const status = await apiService.getRoomStatus(roomState.id);
+                const messages = await apiService.getRoomMessages(roomState.id);
+                // Sync Trade
+                if (status.activeTrades) {
+                    const myTrade = status.activeTrades.find((t: any) =>
+                        t.participants.some((p: any) => p.email === userEmail)
+                    );
+                    // Only update if changed to avoid loop? useState handles identicals.
+                    setActiveTrade(myTrade || null);
+                } else setActiveTrade(null);
+
+                // Update refs for tracking
+                if (status.members) prevMembersRef.current = status.members;
+                if (status.turnIndex !== undefined && status.turnIndex !== prevTurnIndexRef.current) {
+                    hasNotifiedTurnRef.current = false;
+                    prevTurnIndexRef.current = status.turnIndex;
+                    if (status.isGameStarted && status.turnOrder?.[status.turnIndex] === roomState.nickname) {
+                        setNotification({ id: 'your-turn-' + Date.now(), type: 'warning', message: '⚠️ JSI NA TAHU!' });
+                        playSound('open');
+                        vibrate([100, 50, 100]);
+                        hasNotifiedTurnRef.current = true;
+                    }
+                }
+                if (status.isGameStarted && !hasNotifiedStartRef.current) {
+                    setNotification({ id: 'game-start', type: 'success', message: 'MISE ZAHÁJENA!' });
+                    hasNotifiedStartRef.current = true;
+                }
+
+                setRoomState(prev => ({
+                    ...prev, members: status.members, turnIndex: status.turnIndex,
+                    messages, isGameStarted: status.isGameStarted, roundNumber: status.roundNumber,
+                    turnOrder: status.turnOrder, readyForNextRound: status.readyForNextRound,
+                    host: status.host, activeEncounter: status.activeEncounter, activeTrades: status.activeTrades
+                }));
+            } catch (e) { }
+        }, 1000);
+        return () => clearInterval(pollInterval);
+    }, [roomState.isInRoom, roomState.id, isServerReady, userEmail, roomState.nickname]);
+
+    useEffect(() => {
+        if (activeTab === Tab.ROOM && roomState.isInRoom && roomState.id && isServerReady) {
+            const sync = async () => {
+                try {
+                    const status = await apiService.getRoomStatus(roomState.id);
+                    const messages = await apiService.getRoomMessages(roomState.id);
+                    setRoomState(prev => ({
+                        ...prev, members: status.members, turnOrder: status.turnOrder, turnIndex: status.turnIndex,
+                        messages, isGameStarted: status.isGameStarted, roundNumber: status.roundNumber,
+                        readyForNextRound: status.readyForNextRound, host: status.host, activeTrades: status.activeTrades
+                    }));
+                } catch (e) { }
+            };
+            sync();
+        }
+    }, [activeTab, roomState.isInRoom, roomState.id, isServerReady]);
+
+
+    return {
+        userEmail, setUserEmail,
+        isAdmin, setIsAdmin,
+        isGuest, setIsGuest,
+        isTestMode, toggleTestMode,
+        isServerReady, setIsServerReady,
+        isRefreshing, handleRefreshDatabase,
+        isNight,
+        adminNightOverride, setAdminNightOverride,
+        playerHp, handleHpChange,
+        playerMana, handleManaChange,
+        playerFuel, handleFuelChange,
+        playerGold, handleGoldChange,
+        playerArmor, setPlayerArmor,
+        playerOxygen, setPlayerOxygen,
+        playerClass, setPlayerClass,
+        activeCharacter, setActiveCharacter,
+        activeTab, setActiveTab,
+        notification, setNotification,
+        scanLog,
+        isAIThinking,
+        screenFlash,
+        soundEnabled, handleToggleSound: () => { toggleSoundSystem(!soundEnabled); setSoundEnabled(!soundEnabled); },
+        vibrationEnabled, handleToggleVibration: () => { toggleVibrationSystem(!vibrationEnabled); setVibrationEnabled(!vibrationEnabled); },
+        currentEvent, setCurrentEvent,
+        inventory,
+        masterCatalog,
+        editingEvent, setEditingEvent,
+        roomState, setRoomState,
+        activeTrade,
+        handleInitTrade, handleCancelTrade, handleConfirmTrade, handleTradeSelectOffer,
+        isSoloMode,
+        giftTarget, setGiftTarget,
+        isMyTurn, isBlocked,
+        showRoundEndAlert, setShowRoundEndAlert,
+        handleLogin, handleLogout: () => { localStorage.clear(); sessionStorage.clear(); window.location.reload(); },
+        handleScanCode,
+
+        handleSaveEvent, handleDeleteEvent, handleUseEvent,
+
+        handlePlanetProgress,
+        getAdjustedItem,
+        handleGameSetup,
+        handleLeaveRoom,
+        handleKickPlayer,
+        handleExitToMenu,
+        handleStartGame,
+        handleResolveDilemma,
+        handleEndTurn,
+        handleSendMessage,
+        closeEvent,
+        handleOpenInventoryItem: (item: GameEvent) => {
+            if (isAdmin && !isTestMode) { setEditingEvent(item); setActiveTab(Tab.GENERATOR); }
+            else { setCurrentEvent(item); }
+        },
+        handleSwapItems,
+        handleInspectItem,
+        handleCraftItem,
+        handleHardReset,
+        handleWipeTestVault,
+        handleSwitchToOffline: () => { setIsGuest(true); setIsServerReady(true); setNotification({ id: 'offline', message: 'Offline Mode', type: 'warning' }); },
+
+        // --- ADDED MISSING EXPORTS ---
+        handleBuyItem,
+        handleSellItem,
+        activeStation,
+        activeMerchant,
+        setActiveMerchant,
+        handleLeaveStation,
+        handleClaimStationRewards,
+        isDocking,
+        handleDockingComplete,
+        handleToggleReady,
+
+        // Computed
+        isScannerPaused: !!activeMerchant || !!currentEvent || !!activeTrade || isAIThinking
+    };
 };
