@@ -9,15 +9,15 @@ interface TrapPanelProps {
 }
 
 const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
-    
+
     const updateTrapConfig = (field: string, value: any) => {
         onUpdate({
             trapConfig: {
-                ...(event.trapConfig || { 
-                    difficulty: 10, 
-                    damage: 20, 
-                    disarmClass: PlayerClass.ROGUE, 
-                    successMessage: "Past zneškodněna.", 
+                ...(event.trapConfig || {
+                    difficulty: 10,
+                    damage: 20,
+                    disarmClass: PlayerClass.ROGUE,
+                    successMessage: "Past zneškodněna.",
                     failMessage: "Past sklapla!",
                     loot: []
                 }),
@@ -29,16 +29,16 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
     // --- LOOT MANAGEMENT ---
     const addLoot = (label: string = 'ZLATO', value: string = '+10') => {
         const currentConfig = event.trapConfig || {
-            difficulty: 10, 
-            damage: 20, 
-            disarmClass: PlayerClass.ROGUE, 
-            successMessage: "Past zneškodněna.", 
+            difficulty: 10,
+            damage: 20,
+            disarmClass: PlayerClass.ROGUE,
+            successMessage: "Past zneškodněna.",
             failMessage: "Past sklapla!",
             loot: []
         };
-        
+
         const currentLoot = currentConfig.loot || [];
-        
+
         onUpdate({
             trapConfig: {
                 ...currentConfig,
@@ -64,141 +64,151 @@ const TrapPanel: React.FC<TrapPanelProps> = ({ event, onUpdate }) => {
         { label: 'HP', icon: Heart, color: 'text-red-500' },
         { label: 'DMG', icon: Swords, color: 'text-orange-500' },
         { label: 'ARMOR', icon: Shield, color: 'text-zinc-200' },
-        { label: 'MANA', icon: Zap, color: 'text-cyan-400' },
         { label: 'PALIVO', icon: Fuel, color: 'text-orange-500' },
         { label: 'ZLATO', icon: Coins, color: 'text-yellow-500' },
         { label: 'KYSLÍK', icon: Wind, color: 'text-cyan-400' },
     ];
 
     return (
-        <div className="space-y-4 bg-arc-panel p-5 border border-arc-red/30 text-white shadow-[0_0_20px_rgba(239,68,68,0.1)] rounded-xl">
-            <div className="flex items-center gap-2 mb-2 text-arc-red border-b border-arc-red/20 pb-2">
-                <Zap className="w-5 h-5"/>
-                <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest">Nástraha_konfigurace:</h3>
+        <div className="bg-black border border-white/10 p-6 relative shadow-[0_0_20px_rgba(239,68,68,0.1)]">
+            <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                <Zap className="w-24 h-24 text-arc-red" />
             </div>
-            
+
+            <div className="flex items-center gap-3 mb-6 border-b border-arc-red/20 pb-4">
+                <div className="p-2 border border-arc-red text-arc-red">
+                    <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                    <span className="text-[9px] font-mono text-red-800 uppercase tracking-widest block mb-0.5">HAZARD_PROTOCOL</span>
+                    <h3 className="text-xl font-display font-black uppercase tracking-widest text-white">Trap Specs</h3>
+                </div>
+            </div>
+
             {/* TYPE SPECIFICATION */}
-            <div className="bg-black/40 p-3 rounded border border-white/5">
-                <label className="text-[8px] text-zinc-400 uppercase font-bold tracking-widest flex items-center gap-1 mb-2">
-                    <Tag className="w-3 h-3"/> Specifikace / Typ Pasti
+            <div className="p-4 bg-zinc-900/30 border-l-2 border-arc-red mb-6">
+                <label className="text-[9px] text-zinc-400 uppercase font-black tracking-widest flex items-center gap-2 mb-2">
+                    <Tag className="w-3 h-3" /> Hazard Classification
                 </label>
-                <input 
-                    type="text" 
-                    value={event.trapConfig?.trapType ?? ''} 
-                    onChange={(e) => updateTrapConfig('trapType', e.target.value)} 
-                    placeholder="Např. MECHANICKÁ, BIOLOGICKÁ, HACKING..."
-                    className="w-full bg-black border border-zinc-700 p-2 text-white text-xs font-mono outline-none focus:border-arc-red rounded" 
+                <input
+                    type="text"
+                    value={event.trapConfig?.trapType ?? ''}
+                    onChange={(e) => updateTrapConfig('trapType', e.target.value)}
+                    placeholder="e.g. MECHANICAL, BIOLOGICAL, DIGITAL..."
+                    className="w-full bg-black border-b border-zinc-700 py-2 text-white text-sm font-mono outline-none focus:border-arc-red placeholder-zinc-800 uppercase"
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="text-[8px] text-zinc-300 uppercase font-bold tracking-widest">Obtížnost (Hod kostkou):</label>
-                    <input 
-                        type="number" 
-                        value={event.trapConfig?.difficulty ?? 10} 
-                        onChange={(e) => updateTrapConfig('difficulty', parseInt(e.target.value))} 
-                        className="w-full bg-black border border-arc-red/40 p-3 text-white font-mono text-sm rounded focus:border-arc-red outline-none" 
+            <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="bg-black border border-zinc-800 p-3 hover:border-white transition-colors">
+                    <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">DISARM DIFFICULTY (D20)</label>
+                    <input
+                        type="number"
+                        value={event.trapConfig?.difficulty ?? 10}
+                        onChange={(e) => updateTrapConfig('difficulty', parseInt(e.target.value))}
+                        className="w-full bg-transparent text-white font-mono text-2xl font-bold outline-none"
                     />
                 </div>
-                <div>
-                    <label className="text-[8px] text-zinc-300 uppercase font-bold tracking-widest">DMG po selhání:</label>
-                    <input 
-                        type="number" 
-                        value={event.trapConfig?.damage ?? 20} 
-                        onChange={(e) => updateTrapConfig('damage', parseInt(e.target.value))} 
-                        className="w-full bg-black border border-arc-red/40 p-3 text-arc-red font-mono text-sm rounded focus:border-arc-red outline-none" 
+                <div className="bg-black border border-zinc-800 p-3 hover:border-red-500 transition-colors">
+                    <label className="text-[9px] text-red-500 uppercase font-black tracking-widest block mb-2">FAILURE DAMAGE</label>
+                    <input
+                        type="number"
+                        value={event.trapConfig?.damage ?? 20}
+                        onChange={(e) => updateTrapConfig('damage', parseInt(e.target.value))}
+                        className="w-full bg-transparent text-red-500 font-mono text-2xl font-bold outline-none"
                     />
                 </div>
             </div>
-            
-            <div>
-                <label className="text-[8px] text-zinc-300 uppercase font-bold tracking-widest">Expert na zneškodnění (Bonus Class):</label>
-                <select 
-                    value={event.trapConfig?.disarmClass ?? 'ANY'} 
-                    onChange={(e) => updateTrapConfig('disarmClass', e.target.value)} 
-                    className="w-full bg-black border border-arc-border p-3 text-white text-xs font-mono uppercase focus:ring-1 focus:ring-arc-yellow outline-none rounded"
-                >
-                    <option value="ANY" className="bg-arc-panel text-white">KDOKOLIV (Bez bonusu)</option>
-                    {Object.values(PlayerClass).map(c => <option key={c} value={c} className="bg-arc-panel text-white">{c}</option>)}
-                </select>
+
+            <div className="mb-6">
+                <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">SPECIALIST (BONUS CLASS)</label>
+                <div className="bg-black border border-zinc-800 p-1">
+                    <select
+                        value={event.trapConfig?.disarmClass ?? 'ANY'}
+                        onChange={(e) => updateTrapConfig('disarmClass', e.target.value)}
+                        className="w-full bg-black text-white text-xs font-mono uppercase p-2 outline-none"
+                    >
+                        <option value="ANY">NONE (STANDARD DIFFICULTY)</option>
+                        {Object.values(PlayerClass).map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
             </div>
 
             {/* MESSAGES CONFIG */}
-            <div className="grid grid-cols-1 gap-2">
-                <div>
-                    <label className="text-[8px] text-green-500 uppercase font-bold tracking-widest">Zpráva při úspěchu:</label>
-                    <input 
-                        type="text" 
-                        value={event.trapConfig?.successMessage ?? "Past zneškodněna."} 
-                        onChange={(e) => updateTrapConfig('successMessage', e.target.value)} 
-                        className="w-full bg-black border border-green-500/30 p-2 text-zinc-300 text-xs font-mono rounded" 
+            <div className="space-y-4 mb-6">
+                <div className="bg-green-950/10 border-l-2 border-green-500 pl-3 py-2">
+                    <label className="text-[9px] text-green-500 uppercase font-bold tracking-widest block mb-1">SUCCESS MESSAGE</label>
+                    <input
+                        type="text"
+                        value={event.trapConfig?.successMessage ?? "Past zneškodněna."}
+                        onChange={(e) => updateTrapConfig('successMessage', e.target.value)}
+                        className="w-full bg-transparent text-zinc-300 text-xs font-mono outline-none"
                     />
                 </div>
-                <div>
-                    <label className="text-[8px] text-red-500 uppercase font-bold tracking-widest">Zpráva při selhání:</label>
-                    <input 
-                        type="text" 
-                        value={event.trapConfig?.failMessage ?? "Past sklapla!"} 
-                        onChange={(e) => updateTrapConfig('failMessage', e.target.value)} 
-                        className="w-full bg-black border border-red-500/30 p-2 text-zinc-300 text-xs font-mono rounded" 
+                <div className="bg-red-950/10 border-l-2 border-red-500 pl-3 py-2">
+                    <label className="text-[9px] text-red-500 uppercase font-bold tracking-widest block mb-1">FAILURE MESSAGE</label>
+                    <input
+                        type="text"
+                        value={event.trapConfig?.failMessage ?? "Past sklapla!"}
+                        onChange={(e) => updateTrapConfig('failMessage', e.target.value)}
+                        className="w-full bg-transparent text-zinc-300 text-xs font-mono outline-none"
                     />
                 </div>
             </div>
 
             {/* REWARD CONFIG */}
-            <div className="bg-arc-yellow/5 border border-arc-yellow/20 p-3 rounded-xl mt-2">
+            <div className="bg-arc-yellow/5 border border-arc-yellow/20 p-4 relative">
                 <div className="flex justify-between items-center mb-4">
-                    <label className="text-[9px] text-arc-yellow uppercase font-bold tracking-widest flex items-center gap-2">
-                        <Coins className="w-3 h-3"/> Odměna za zneškodnění (Loot)
+                    <label className="text-[9px] text-arc-yellow uppercase font-black tracking-widest flex items-center gap-2">
+                        <Coins className="w-3 h-3" /> DISARM REWARD (LOOT)
                     </label>
                 </div>
 
                 {/* Quick Add Buttons */}
                 <div className="flex flex-wrap gap-2 mb-4">
                     {quickLootOptions.map(opt => (
-                        <button 
-                            key={opt.label} 
-                            type="button" 
+                        <button
+                            key={opt.label}
+                            type="button"
                             onClick={() => addLoot(opt.label, '+10')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 border border-zinc-700 hover:border-arc-yellow transition-all active:scale-95 bg-black rounded`}
+                            className={`flex items-center gap-1.5 px-2 py-1 border border-zinc-800 bg-black hover:border-white transition-all active:scale-95`}
                         >
                             <opt.icon className={`w-3 h-3 ${opt.color}`} />
-                            <span className={`text-[9px] font-bold uppercase tracking-tighter text-zinc-200`}>{opt.label}</span>
+                            <span className={`text-[8px] font-bold uppercase tracking-wider text-zinc-400 group-hover:text-white`}>{opt.label}</span>
                         </button>
                     ))}
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         onClick={() => addLoot('JINÉ', '+1')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-700 hover:border-white transition-all active:scale-95 bg-black rounded"
+                        className="flex items-center gap-1.5 px-2 py-1 border border-zinc-800 bg-black hover:border-white transition-all active:scale-95"
                     >
                         <Plus className="w-3 h-3 text-zinc-400" />
-                        <span className="text-[9px] font-bold uppercase tracking-tighter text-zinc-400">Vlastní</span>
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-zinc-400">CUSTOM</span>
                     </button>
                 </div>
 
                 <div className="space-y-2">
                     {(!event.trapConfig?.loot || event.trapConfig.loot.length === 0) && (
-                        <p className="text-[9px] text-zinc-500 italic text-center py-2">Žádná odměna. Past se jen vypne.</p>
+                        <p className="text-[9px] text-zinc-600 italic text-center py-2 uppercase">NO REWARDS CONFIGURED</p>
                     )}
                     {event.trapConfig?.loot?.map((stat, idx) => (
-                        <div key={idx} className="flex gap-2 items-center bg-black p-2 border border-zinc-700 rounded animate-in slide-in-from-left-2">
-                            <input 
-                                value={stat.label} 
-                                onChange={(e) => updateLootStat(idx, 'label', e.target.value)} 
-                                className="w-24 bg-zinc-900 border border-zinc-600 p-2 text-[10px] font-bold text-arc-yellow uppercase font-mono rounded outline-none" 
-                                placeholder="TYP" 
+                        <div key={idx} className="flex gap-0 items-center bg-black border border-zinc-700 hover:border-arc-yellow transition-colors">
+                            <input
+                                value={stat.label}
+                                onChange={(e) => updateLootStat(idx, 'label', e.target.value)}
+                                className="w-24 bg-transparent border-r border-zinc-700 p-2 text-[10px] font-black text-arc-yellow uppercase font-mono outline-none"
+                                placeholder="TYPE"
                             />
-                            <input 
-                                value={stat.value} 
-                                onChange={(e) => updateLootStat(idx, 'value', e.target.value)} 
-                                className="flex-1 bg-zinc-900 border border-zinc-600 px-3 py-2 text-xs text-white font-mono outline-none rounded" 
-                                placeholder="HODNOTA" 
+                            <input
+                                value={stat.value}
+                                onChange={(e) => updateLootStat(idx, 'value', e.target.value)}
+                                className="flex-1 bg-transparent px-3 py-2 text-xs text-white font-mono outline-none"
+                                placeholder="VALUE"
                             />
-                            <button 
-                                type="button" 
-                                onClick={() => removeLootStat(idx)} 
-                                className="p-2 text-zinc-500 hover:text-red-500 transition-colors"
+                            <button
+                                type="button"
+                                onClick={() => removeLootStat(idx)}
+                                className="p-2 text-zinc-600 hover:text-red-500 transition-colors border-l border-zinc-700"
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>

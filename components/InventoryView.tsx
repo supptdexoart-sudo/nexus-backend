@@ -386,36 +386,65 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                         key={item.id}
                                         onClick={() => handleCardClick(item)}
                                         {...({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } } as any)}
-                                        className={`tactical-card h-48 flex flex-col justify-between p-4 bg-black/40 border-t-2 ${config.border} active:scale-95 transition-transform group relative ${isSelected ? 'scale-90 border-2 border-signal-cyan ring-4 ring-signal-cyan/20' : ''} ${isResource ? 'bg-orange-950/10' : ''}`}
+                                        className={`relative h-40 flex flex-col justify-end p-0 bg-[#0d0e12] border-2 ${config.border} rounded-lg overflow-hidden active:scale-95 transition-all group cursor-pointer ${isSelected ? 'scale-90 ring-4 ring-signal-cyan/30' : ''}`}
                                     >
+                                        {/* Gradient Overlay from Border Color */}
+                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isResource ? 'bg-gradient-to-b from-orange-500/10 to-transparent' :
+                                                item.rarity === 'Legendary' ? 'bg-gradient-to-b from-yellow-500/10 to-transparent' :
+                                                    item.rarity === 'Epic' ? 'bg-gradient-to-b from-purple-500/10 to-transparent' :
+                                                        item.rarity === 'Rare' ? 'bg-gradient-to-b from-cyan-500/10 to-transparent' :
+                                                            'bg-gradient-to-b from-white/5 to-transparent'
+                                            }`} />
+
+                                        {/* Subtle Background Gradient */}
+                                        <div className={`absolute inset-0 ${isResource ? 'bg-gradient-to-br from-orange-500/5 via-transparent to-transparent' :
+                                                item.rarity === 'Legendary' ? 'bg-gradient-to-br from-yellow-500/5 via-transparent to-transparent' :
+                                                    item.rarity === 'Epic' ? 'bg-gradient-to-br from-purple-500/5 via-transparent to-transparent' :
+                                                        item.rarity === 'Rare' ? 'bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent' :
+                                                            ''
+                                            }`} />
+
+                                        {/* Compare Mode Selection Overlay */}
                                         {isSelected && (
-                                            <div className="absolute inset-0 bg-signal-cyan/10 flex items-center justify-center z-10">
+                                            <div className="absolute inset-0 bg-signal-cyan/10 flex items-center justify-center z-20">
                                                 <div className="bg-signal-cyan text-black p-2 rounded-full shadow-[0_0_20px_#00f2ff]">
                                                     <ArrowLeftRight className="w-6 h-6" />
                                                 </div>
                                             </div>
                                         )}
 
-                                        <div className="flex justify-between items-start">
-                                            <div className={`${config.text}`}>{getEventIcon(item.type, isResource)}</div>
+                                        {/* Content Container */}
+                                        <div className="relative z-10 p-4 flex flex-col gap-2">
+                                            {/* Item Title - Larger and More Prominent */}
+                                            <h3 className={`font-black text-base uppercase leading-tight line-clamp-2 transition-colors ${isResource ? 'text-orange-100 group-hover:text-orange-400' :
+                                                    'text-white group-hover:text-signal-cyan'
+                                                }`}>
+                                                {item.title}
+                                            </h3>
 
-                                            {isResource && (
-                                                <div className="text-xs font-mono font-bold text-orange-500 bg-orange-950/50 px-2 py-0.5 rounded border border-orange-500/30 shadow-[0_0_10px_rgba(249,115,22,0.2)]">
-                                                    x{item.resourceConfig?.resourceAmount || 1}
-                                                </div>
-                                            )}
+                                            {/* Rarity Label */}
+                                            <p className={`text-[9px] font-bold uppercase tracking-widest ${config.text} opacity-60`}>
+                                                {config.label}
+                                            </p>
+                                        </div>
 
-                                            {!isResource && stackedItem._stackQty > 1 && (
-                                                <div className="flex items-center gap-1 text-[10px] font-black text-white bg-red-600 px-2 py-0.5 rounded shadow-[0_0_10px_rgba(220,38,38,0.5)] border border-red-400">
-                                                    <Copy className="w-3 h-3" />
-                                                    <span>x{stackedItem._stackQty}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className={`font-bold text-[10px] uppercase line-clamp-2 transition-colors ${isResource ? 'text-orange-100 group-hover:text-orange-400' : 'text-white group-hover:text-signal-cyan'}`}>{item.title}</h3>
-                                            <p className="text-[8px] text-zinc-500 font-mono mt-1">{config.label}</p>
-                                        </div>
+                                        {/* Quantity Badge - Bottom Right Corner */}
+                                        {isResource && (
+                                            <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 bg-black/80 backdrop-blur-sm px-2.5 py-1 rounded border border-orange-500/50 shadow-[0_0_12px_rgba(249,115,22,0.3)]">
+                                                <span className="text-xs font-mono font-black text-orange-400">
+                                                    ×{item.resourceConfig?.resourceAmount || 1}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {!isResource && stackedItem._stackQty > 1 && (
+                                            <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 bg-black/80 backdrop-blur-sm px-2.5 py-1 rounded border border-white/30 shadow-[0_0_12px_rgba(255,255,255,0.2)]">
+                                                <Copy className="w-3 h-3 text-white/70" />
+                                                <span className="text-xs font-mono font-black text-white">
+                                                    ×{stackedItem._stackQty}
+                                                </span>
+                                            </div>
+                                        )}
                                     </motion.div>
                                 );
                             })

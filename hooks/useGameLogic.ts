@@ -41,7 +41,6 @@ export const useGameLogic = () => {
     // Game Stats
     // const [playerHP, setPlayerHP] = useState(100); // Internal state - REMOVED (Build Fix)
     const [playerHp, setPlayerHp] = useState(100); // Public state (renaming consistency)
-    const [playerMana, setPlayerMana] = useState(100);
     const [playerFuel, setPlayerFuel] = useState(100);
     const [playerGold, setPlayerGold] = useState(0);
     const [playerArmor, setPlayerArmor] = useState(0);
@@ -191,7 +190,6 @@ export const useGameLogic = () => {
         setTimeout(() => setScreenFlash(null), 300);
     };
 
-    const handleManaChange = (amount: number) => setPlayerMana(prev => Math.min(100, Math.max(0, prev + amount)));
     const handleFuelChange = (amount: number) => setPlayerFuel(prev => Math.min(100, Math.max(0, prev + amount)));
     const handleGoldChange = (amount: number) => setPlayerGold(prev => Math.max(0, prev + amount));
 
@@ -276,9 +274,9 @@ export const useGameLogic = () => {
 
     // Apply character perks based on conditions
     const applyCharacterPerks = (character: any, currentIsNight: boolean) => {
-        if (!character || !character.perks) return { hp: 0, mana: 0, armor: 0, damage: 0, critChance: 0 };
+        if (!character || !character.perks) return { hp: 0, armor: 0, damage: 0 };
 
-        let bonuses = { hp: 0, mana: 0, armor: 0, damage: 0, critChance: 0 };
+        let bonuses = { hp: 0, armor: 0, damage: 0 };
 
         character.perks.forEach((perk: any) => {
             const condition = perk.effect.condition || 'always';
@@ -303,15 +301,9 @@ export const useGameLogic = () => {
             if (shouldApply) {
                 const stat = perk.effect.stat;
                 const modifier = perk.effect.modifier;
-                const isPercentage = perk.effect.isPercentage;
 
                 if (bonuses.hasOwnProperty(stat)) {
-                    if (isPercentage) {
-                        // Percentage bonuses will be applied after base stats
-                        bonuses[stat as keyof typeof bonuses] += modifier;
-                    } else {
-                        bonuses[stat as keyof typeof bonuses] += modifier;
-                    }
+                    bonuses[stat as keyof typeof bonuses] += modifier;
                 }
             }
         });
@@ -330,17 +322,14 @@ export const useGameLogic = () => {
 
             // Apply base stats
             let finalHp = character.baseStats.hp;
-            let finalMana = character.baseStats.mana;
             let finalArmor = character.baseStats.armor;
 
             // Apply perks
             const perkBonuses = applyCharacterPerks(character, isNight);
             finalHp += perkBonuses.hp;
-            finalMana += perkBonuses.mana;
             finalArmor += perkBonuses.armor;
 
             setPlayerHp(finalHp);
-            setPlayerMana(finalMana);
             setPlayerArmor(finalArmor);
             // Store character for later use (perks, etc.)
             localStorage.setItem(`nexus_character_${userEmail}`, JSON.stringify(character));
@@ -633,17 +622,14 @@ export const useGameLogic = () => {
 
                     // Apply base stats
                     let finalHp = character.baseStats.hp;
-                    let finalMana = character.baseStats.mana;
                     let finalArmor = character.baseStats.armor;
 
                     // Apply perks
                     const perkBonuses = applyCharacterPerks(character, isNight);
                     finalHp += perkBonuses.hp;
-                    finalMana += perkBonuses.mana;
                     finalArmor += perkBonuses.armor;
 
                     setPlayerHp(finalHp);
-                    setPlayerMana(finalMana);
                     setPlayerArmor(finalArmor);
                     setPlayerClass(character.name as any);
                     localStorage.setItem(`nexus_character_${userEmail}`, JSON.stringify(character));
@@ -796,7 +782,6 @@ export const useGameLogic = () => {
 
                 if (!isNaN(val) && val !== 0) {
                     if (['HP', 'ZDRAVÍ', 'HEAL'].some(k => label.includes(k))) { handleHpChange(val); effectApplied = true; }
-                    else if (['MANA', 'ENERGIE'].some(k => label.includes(k))) { handleManaChange(val); effectApplied = true; }
                     else if (['PALIVO', 'FUEL'].some(k => label.includes(k))) { handleFuelChange(val); effectApplied = true; }
                     else if (['GOLD', 'ZLATO'].some(k => label.includes(k))) { handleGoldChange(val); effectApplied = true; }
                     else if (['O2', 'KYSLÍK'].some(k => label.includes(k))) { setPlayerOxygen(prev => Math.min(100, Math.max(0, prev + val))); effectApplied = true; }
@@ -828,7 +813,6 @@ export const useGameLogic = () => {
         if (result === 'success') {
             option.rewards?.forEach(reward => {
                 if (reward.type === 'HP') handleHpChange(reward.value);
-                if (reward.type === 'MANA') handleManaChange(reward.value);
                 if (reward.type === 'GOLD') handleGoldChange(reward.value);
             });
             if (option.effectType === 'hp') handleHpChange(option.effectValue || 0);
@@ -904,11 +888,9 @@ export const useGameLogic = () => {
 
         // Apply base stats + perks
         const newHp = activeCharacter.baseStats.hp + perkBonuses.hp;
-        const newMana = activeCharacter.baseStats.mana + perkBonuses.mana;
         const newArmor = activeCharacter.baseStats.armor + perkBonuses.armor;
 
         setPlayerHp(newHp);
-        setPlayerMana(newMana);
         setPlayerArmor(newArmor);
 
         // Show notification about perk changes
@@ -1053,6 +1035,16 @@ export const useGameLogic = () => {
         }
     }, [activeTab, roomState.isInRoom, roomState.id, isServerReady]);
 
+    // AUTO-SYNC INVENTORY FOR REGULAR PLAYERS
+    // Admin and test mode users have manual control, regular players get automatic sync
+    useEffect(() => {
+        const isRegularPlayer = !isAdmin || isTestMode;
+
+        if (activeTab === Tab.INVENTORY && isRegularPlayer && isServerReady && userEmail && !isGuest) {
+            console.log('[AUTO-SYNC] Triggering inventory sync for regular player');
+            handleRefreshDatabase();
+        }
+    }, [activeTab, isAdmin, isTestMode, isServerReady, userEmail, isGuest]);
 
     return {
         userEmail, setUserEmail,
@@ -1064,7 +1056,6 @@ export const useGameLogic = () => {
         isNight,
         adminNightOverride, setAdminNightOverride,
         playerHp, handleHpChange,
-        playerMana, handleManaChange,
         playerFuel, handleFuelChange,
         playerGold, handleGoldChange,
         playerArmor, setPlayerArmor,

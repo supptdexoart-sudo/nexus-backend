@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { GameEvent, Stat, PlayerClass } from '../../types';
-import { Box, Heart, Swords, Shield, Zap, Coins, Sparkles, Wind, Trash2, Fuel, Hammer, Scroll, Plus, Clock, ShoppingCart, Recycle, Users, Tags, X, Ban } from 'lucide-react';
+import { Box, Heart, Swords, Shield, Coins, Wind, Trash2, Fuel, Hammer, Scroll, Plus, Clock, ShoppingCart, Recycle, Users, Tags, X, Ban, Settings, Check } from 'lucide-react';
 
 interface ItemPanelProps {
     event: GameEvent;
@@ -10,7 +10,7 @@ interface ItemPanelProps {
 }
 
 const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = [] }) => {
-    
+
     // Local state for adding ingredients
     const [selectedIngredient, setSelectedIngredient] = useState('');
     const [ingredientAmount, setIngredientAmount] = useState(1);
@@ -42,10 +42,10 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
     const updateResourceConfig = (field: string, value: any) => {
         onUpdate({
             resourceConfig: {
-                ...(event.resourceConfig || { 
-                    isResourceContainer: false, 
-                    resourceName: 'Kovový šrot', 
-                    resourceAmount: 1 
+                ...(event.resourceConfig || {
+                    isResourceContainer: false,
+                    resourceName: 'Kovový šrot',
+                    resourceAmount: 1
                 }),
                 [field]: value
             }
@@ -141,204 +141,193 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
         { label: 'HP', icon: Heart, color: 'text-red-500' },
         { label: 'DMG', icon: Swords, color: 'text-orange-500' },
         { label: 'ARMOR', icon: Shield, color: 'text-zinc-200' },
-        { label: 'MANA', icon: Zap, color: 'text-cyan-400' },
         { label: 'PALIVO', icon: Fuel, color: 'text-orange-500' },
         { label: 'ZLATO', icon: Coins, color: 'text-yellow-500' },
         { label: 'KYSLÍK', icon: Wind, color: 'text-cyan-400' },
     ];
 
     return (
-        <div className="space-y-6 bg-zinc-900/50 p-5 border border-zinc-700 relative rounded-xl">
-            <div className="flex items-center gap-2 text-yellow-500 border-b border-zinc-700 pb-3">
-                <Box className="w-5 h-5"/>
-                <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.2em]">Konfigurace_Assetu:</h3>
+        <div className="space-y-6 bg-black border border-white/10 p-6 relative shadow-lg">
+            <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                <Settings className="w-32 h-32 text-white" />
             </div>
 
-            {/* Consumable & Sell Only Checkboxes */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-black border border-zinc-700 rounded-lg overflow-hidden transition-colors hover:border-yellow-500">
-                    <label className="flex items-center gap-4 p-4 cursor-pointer group">
-                        <div className="relative flex items-center justify-center">
-                        <input 
-                            type="checkbox" 
-                            checked={event.isConsumable} 
-                            onChange={(e) => onUpdate({ isConsumable: e.target.checked })} 
-                            className="w-6 h-6 rounded border-zinc-700 bg-zinc-900 text-yellow-500 focus:ring-yellow-500 accent-yellow-500" 
-                        />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className={`text-[11px] font-black uppercase tracking-widest transition-colors ${event.isConsumable ? 'text-yellow-500' : 'text-white'}`}>
-                                Spotřebovatelný
-                            </span>
-                            <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-tight">
-                                Zmizí po použití
-                            </span>
-                        </div>
-                    </label>
+            {/* HEADER */}
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-6">
+                <div className="p-2 bg-arc-cyan/10 border border-arc-cyan/30">
+                    <Box className="w-5 h-5 text-arc-cyan" />
                 </div>
+                <div>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest block mb-0.5">CONFIGURATION_PANEL</span>
+                    <h3 className="text-xl font-display font-black uppercase tracking-wider text-white">Asset Parameters</h3>
+                </div>
+            </div>
 
-                <div className="bg-black border border-zinc-700 rounded-lg overflow-hidden transition-colors hover:border-red-500">
-                    <label className="flex items-center gap-4 p-4 cursor-pointer group">
-                        <div className="relative flex items-center justify-center">
-                        <input 
-                            type="checkbox" 
-                            checked={event.isSellOnly} 
-                            onChange={(e) => onUpdate({ isSellOnly: e.target.checked })} 
-                            className="w-6 h-6 rounded border-zinc-700 bg-zinc-900 text-red-500 focus:ring-red-500 accent-red-500" 
-                        />
+            {/* Consumable & Sell Only Checkboxes - ARC STYLE */}
+            <div className="grid grid-cols-2 gap-4">
+                <label className={`relative group cursor-pointer border p-4 transition-all ${event.isConsumable ? 'bg-arc-yellow/10 border-arc-yellow/50' : 'bg-black border-zinc-800 hover:border-zinc-600'}`}>
+                    <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 border flex items-center justify-center transition-colors ${event.isConsumable ? 'bg-arc-yellow border-arc-yellow text-black' : 'border-zinc-600'}`}>
+                            {event.isConsumable && <Check className="w-4 h-4" />}
                         </div>
                         <div className="flex flex-col">
-                            <span className={`text-[11px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 ${event.isSellOnly ? 'text-red-500' : 'text-white'}`}>
-                                <Ban className="w-3 h-3"/> Jen pro Prodej
-                            </span>
-                            <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-tight">
-                                Nelze použít, jen prodat
-                            </span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${event.isConsumable ? 'text-arc-yellow' : 'text-zinc-400'}`}>CONSUMABLE</span>
+                            <span className="text-[8px] font-mono text-zinc-600 uppercase">One-time use item</span>
                         </div>
-                    </label>
-                </div>
+                    </div>
+                    <input type="checkbox" checked={event.isConsumable} onChange={(e) => onUpdate({ isConsumable: e.target.checked })} className="hidden" />
+                </label>
+
+                <label className={`relative group cursor-pointer border p-4 transition-all ${event.isSellOnly ? 'bg-red-500/10 border-red-500/50' : 'bg-black border-zinc-800 hover:border-zinc-600'}`}>
+                    <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 border flex items-center justify-center transition-colors ${event.isSellOnly ? 'bg-red-500 border-red-500 text-black' : 'border-zinc-600'}`}>
+                            {event.isSellOnly && <Ban className="w-4 h-4" />}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${event.isSellOnly ? 'text-red-500' : 'text-zinc-400'}`}>TRADE_ONLY</span>
+                            <span className="text-[8px] font-mono text-zinc-600 uppercase">No functional utility</span>
+                        </div>
+                    </div>
+                    <input type="checkbox" checked={event.isSellOnly} onChange={(e) => onUpdate({ isSellOnly: e.target.checked })} className="hidden" />
+                </label>
             </div>
 
             {/* PRICE CONFIG */}
-            <div className="bg-black border border-zinc-700 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2 text-yellow-500">
-                    <Coins className="w-4 h-4"/>
-                    <label className="text-[9px] font-bold uppercase tracking-widest">Tržní Hodnota (Cena)</label>
+            <div className="bg-arc-panel/30 border border-white/5 p-4 relative group hover:border-white/10 transition-colors">
+                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-arc-yellow/50"></div>
+                <div className="flex items-center gap-2 mb-3 text-arc-yellow">
+                    <Coins className="w-4 h-4" />
+                    <label className="text-[10px] font-black uppercase tracking-widest">MARKET_VALUE</label>
                 </div>
                 <div className="relative">
-                    <input 
-                        type="number" 
-                        value={event.price || 0} 
-                        onChange={(e) => onUpdate({ price: parseInt(e.target.value) })} 
-                        className="w-full bg-zinc-900 border border-zinc-700 p-3 text-white font-mono text-sm focus:border-yellow-500 outline-none rounded" 
+                    <input
+                        type="number"
+                        value={event.price || 0}
+                        onChange={(e) => onUpdate({ price: parseInt(e.target.value) })}
+                        className="w-full bg-black border border-zinc-800 p-3 text-white font-mono text-lg font-bold outline-none focus:border-arc-yellow transition-all"
                     />
-                    <span className="absolute right-3 top-3 text-[10px] text-zinc-500 font-bold">GOLD</span>
+                    <span className="absolute right-4 top-4 text-[10px] text-zinc-600 font-bold uppercase tracking-widest pointer-events-none">CREDITS</span>
                 </div>
             </div>
 
-            {/* NEW: MARKET & RECYCLING CONFIG */}
-            <div className={`border rounded-lg overflow-hidden transition-all duration-300 ${event.marketConfig?.enabled ? 'bg-indigo-950/20 border-indigo-500/50' : 'bg-black border-zinc-700'}`}>
-                <label className="flex items-center gap-4 p-4 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        checked={event.marketConfig?.enabled || false} 
-                        onChange={(e) => updateMarketConfig('enabled', e.target.checked)} 
-                        className="w-5 h-5 rounded border-zinc-600 bg-zinc-900 text-indigo-500 focus:ring-indigo-500 accent-indigo-500" 
-                    />
-                    <div className="flex flex-col">
-                        <span className={`text-[11px] font-black uppercase tracking-widest flex items-center gap-2 ${event.marketConfig?.enabled ? 'text-indigo-400' : 'text-zinc-400'}`}>
-                            <ShoppingCart className="w-3 h-3" /> Konfigurace Tržiště & Recyklace
-                        </span>
+            {/* MARKET & RECYCLING CONFIG */}
+            <div className={`border p-4 transition-all duration-300 ${event.marketConfig?.enabled ? 'bg-indigo-950/10 border-indigo-500/30' : 'bg-black border-zinc-800'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2">
+                        <ShoppingCart className={`w-4 h-4 ${event.marketConfig?.enabled ? 'text-indigo-400' : 'text-zinc-600'}`} />
+                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.marketConfig?.enabled ? 'text-indigo-400' : 'text-zinc-600'}`}>MARKET_MODULE</h3>
                     </div>
-                </label>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={event.marketConfig?.enabled || false} onChange={(e) => updateMarketConfig('enabled', e.target.checked)} className="sr-only peer" />
+                        <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
 
                 {event.marketConfig?.enabled && (
-                    <div className="p-4 pt-0 space-y-5 animate-in slide-in-from-top-2">
-                        
+                    <div className="space-y-6 pt-2 animate-in fade-in slide-in-from-top-2">
+
                         {/* 1. Market Specifics */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-[8px] text-indigo-300 uppercase font-bold tracking-widest mb-1 block">Override Tržní Ceny (Volitelné)</label>
-                                <input 
-                                    type="number" 
-                                    placeholder="Standardní cena (zleva)"
-                                    value={event.marketConfig.marketPrice || ''} 
-                                    onChange={(e) => updateMarketConfig('marketPrice', e.target.value ? parseInt(e.target.value) : undefined)} 
-                                    className="w-full bg-black border border-indigo-500/30 p-2 text-white text-xs font-mono outline-none focus:border-indigo-500 rounded"
+                                <label className="text-[9px] text-indigo-400/70 uppercase font-bold tracking-widest mb-2 block">Fixed Price Override</label>
+                                <input
+                                    type="number"
+                                    placeholder="DEFAULT"
+                                    value={event.marketConfig.marketPrice || ''}
+                                    onChange={(e) => updateMarketConfig('marketPrice', e.target.value ? parseInt(e.target.value) : undefined)}
+                                    className="w-full bg-black border border-indigo-500/30 p-2 text-white text-xs font-mono outline-none focus:border-indigo-500"
                                 />
                             </div>
                             <div>
-                                <label className="text-[8px] text-indigo-300 uppercase font-bold tracking-widest mb-1 flex items-center gap-1"><Tags className="w-3 h-3"/> Šance na Akci (%)</label>
-                                <input 
-                                    type="range" 
-                                    min="0" max="100"
-                                    value={event.marketConfig.saleChance || 0} 
-                                    onChange={(e) => updateMarketConfig('saleChance', parseInt(e.target.value))} 
-                                    className="w-full h-2 bg-black rounded-lg appearance-none cursor-pointer accent-indigo-500 mb-1"
-                                />
-                                <div className="text-right text-[10px] font-mono text-indigo-400">{event.marketConfig.saleChance || 0}%</div>
+                                <label className="text-[9px] text-indigo-400/70 uppercase font-bold tracking-widest mb-2 flex items-center gap-1"><Tags className="w-3 h-3" /> Sale Chance</label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="range"
+                                        min="0" max="100"
+                                        value={event.marketConfig.saleChance || 0}
+                                        onChange={(e) => updateMarketConfig('saleChance', parseInt(e.target.value))}
+                                        className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                    />
+                                    <span className="text-indigo-400 font-mono text-xs w-8 text-right">{event.marketConfig.saleChance || 0}%</span>
+                                </div>
                             </div>
                         </div>
 
                         {/* 2. Class Modifiers */}
-                        <div className="bg-black/40 p-3 rounded border border-indigo-500/20">
-                            <label className="text-[8px] text-indigo-300 uppercase font-bold tracking-widest mb-2 flex items-center gap-1"><Users className="w-3 h-3"/> Třídní Slevy / Přirážky</label>
-                            
-                            <div className="flex gap-2 mb-2">
-                                <select 
+                        <div className="bg-black/40 p-4 border border-indigo-500/20 relative">
+                            <label className="text-[9px] text-indigo-400 uppercase font-bold tracking-widest mb-3 flex items-center gap-2"><Users className="w-3 h-3" /> Class Adjustments</label>
+
+                            <div className="flex gap-0 mb-4 items-center border border-zinc-700">
+                                <select
                                     value={selectedMarketClass}
                                     onChange={(e) => setSelectedMarketClass(e.target.value as PlayerClass)}
-                                    className="flex-[2] bg-black border border-zinc-600 text-white text-xs font-mono p-1.5 rounded outline-none focus:border-indigo-500"
+                                    className="flex-[2] bg-black text-zinc-300 text-xs font-mono p-2 outline-none border-r border-zinc-700"
                                 >
-                                    <option value="">-- Třída --</option>
+                                    <option value="">-- SELECT CLASS --</option>
                                     {Object.values(PlayerClass).map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
-                                <select 
+                                <select
                                     value={classPriceMultiplier}
                                     onChange={(e) => setClassPriceMultiplier(parseFloat(e.target.value))}
-                                    className="flex-1 bg-black border border-zinc-600 text-white text-xs font-mono p-1.5 rounded outline-none"
+                                    className="flex-1 bg-black text-zinc-300 text-xs font-mono p-2 outline-none border-r border-zinc-700"
                                 >
-                                    <option value={0.5}>-50% (Sleva)</option>
-                                    <option value={0.8}>-20% (Sleva)</option>
-                                    <option value={1.2}>+20% (Dražší)</option>
-                                    <option value={1.5}>+50% (Dražší)</option>
+                                    <option value={0.5}>-50% (SALE)</option>
+                                    <option value={0.8}>-20% (SALE)</option>
+                                    <option value={1.2}>+20% (MARKUP)</option>
+                                    <option value={1.5}>+50% (MARKUP)</option>
                                 </select>
-                                <button type="button" onClick={addClassModifier} className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 rounded">
-                                    <Plus className="w-3 h-3" />
+                                <button type="button" onClick={addClassModifier} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 transition-colors">
+                                    <Plus className="w-4 h-4" />
                                 </button>
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="flex flex-wrap gap-2">
                                 {event.marketConfig.classModifiers?.map((mod, idx) => (
-                                    <div key={idx} className="flex justify-between items-center bg-indigo-900/20 px-2 py-1 rounded text-[10px] text-zinc-300 border border-indigo-500/10">
-                                        <span>{mod.playerClass}</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className={mod.priceMultiplier < 1 ? 'text-green-400' : 'text-red-400'}>
-                                                {mod.priceMultiplier < 1 ? `SLEVA ${Math.round((1-mod.priceMultiplier)*100)}%` : `PŘIRÁŽKA ${Math.round((mod.priceMultiplier-1)*100)}%`}
-                                            </span>
-                                            <button onClick={() => removeClassModifier(idx)} className="text-zinc-500 hover:text-white"><X className="w-3 h-3"/></button>
-                                        </div>
+                                    <div key={idx} className="flex items-center gap-2 bg-indigo-900/20 pl-2 pr-1 py-1 border border-indigo-500/20 text-[10px]">
+                                        <span className="text-indigo-200 font-bold uppercase">{mod.playerClass}</span>
+                                        <span className={`font-mono ${mod.priceMultiplier < 1 ? 'text-green-400' : 'text-red-400'}`}>
+                                            {mod.priceMultiplier < 1 ? `-${Math.round((1 - mod.priceMultiplier) * 100)}%` : `+${Math.round((mod.priceMultiplier - 1) * 100)}%`}
+                                        </span>
+                                        <button onClick={() => removeClassModifier(idx)} className="ml-1 p-0.5 text-zinc-500 hover:text-white"><X className="w-3 h-3" /></button>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* 3. Recycling Configuration */}
-                        <div className="bg-black/40 p-3 rounded border border-orange-500/20">
-                            <label className="text-[8px] text-orange-400 uppercase font-bold tracking-widest mb-2 flex items-center gap-1"><Recycle className="w-3 h-3"/> Výstup Recyklace</label>
-                            
-                            <div className="flex gap-2 mb-2">
-                                <select 
+                        <div className="bg-black/40 p-4 border border-orange-500/20 relative">
+                            <label className="text-[9px] text-orange-400 uppercase font-bold tracking-widest mb-3 flex items-center gap-2"><Recycle className="w-3 h-3" /> Recycling Output</label>
+
+                            <div className="flex gap-0 mb-4 items-center border border-zinc-700">
+                                <select
                                     value={selectedRecycleRes}
                                     onChange={(e) => setSelectedRecycleRes(e.target.value)}
-                                    className="flex-[2] bg-black border border-zinc-600 text-white text-xs font-mono p-1.5 rounded outline-none focus:border-orange-500"
+                                    className="flex-[2] bg-black text-zinc-300 text-xs font-mono p-2 outline-none border-r border-zinc-700"
                                 >
-                                    <option value="">-- Surovina --</option>
+                                    <option value="">-- SELECT RESOURCE --</option>
                                     {availableResources.map(res => (
                                         <option key={res.id} value={res.resourceConfig?.resourceName || res.title}>
                                             {res.resourceConfig?.resourceName || res.title}
                                         </option>
                                     ))}
                                 </select>
-                                <input 
+                                <input
                                     type="number"
                                     value={recycleAmount}
                                     onChange={(e) => setRecycleAmount(parseInt(e.target.value))}
-                                    className="w-12 bg-black border border-zinc-600 text-white text-xs text-center font-mono p-1.5 rounded outline-none focus:border-orange-500"
+                                    className="w-16 bg-black text-zinc-300 text-xs text-center font-mono p-2 outline-none border-r border-zinc-700"
                                 />
-                                <button type="button" onClick={addRecycleOutput} className="bg-orange-600 hover:bg-orange-500 text-white px-2 rounded">
-                                    <Plus className="w-3 h-3" />
+                                <button type="button" onClick={addRecycleOutput} className="bg-orange-600 hover:bg-orange-500 text-white px-3 py-2 transition-colors">
+                                    <Plus className="w-4 h-4" />
                                 </button>
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="flex flex-wrap gap-2">
                                 {event.marketConfig.recyclingOutput?.map((out, idx) => (
-                                    <div key={idx} className="flex justify-between items-center bg-orange-900/20 px-2 py-1 rounded text-[10px] text-zinc-300 border border-orange-500/10">
-                                        <span className="flex items-center gap-1"><Hammer className="w-3 h-3 text-orange-500"/> {out.resourceName}</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono font-bold text-white">x{out.amount}</span>
-                                            <button onClick={() => removeRecycleOutput(idx)} className="text-zinc-500 hover:text-white"><X className="w-3 h-3"/></button>
-                                        </div>
+                                    <div key={idx} className="flex items-center gap-2 bg-orange-900/20 pl-2 pr-1 py-1 border border-orange-500/20 text-[10px]">
+                                        <span className="text-orange-300 font-bold uppercase flex items-center gap-1"><Hammer className="w-3 h-3" /> {out.resourceName}</span>
+                                        <span className="font-mono font-bold text-white">x{out.amount}</span>
+                                        <button onClick={() => removeRecycleOutput(idx)} className="ml-1 p-0.5 text-zinc-500 hover:text-white"><X className="w-3 h-3" /></button>
                                     </div>
                                 ))}
                             </div>
@@ -349,52 +338,49 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
             </div>
 
             {/* Resource Configuration - IS IT A RESOURCE? */}
-            <div className={`border rounded-lg overflow-hidden transition-all duration-300 ${event.resourceConfig?.isResourceContainer ? 'bg-orange-950/20 border-orange-500/50' : 'bg-black border-zinc-700'}`}>
-                <label className="flex items-center gap-4 p-4 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        checked={event.resourceConfig?.isResourceContainer || false} 
-                        onChange={(e) => updateResourceConfig('isResourceContainer', e.target.checked)} 
-                        className="w-5 h-5 rounded border-zinc-600 bg-zinc-900 text-orange-500 focus:ring-orange-500 accent-orange-500" 
-                    />
-                    <div className="flex flex-col">
-                        <span className={`text-[11px] font-black uppercase tracking-widest flex items-center gap-2 ${event.resourceConfig?.isResourceContainer ? 'text-orange-500' : 'text-zinc-400'}`}>
-                            <Hammer className="w-3 h-3" /> Je to Surovina?
-                        </span>
+            <div className={`border p-4 transition-all duration-300 ${event.resourceConfig?.isResourceContainer ? 'bg-orange-950/10 border-orange-500/30' : 'bg-black border-zinc-800'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2">
+                        <Hammer className={`w-4 h-4 ${event.resourceConfig?.isResourceContainer ? 'text-orange-500' : 'text-zinc-600'}`} />
+                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.resourceConfig?.isResourceContainer ? 'text-orange-500' : 'text-zinc-600'}`}>RESOURCE_TYPE</h3>
                     </div>
-                </label>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={event.resourceConfig?.isResourceContainer || false} onChange={(e) => updateResourceConfig('isResourceContainer', e.target.checked)} className="sr-only peer" />
+                        <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-600"></div>
+                    </label>
+                </div>
 
                 {event.resourceConfig?.isResourceContainer && (
-                    <div className="p-4 pt-0 space-y-3 animate-in slide-in-from-top-2">
-                        <div className="grid grid-cols-[2fr_1fr] gap-3">
+                    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2">
+                        <div className="grid grid-cols-[2fr_1fr] gap-4">
                             <div>
-                                <label className="text-[8px] text-orange-400/70 uppercase font-bold tracking-widest mb-1 block">Název Suroviny (ID pro crafting)</label>
-                                <input 
-                                    type="text" 
-                                    value={event.resourceConfig.resourceName || ''} 
-                                    onChange={(e) => updateResourceConfig('resourceName', e.target.value)} 
-                                    className="w-full bg-black border border-orange-500/30 p-2 text-white text-xs font-mono outline-none focus:border-orange-500 rounded"
-                                    placeholder="např. Kovový šrot"
+                                <label className="text-[9px] text-orange-400/70 uppercase font-bold tracking-widest mb-2 block">Resource ID</label>
+                                <input
+                                    type="text"
+                                    value={event.resourceConfig.resourceName || ''}
+                                    onChange={(e) => updateResourceConfig('resourceName', e.target.value)}
+                                    className="w-full bg-black border border-orange-500/30 p-2 text-white text-xs font-mono outline-none focus:border-orange-500"
+                                    placeholder="SCRAP_METAL"
                                 />
                             </div>
                             <div>
-                                <label className="text-[8px] text-orange-400/70 uppercase font-bold tracking-widest mb-1 block">Množství v balíku</label>
-                                <input 
-                                    type="number" 
-                                    value={event.resourceConfig.resourceAmount || 1} 
-                                    onChange={(e) => updateResourceConfig('resourceAmount', parseInt(e.target.value))} 
-                                    className="w-full bg-black border border-orange-500/30 p-2 text-white text-xs font-mono text-center outline-none focus:border-orange-500 rounded"
+                                <label className="text-[9px] text-orange-400/70 uppercase font-bold tracking-widest mb-2 block">Amount</label>
+                                <input
+                                    type="number"
+                                    value={event.resourceConfig.resourceAmount || 1}
+                                    onChange={(e) => updateResourceConfig('resourceAmount', parseInt(e.target.value))}
+                                    className="w-full bg-black border border-orange-500/30 p-2 text-white text-xs font-mono text-center outline-none focus:border-orange-500"
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="text-[8px] text-orange-400/70 uppercase font-bold tracking-widest mb-1 block">Vlastní nápis v Batohu</label>
-                            <input 
-                                type="text" 
-                                value={event.resourceConfig.customLabel || ''} 
-                                onChange={(e) => updateResourceConfig('customLabel', e.target.value)} 
-                                className="w-full bg-black border border-orange-500/30 p-2 text-white text-xs font-mono outline-none focus:border-orange-500 rounded"
-                                placeholder="Výchozí: Surovina k Těžbě"
+                            <label className="text-[9px] text-orange-400/70 uppercase font-bold tracking-widest mb-2 block">Inventory Label</label>
+                            <input
+                                type="text"
+                                value={event.resourceConfig.customLabel || ''}
+                                onChange={(e) => updateResourceConfig('customLabel', e.target.value)}
+                                className="w-full bg-black border border-orange-500/30 p-2 text-white text-xs font-mono outline-none focus:border-orange-500"
+                                placeholder="Raw Material (Default)"
                             />
                         </div>
                     </div>
@@ -402,65 +388,61 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
             </div>
 
             {/* CRAFTING RECIPE CONFIGURATION - IS IT CRAFTABLE? */}
-            <div className={`border rounded-lg overflow-hidden transition-all duration-300 ${event.craftingRecipe?.enabled ? 'bg-cyan-950/20 border-cyan-500/50' : 'bg-black border-zinc-700'}`}>
-                <label className="flex items-center gap-4 p-4 cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        checked={event.craftingRecipe?.enabled || false} 
-                        onChange={(e) => updateCraftingConfig('enabled', e.target.checked)} 
-                        className="w-5 h-5 rounded border-zinc-600 bg-zinc-900 text-cyan-500 focus:ring-cyan-500 accent-cyan-500" 
-                    />
-                    <div className="flex flex-col">
-                        <span className={`text-[11px] font-black uppercase tracking-widest flex items-center gap-2 ${event.craftingRecipe?.enabled ? 'text-cyan-500' : 'text-zinc-400'}`}>
-                            <Scroll className="w-3 h-3" /> Povolit Výrobu (Recept)
-                        </span>
+            <div className={`border p-4 transition-all duration-300 ${event.craftingRecipe?.enabled ? 'bg-teal-950/10 border-teal-500/30' : 'bg-black border-zinc-800'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2">
+                        <Scroll className={`w-4 h-4 ${event.craftingRecipe?.enabled ? 'text-teal-400' : 'text-zinc-600'}`} />
+                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${event.craftingRecipe?.enabled ? 'text-teal-400' : 'text-zinc-600'}`}>BLUEPRINT_MODULE</h3>
                     </div>
-                </label>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={event.craftingRecipe?.enabled || false} onChange={(e) => updateCraftingConfig('enabled', e.target.checked)} className="sr-only peer" />
+                        <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600"></div>
+                    </label>
+                </div>
 
                 {event.craftingRecipe?.enabled && (
-                    <div className="p-4 pt-0 space-y-4 animate-in slide-in-from-top-2">
-                        
+                    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2">
+
                         {/* 1. Global Crafting Time */}
-                        <div className="bg-black/40 p-3 rounded border border-cyan-500/20 flex justify-between items-center">
-                            <div className="flex items-center gap-2 text-cyan-400">
+                        <div className="bg-black/40 p-3 border border-teal-500/20 flex justify-between items-center">
+                            <div className="flex items-center gap-2 text-teal-400">
                                 <Clock className="w-4 h-4" />
-                                <label className="text-[10px] uppercase font-bold tracking-widest">Doba výroby (sekundy)</label>
+                                <label className="text-[9px] uppercase font-bold tracking-widest">PRODUCTION_TIME (SEC)</label>
                             </div>
-                            <input 
-                                type="number" 
-                                value={event.craftingRecipe.craftingTimeSeconds || 60} 
-                                onChange={(e) => updateCraftingConfig('craftingTimeSeconds', parseInt(e.target.value))} 
-                                className="w-20 bg-black border border-cyan-500/30 p-2 text-white text-xs font-mono text-center outline-none focus:border-cyan-500 rounded"
+                            <input
+                                type="number"
+                                value={event.craftingRecipe.craftingTimeSeconds || 60}
+                                onChange={(e) => updateCraftingConfig('craftingTimeSeconds', parseInt(e.target.value))}
+                                className="w-20 bg-black border border-teal-500/30 p-1 text-white text-xs font-mono text-center outline-none focus:border-teal-500"
                             />
                         </div>
 
                         {/* 2. Add Ingredient Form */}
-                        <div className="p-3 bg-zinc-900/50 rounded border border-zinc-700">
-                            <label className="text-[8px] text-zinc-400 uppercase font-bold tracking-widest block mb-2">Přidat Ingredienci</label>
-                            <div className="flex gap-2">
-                                <select 
+                        <div className="p-3 bg-zinc-900/30 border border-zinc-700">
+                            <label className="text-[9px] text-zinc-500 uppercase font-black tracking-widest block mb-2">ADD COMPONENT</label>
+                            <div className="flex gap-0 mb-4 items-center border border-zinc-700">
+                                <select
                                     value={selectedIngredient}
                                     onChange={(e) => setSelectedIngredient(e.target.value)}
-                                    className="flex-[2] bg-black border border-zinc-600 text-white text-xs font-mono p-2 rounded outline-none focus:border-cyan-500"
+                                    className="flex-[2] bg-black text-zinc-300 text-xs font-mono p-2 outline-none border-r border-zinc-700"
                                 >
-                                    <option value="">-- Vyberte Surovinu --</option>
+                                    <option value="">-- SELECT --</option>
                                     {availableResources.map(res => (
                                         <option key={res.id} value={res.resourceConfig?.resourceName || res.title}>
-                                            {res.resourceConfig?.resourceName || res.title} ({res.id})
+                                            {res.resourceConfig?.resourceName || res.title}
                                         </option>
                                     ))}
                                 </select>
-                                <input 
+                                <input
                                     type="number"
-                                    placeholder="Ks"
                                     value={ingredientAmount}
                                     onChange={(e) => setIngredientAmount(parseInt(e.target.value))}
-                                    className="w-14 bg-black border border-zinc-600 text-white text-xs text-center font-mono p-2 rounded outline-none focus:border-cyan-500"
+                                    className="w-16 bg-black text-zinc-300 text-xs text-center font-mono p-2 outline-none border-r border-zinc-700"
                                 />
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={addIngredient}
-                                    className="bg-cyan-600 hover:bg-cyan-500 text-white px-3 rounded flex items-center justify-center"
+                                    className="bg-teal-600 hover:bg-teal-500 text-white px-3 py-2 transition-colors"
                                 >
                                     <Plus className="w-4 h-4" />
                                 </button>
@@ -469,28 +451,25 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
 
                         {/* 3. Ingredients List Table */}
                         <div className="space-y-2">
-                            <label className="text-[8px] text-cyan-400/70 uppercase font-bold tracking-widest block">Seznam Požadovaných Surovin:</label>
-                            
                             {event.craftingRecipe.requiredResources?.length === 0 && (
-                                <p className="text-[10px] text-zinc-600 italic text-center py-2">Žádné suroviny. Předmět půjde vyrobit zdarma.</p>
+                                <p className="text-[10px] text-zinc-600 italic text-center py-2 uppercase">NO COMPONENTS REQUIRED</p>
                             )}
-
                             {event.craftingRecipe.requiredResources?.map((ing, idx) => (
-                                <div key={idx} className="flex gap-2 items-center bg-black p-2 border border-cyan-500/20 rounded hover:border-cyan-500/50 transition-colors">
+                                <div key={idx} className="flex gap-4 items-center bg-black p-2 border border-teal-500/20 hover:border-teal-500/50 transition-colors">
                                     <div className="flex-1">
-                                        <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wide">Surovina</span>
+                                        <span className="text-[8px] font-bold text-zinc-500 block uppercase tracking-widest">COMPONENT</span>
                                         <span className="text-xs text-white font-mono">{ing.resourceName}</span>
                                     </div>
                                     <div className="px-3 border-l border-zinc-800">
-                                        <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wide">Množství</span>
-                                        <span className="text-xs text-cyan-400 font-mono font-bold">x{ing.amount}</span>
+                                        <span className="text-[8px] font-bold text-zinc-500 block uppercase tracking-widest">QTY</span>
+                                        <span className="text-xs text-teal-400 font-mono font-bold">x{ing.amount}</span>
                                     </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => removeIngredient(idx)} 
-                                        className="text-red-500 hover:text-red-400 p-2 ml-2"
+                                    <button
+                                        type="button"
+                                        onClick={() => removeIngredient(idx)}
+                                        className="text-zinc-600 hover:text-red-500 transition-colors p-2"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-3 h-3" />
                                     </button>
                                 </div>
                             ))}
@@ -500,59 +479,45 @@ const ItemPanel: React.FC<ItemPanelProps> = ({ event, onUpdate, masterCatalog = 
             </div>
 
             {/* STATS CONFIG */}
-            <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <label className="text-[8px] text-zinc-400 uppercase font-bold tracking-widest">Aktivní_stats na kartě:</label>
-                </div>
+            <div className="bg-arc-panel/30 border border-white/5 p-4">
+                <label className="text-[9px] text-zinc-400 uppercase font-black tracking-widest mb-4 block">ACTIVE_MODIFIERS</label>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
                     {quickOptions.map(opt => (
-                        <button 
-                        key={opt.label} 
-                        type="button" 
-                        onClick={() => addQuickStat(opt.label)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 border border-zinc-700 hover:border-yellow-500 transition-all active:scale-95 bg-black rounded`}
+                        <button
+                            key={opt.label}
+                            type="button"
+                            onClick={() => addQuickStat(opt.label)}
+                            className={`flex items-center gap-1.5 px-2 py-1 border border-zinc-800 hover:border-white bg-black transition-all active:scale-95`}
                         >
                             <opt.icon className={`w-3 h-3 ${opt.color}`} />
-                            <span className={`text-[9px] font-bold uppercase tracking-tighter text-zinc-200`}>{opt.label}</span>
+                            <span className={`text-[9px] font-bold uppercase tracking-wider text-zinc-400 group-hover:text-white`}>{opt.label}</span>
                         </button>
                     ))}
                 </div>
 
-                <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar pr-1">
+                <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
                     {event.stats?.map((stat, idx) => {
-                        const labelUpper = stat.label.toUpperCase();
-                        const foundOption = quickOptions.find(o => 
-                            labelUpper.includes(o.label) || 
-                            (o.label === 'ARMOR' && labelUpper.includes('ARMOR')) ||
-                            (o.label === 'KYSLÍK' && labelUpper.includes('OXYGEN')) ||
-                            (o.label === 'HP' && (labelUpper.includes('HEALTH') || labelUpper.includes('ŽIVOT'))) ||
-                            (o.label === 'PALIVO' && (labelUpper.includes('FUEL') || labelUpper.includes('PALIVO')))
-                        );
-
                         return (
-                            <div key={idx} className="flex gap-2 items-center bg-black p-2 border border-zinc-700 rounded animate-in slide-in-from-left-2 duration-200">
-                                <div className={`p-2 border border-zinc-800 bg-zinc-900 rounded`}>
-                                    {foundOption ? <foundOption.icon className={`w-4 h-4 ${foundOption.color}`} /> : <Sparkles className="w-4 h-4 text-zinc-400" />}
-                                </div>
-                                <input 
-                                value={stat.label} 
-                                onChange={(e) => updateStat(idx, 'label', e.target.value)} 
-                                className="w-24 bg-zinc-900 border border-zinc-700 p-2 text-[10px] font-bold text-white placeholder-zinc-600 outline-none uppercase font-mono rounded focus:border-yellow-500" 
-                                placeholder="TAG" 
+                            <div key={idx} className="flex gap-0 items-stretch bg-black border border-zinc-800 hover:border-zinc-600 transition-colors">
+                                <input
+                                    value={stat.label}
+                                    onChange={(e) => updateStat(idx, 'label', e.target.value)}
+                                    className="w-24 bg-transparent border-r border-zinc-800 p-2 text-[10px] font-bold text-zinc-400 placeholder-zinc-700 outline-none uppercase font-mono focus:text-white focus:bg-white/5 transition-colors"
+                                    placeholder="TAG"
                                 />
-                                <input 
-                                value={stat.value} 
-                                onChange={(e) => updateStat(idx, 'value', e.target.value)} 
-                                className="flex-1 bg-zinc-900 border border-zinc-700 px-3 py-2 text-xs text-white font-mono placeholder-zinc-600 focus:border-yellow-500 outline-none rounded" 
-                                placeholder="HODNOTA (+/-)" 
+                                <input
+                                    value={stat.value}
+                                    onChange={(e) => updateStat(idx, 'value', e.target.value)}
+                                    className="flex-1 bg-transparent px-3 py-2 text-xs text-white font-mono placeholder-zinc-700 outline-none focus:bg-white/5 transition-colors"
+                                    placeholder="VALUE"
                                 />
-                                <button 
-                                    type="button" 
-                                    onClick={() => removeStat(idx)} 
-                                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                                <button
+                                    type="button"
+                                    onClick={() => removeStat(idx)}
+                                    className="px-3 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 transition-colors border-l border-zinc-800"
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash2 className="w-3 h-3" />
                                 </button>
                             </div>
                         );

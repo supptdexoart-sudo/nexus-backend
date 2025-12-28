@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
     rel="stylesheet">
 
   <script>
@@ -27,20 +27,26 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Outfit', 'sans-serif'],
+            sans: ['Rajdhani', 'sans-serif'],
+            display: ['Oswald', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
+            arc: {
+              black: '#0A0A0A',
+              yellow: '#F9D423',
+              cyan: '#00F2FF',
+              panel: 'rgba(10, 10, 10, 0.95)',
+              border: 'rgba(255, 255, 255, 0.15)'
+            },
             signal: {
               amber: '#ff9d00',
               cyan: '#00f2ff',
               hazard: '#ff3c3c',
-            },
-            hud: {
-              bg: '#0a0b0d',
-              glass: 'rgba(20, 22, 25, 0.85)',
-              border: 'rgba(255, 255, 255, 0.1)'
             }
+          },
+          backgroundImage: {
+            'arc-gradient': 'linear-gradient(135deg, rgba(20,20,20,0.95) 0%, rgba(10,10,10,0.98) 100%)',
           }
         }
       }
@@ -48,22 +54,22 @@
   </script>
   <style>
     :root {
-      --bg: #0a0b0d;
-      --signal-amber: #ff9d00;
-      --signal-cyan: #00f2ff;
-      --hazard-red: #ff3c3c;
-      --glass: rgba(20, 22, 25, 0.85);
-      --border-muted: rgba(255, 255, 255, 0.1);
+      --bg: #0A0A0A;
+      --arc-yellow: #F9D423;
+      --arc-cyan: #00F2FF;
+      --arc-panel: rgba(10, 10, 10, 0.95);
+      --border-muted: rgba(255, 255, 255, 0.15);
     }
 
     body {
       background-color: var(--bg);
-      color: #fff;
+      color: #e0e0e0;
       overflow: hidden;
       overscroll-behavior: none;
       touch-action: none;
       -webkit-tap-highlight-color: transparent;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Rajdhani', sans-serif;
+      letter-spacing: 0.02em;
     }
 
     .noise-overlay {
@@ -71,10 +77,8 @@
       inset: 0;
       z-index: 9999;
       pointer-events: none;
-      opacity: 0.04;
-      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-      will-change: transform;
-      transform: translateZ(0);
+      opacity: 0.06;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
     }
 
     .scanlines {
@@ -82,102 +86,74 @@
       inset: 0;
       z-index: 9998;
       pointer-events: none;
-      background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.15) 50%);
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
       background-size: 100% 4px;
-      will-change: transform;
-      transform: translateZ(0);
     }
 
     .screen-fringe {
       position: fixed;
       inset: 0;
-      box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.9);
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
       z-index: 9997;
       pointer-events: none;
     }
 
-    .chromatic-text {
-      text-shadow:
-        -1.5px 0px 0px rgba(255, 0, 0, 0.5),
-        1.5px 0px 0px rgba(0, 255, 255, 0.5);
-    }
-
     .button-primary {
-      background: var(--signal-amber);
+      background: var(--arc-yellow);
       color: #000;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 800;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
       text-transform: uppercase;
-      padding: 18px;
+      padding: 16px;
       text-align: center;
-      clip-path: polygon(0 0, 92% 0, 100% 30%, 100% 100%, 8% 100%, 0 70%);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
       letter-spacing: 2px;
       cursor: pointer;
-      transition: transform 0.1s, filter 0.2s;
+      transition: all 0.2s;
+      border: 1px solid var(--arc-yellow);
       display: block;
       width: 100%;
     }
+    
+    .button-primary:hover {
+        background: #000;
+        color: var(--arc-yellow);
+    }
+    
+    .button-primary:active {
+        transform: scale(0.98);
+    }
 
-    .tactical-card {
-      background: var(--glass);
+    /* ARC Specific Utilities */
+    .arc-border {
+        border: 1px solid var(--border-muted);
+    }
+
+    .arc-card {
+      background: var(--arc-panel);
       border: 1px solid var(--border-muted);
-      padding: 16px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .corner-accent {
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      border: 2px solid var(--signal-cyan);
-    }
-
-    .top-left {
-      top: 8px;
-      left: 8px;
-      border-right: 0;
-      border-bottom: 0;
-    }
-
-    .bottom-right {
-      bottom: 8px;
-      right: 8px;
-      border-left: 0;
-      border-top: 0;
-    }
-
-    .battery-meter {
-      width: 45px;
-      height: 5px;
-      background: rgba(255, 255, 255, 0.1);
-      margin-top: 5px;
       position: relative;
     }
 
-    .battery-meter::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: 80%;
-      background: var(--signal-amber);
-      box-shadow: 0 0 12px var(--signal-amber);
+    input, select, textarea {
+        font-family: 'Rajdhani', sans-serif;
     }
 
     ::-webkit-scrollbar {
-      width: 4px;
+      width: 6px;
     }
 
     ::-webkit-scrollbar-track {
-      background: transparent;
+      background: #000;
     }
 
     ::-webkit-scrollbar-thumb {
-      background: var(--signal-cyan);
-      opacity: 0.3;
-      border-radius: 2px;
+      background: #333;
+      border: 1px solid #000;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--arc-yellow);
     }
 
     * {

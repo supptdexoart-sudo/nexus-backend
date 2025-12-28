@@ -56,32 +56,24 @@ export const CombatCard: React.FC<CombatCardProps> = ({
 
     // --- COMBAT PERKS ---
     const getCombatPerks = () => {
-        if (!activeCharacter?.perks) return { flatDamage: 0, percentDamage: 0, critBonus: 0, armorBonus: 0 };
+        if (!activeCharacter?.perks) return { flatDamage: 0, armorBonus: 0 };
 
         let flatDamage = 0;
-        let percentDamage = 0;
-        let critBonus = 0;
         let armorBonus = 0;
 
         activeCharacter.perks.forEach((perk: any) => {
             if (perk.effect.condition === 'combat') {
                 const stat = perk.effect.stat;
                 const modifier = perk.effect.modifier;
-                const isPercentage = perk.effect.isPercentage;
 
                 if (stat === 'damage') {
-                    if (isPercentage) {
-                        percentDamage += modifier;
-                    } else {
-                        flatDamage += modifier;
-                    }
+                    flatDamage += modifier;
                 }
-                if (stat === 'critChance') critBonus += modifier;
                 if (stat === 'armor') armorBonus += modifier;
             }
         });
 
-        return { flatDamage, percentDamage, critBonus, armorBonus };
+        return { flatDamage, armorBonus };
     };
 
     const combatPerks = getCombatPerks();
@@ -98,6 +90,14 @@ export const CombatCard: React.FC<CombatCardProps> = ({
     useEffect(() => {
         logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [combatLog]);
+
+    // Apply armor bonus at combat start
+    useEffect(() => {
+        if (combatPerks.armorBonus > 0 && onArmorChange) {
+            onArmorChange(combatPerks.armorBonus);
+            setCombatLog(prev => [...prev, `🛡️ ARMOR BONUS: +${combatPerks.armorBonus} z combat perků`]);
+        }
+    }, []); // Empty dependency array - run only once at mount
 
     // --- CALCULATIONS ---
     const getFleeChance = () => {
@@ -225,12 +225,6 @@ export const CombatCard: React.FC<CombatCardProps> = ({
         // Apply flat combat perks
         let playerDmg = baseDamage + combatPerks.flatDamage;
 
-        // Apply percentage combat perks (from base damage)
-        if (combatPerks.percentDamage > 0) {
-            const percentBonus = Math.floor((baseDamage * combatPerks.percentDamage) / 100);
-            playerDmg += percentBonus;
-        }
-
         // Apply crit multiplier AFTER all bonuses
         if (isCrit) playerDmg *= 2;
         if (isMiss) playerDmg = 0;
@@ -357,39 +351,47 @@ export const CombatCard: React.FC<CombatCardProps> = ({
     if (isVictory) {
         const rewards = getLootStats();
         return (
-            <div className="flex flex-col items-center justify-center p-6 space-y-6 animate-in zoom-in duration-500 text-center">
-                <Trophy className="w-24 h-24 text-yellow-500 animate-bounce drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]" />
-                <div className="space-y-2">
-                    <h2 className="text-3xl font-display font-black text-yellow-500 uppercase tracking-widest">VÍTĚZSTVÍ</h2>
-                    <p className="text-zinc-400 font-mono text-xs uppercase tracking-widest">Nepřítel poražen. Kořist dostupná.</p>
+            <div className="flex flex-col items-center justify-center p-6 space-y-6 animate-in zoom-in duration-500 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-arc-yellow/5 animate-pulse"></div>
+
+                <Trophy className="w-24 h-24 text-arc-yellow drop-shadow-[0_0_20px_rgba(249,212,35,0.6)]" strokeWidth={1} />
+                <div className="space-y-2 relative z-10">
+                    <h2 className="text-4xl font-display font-black text-arc-yellow uppercase tracking-tighter">CÍL ELIMINOVÁN</h2>
+                    <p className="text-zinc-500 font-mono text-xs uppercase tracking-[0.3em]">Hrozba neutralizována // Sektor zajištěn</p>
                 </div>
 
-                <div className="w-full bg-zinc-900/80 border border-yellow-500/30 rounded-xl p-4 space-y-3">
-                    <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em] border-b border-zinc-800 pb-2 mb-2">Nalezené Suroviny & Data</h3>
+                <div className="w-full bg-black/80 border border-arc-yellow/30 p-1 space-y-1 relative z-10">
+                    <div className="bg-arc-yellow/10 p-2 flex items-center justify-between border-b border-arc-yellow/10">
+                        <span className="text-[10px] font-black uppercase text-arc-yellow tracking-[0.2em]">Data Scan Result</span>
+                        <span className="text-[9px] font-mono text-zinc-500">Hash: {event.id.slice(-6)}</span>
+                    </div>
                     {rewards.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-1 p-2">
                             {rewards.map((stat, idx) => (
-                                <div key={idx} className="bg-black p-2 rounded border border-zinc-800 flex items-center justify-between">
-                                    <span className="text-[9px] font-bold text-zinc-400 uppercase">{stat.label}</span>
-                                    <span className="text-sm font-mono font-black text-yellow-500">{stat.value}</span>
+                                <div key={idx} className="bg-arc-panel p-3 border border-white/5 flex items-center justify-between group hover:border-arc-yellow/30 transition-colors">
+                                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{stat.label}</span>
+                                    <span className="text-base font-mono font-bold text-arc-yellow">{stat.value}</span>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <p className="text-xs text-zinc-600 italic">Žádná kořist nalezena.</p>
+                        <p className="text-xs text-zinc-600 font-mono p-4">/// Žádná využitelná data nenalezena ///</p>
                     )}
                 </div>
 
                 <button
                     onClick={handleClaimClick}
                     disabled={isLootClaimed}
-                    className={`w-full py-4 font-black uppercase text-sm tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all ${isLootClaimed ? 'bg-green-600 text-white' : 'bg-yellow-500 hover:bg-yellow-400 text-black active:scale-95'}`}
+                    className={`w-full py-5 font-black uppercase text-sm tracking-[0.2em] relative group overflow-hidden transition-all ${isLootClaimed ? 'bg-green-600 text-white' : 'bg-arc-yellow hover:bg-white hover:text-black text-black'}`}
+                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% 85%, 95% 100%, 5% 100%, 0 85%)' }}
                 >
-                    {isLootClaimed ? (
-                        <><Check className="w-5 h-5" /> VYZVEDNUTO</>
-                    ) : (
-                        <><Package className="w-5 h-5" /> VYZVEDNOUT KOŘIST</>
-                    )}
+                    <div className="relative z-10 flex items-center justify-center gap-3">
+                        {isLootClaimed ? (
+                            <><Check className="w-5 h-5" /> DATA ULOŽENA</>
+                        ) : (
+                            <><Package className="w-5 h-5" /> VYZVEDNOUT KOŘIST</>
+                        )}
+                    </div>
                 </button>
             </div>
         );
@@ -397,44 +399,45 @@ export const CombatCard: React.FC<CombatCardProps> = ({
 
     // --- COMBAT UI ---
     return (
-        <div className="space-y-4">
+        <div className="space-y-1">
             {/* --- HP BARS --- */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 h-20">
                 {/* PLAYER STATUS */}
-                <div className="flex-1 p-3 bg-zinc-900/50 border border-zinc-700 rounded-xl flex flex-col justify-end relative">
-                    <div className="flex justify-between items-end mb-1 relative z-10">
-                        <span className="text-[8px] font-black uppercase text-zinc-500 tracking-widest flex items-center gap-1">
+                <div className="flex-1 p-3 bg-arc-panel border-l-2 border-l-arc-cyan border-y border-r border-white/5 flex flex-col justify-end relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-1">
+                        <span className="text-[7px] font-black uppercase text-zinc-600 tracking-widest">SYS.OVR</span>
+                    </div>
+
+                    <div className="flex justify-between items-end mb-2 relative z-10">
+                        <span className="text-[10px] font-display font-bold uppercase text-arc-cyan tracking-widest flex items-center gap-1 shadow-[0_0_10px_rgba(0,242,255,0.2)]">
                             TY
                         </span>
                         <div className="text-right">
                             {playerArmor > 0 && (
                                 <div className="flex items-center justify-end gap-1 text-zinc-400 mb-0.5">
-                                    <Shield className="w-3 h-3" />
-                                    <span className="text-[9px] font-mono font-bold">{playerArmor}</span>
+                                    <span className="text-[9px] font-mono">{playerArmor} ARM</span>
                                 </div>
                             )}
                             <div className="flex items-center justify-end gap-1 text-red-500">
-                                <Heart className="w-3 h-3 fill-current" />
-                                <span className="text-[10px] font-mono font-bold">{playerHp} HP</span>
+                                <span className="text-base font-mono font-black tracking-tighter">{playerHp}</span>
+                                <span className="text-[8px] font-bold">HP</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        {/* Armor Bar */}
+                        {/* Armor Bar - Segmented style */}
                         {playerArmor > 0 && (
-                            <div className="h-1 bg-black rounded-full overflow-hidden border border-zinc-700">
-                                <motion.div
-                                    className="h-full bg-zinc-400"
-                                    initial={{ width: "100%" }}
-                                    animate={{ width: `${Math.min(100, playerArmor)}%` }}
-                                />
+                            <div className="h-1 w-full bg-black/50 flex gap-[1px]">
+                                {[...Array(10)].map((_, i) => (
+                                    <div key={i} className={`h-full flex-1 ${i < (playerArmor / 5) ? 'bg-zinc-400' : 'bg-zinc-900'}`} />
+                                ))}
                             </div>
                         )}
                         {/* HP Bar */}
-                        <div className="h-1.5 bg-black rounded-full overflow-hidden border border-red-900/50">
+                        <div className="h-1.5 w-full bg-black/50 relative overflow-hidden">
                             <motion.div
-                                className="h-full bg-red-600"
+                                className="h-full bg-red-600 shadow-[0_0_8px_red]"
                                 initial={{ width: "100%" }}
                                 animate={{ width: `${Math.min(100, playerHp)}%` }}
                             />
@@ -443,14 +446,18 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                 </div>
 
                 {/* ENEMY STATUS */}
-                <div className="flex-1 p-3 bg-red-950/30 border border-red-500/30 rounded-xl">
-                    <div className="flex justify-between items-center mb-1">
-                        <span className="text-[8px] font-black uppercase text-red-400 tracking-widest flex items-center gap-1">
-                            <Skull className="w-3 h-3" /> Nepřítel
-                        </span>
-                        <span className="text-[10px] font-mono font-bold text-white">{enemyCurrentHp} HP</span>
+                <div className="flex-1 p-3 bg-red-950/10 border-r-2 border-r-red-500/50 border-y border-l border-white/5 flex flex-col justify-end relative overflow-hidden">
+                    <div className="absolute top-0 left-0 p-1">
+                        <span className="text-[7px] font-black uppercase text-red-900/50 tracking-widest">HOSTILE</span>
                     </div>
-                    <div className="h-1.5 bg-black rounded-full overflow-hidden border border-red-900/50 mt-auto">
+
+                    <div className="flex justify-between items-end mb-2">
+                        <span className="text-[10px] font-display font-bold uppercase text-red-500 tracking-widest flex items-center gap-1 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                            <Skull className="w-3 h-3" /> CÍL
+                        </span>
+                        <span className="text-base font-mono font-black text-white tracking-tighter">{enemyCurrentHp} <span className="text-[8px] font-bold text-zinc-500">HP</span></span>
+                    </div>
+                    <div className="h-1.5 w-full bg-black/50 relative overflow-hidden">
                         <motion.div
                             className="h-full bg-red-600"
                             initial={{ width: "100%" }}
@@ -461,57 +468,65 @@ export const CombatCard: React.FC<CombatCardProps> = ({
             </div>
 
             {/* --- ENEMY STATS --- */}
-            <div className="grid grid-cols-2 gap-2">
-                <div className="bg-black/40 border border-zinc-800 p-2 rounded flex justify-between items-center">
-                    <span className="text-[9px] text-zinc-500 uppercase font-bold">Enemy Útok (ATK)</span>
-                    <span className="text-sm font-black text-orange-500">{atk}</span>
+            <div className="grid grid-cols-2 gap-1 my-2">
+                <div className="bg-black/40 border border-white/5 p-2 flex justify-between items-center group">
+                    <span className="text-[8px] text-zinc-600 uppercase font-black tracking-widest group-hover:text-zinc-400 transition-colors">ATK POWER</span>
+                    <span className="text-sm font-mono font-black text-orange-500">{atk}</span>
                 </div>
-                <div className="bg-black/40 border border-zinc-800 p-2 rounded flex justify-between items-center relative overflow-hidden">
-                    <span className="text-[9px] text-zinc-500 uppercase font-bold">Enemy Obrana (DEF)</span>
-                    <span className={`text-sm font-black text-blue-400 ${hasWeakness ? 'pr-6' : ''}`}>{def}</span>
-                    {/* Weakness Indicator */}
+                <div className="bg-black/40 border border-white/5 p-2 flex justify-between items-center relative overflow-hidden group">
+                    <span className="text-[8px] text-zinc-600 uppercase font-black tracking-widest group-hover:text-zinc-400 transition-colors">DEFENSE</span>
+                    <span className={`text-sm font-mono font-black text-blue-400 ${hasWeakness ? 'pr-6' : ''}`}>{def}</span>
                     {hasWeakness && (
-                        <div className="absolute right-0 top-0 bottom-0 bg-green-900/50 w-6 flex items-center justify-center border-l border-green-500/50" title={`Weakness: ${event.combatConfig?.defBreakChance}%`}>
+                        <div className="absolute right-0 top-0 bottom-0 bg-green-500/10 w-6 flex items-center justify-center border-l border-green-500/20">
                             <Crosshair className="w-3 h-3 text-green-500 animate-pulse" />
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* --- COMBAT PERKS DISPLAY --- */}
-            {(combatPerks.flatDamage > 0 || combatPerks.percentDamage > 0 || combatPerks.critBonus > 0 || combatPerks.armorBonus > 0) && (
-                <div className="bg-green-950/20 border border-green-500/30 p-2 rounded-xl">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Swords className="w-3 h-3 text-green-500" />
-                        <span className="text-[8px] font-black uppercase text-green-400 tracking-widest">Bojové Perky Aktivní</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                        {combatPerks.flatDamage > 0 && (
-                            <span className="text-[9px] bg-green-900/50 border border-green-500/30 px-2 py-0.5 rounded text-green-300 font-mono">
-                                +{combatPerks.flatDamage} DMG
-                            </span>
-                        )}
-                        {combatPerks.percentDamage > 0 && (
-                            <span className="text-[9px] bg-green-900/50 border border-green-500/30 px-2 py-0.5 rounded text-green-300 font-mono">
-                                +{combatPerks.percentDamage}% DMG
-                            </span>
-                        )}
-                        {combatPerks.critBonus > 0 && (
-                            <span className="text-[9px] bg-yellow-900/50 border border-yellow-500/30 px-2 py-0.5 rounded text-yellow-300 font-mono">
-                                +{combatPerks.critBonus}% CRIT
-                            </span>
-                        )}
-                        {combatPerks.armorBonus > 0 && (
-                            <span className="text-[9px] bg-zinc-700/50 border border-zinc-500/30 px-2 py-0.5 rounded text-zinc-300 font-mono">
-                                +{combatPerks.armorBonus} ARMOR
-                            </span>
-                        )}
-                    </div>
+            {/* --- PERKS --- */}
+            {(combatPerks.flatDamage > 0 || combatPerks.armorBonus > 0) && (
+                <div className="flex items-center gap-2 px-2 py-1 bg-green-500/5 border-l-2 border-green-500/50">
+                    <Swords className="w-3 h-3 text-green-500" />
+                    <span className="text-[8px] font-black uppercase text-green-500 tracking-widest mr-2">ACTIVE PERKS</span>
+                    {combatPerks.flatDamage > 0 && <span className="text-[9px] text-green-300 font-mono">+{combatPerks.flatDamage}DMG</span>}
+                    {combatPerks.armorBonus > 0 && <span className="text-[9px] text-zinc-400 font-mono">+{combatPerks.armorBonus}ARM</span>}
                 </div>
             )}
 
-            {/* --- MAIN COMBAT AREA --- */}
-            <div className="bg-black border border-white/10 rounded-xl p-4 relative overflow-hidden">
+            {/* --- MAIN COMBAT AREA (TERMINAL) --- */}
+            <div className="bg-black border border-white/10 p-0 relative overflow-hidden min-h-[220px] flex flex-col">
+                {/* TERMINAL HEADER */}
+                <div className="h-6 bg-white/5 border-b border-white/5 flex items-center px-2 justify-between">
+                    <span className="text-[8px] font-mono text-zinc-600">trm_link_v9.0</span>
+                    <div className="flex gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-800"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-800"></div>
+                    </div>
+                </div>
+
+                {/* DICE ANIMATION */}
+                <AnimatePresence>
+                    {isRolling && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 z-20 bg-black/90 flex flex-col items-center justify-center gap-2 backdrop-blur-sm"
+                        >
+                            <div className="flex gap-4">
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }}>
+                                    <Dice5 className="w-8 h-8 text-white/50" />
+                                </motion.div>
+                            </div>
+                            <span className="text-4xl font-display font-black text-white tracking-widest animate-pulse">
+                                {diceValues ? `${diceValues[0] + diceValues[1]}` : '...'}
+                            </span>
+                            <span className="text-[9px] font-mono text-arc-yellow uppercase">Calculating trajectory...</span>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* MANUAL INPUT OVERLAY */}
                 <AnimatePresence>
                     {showManualInput && (
@@ -519,172 +534,155 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute inset-0 z-30 bg-black flex flex-col items-center justify-center p-4 space-y-3"
+                            className="absolute inset-0 z-30 bg-black/95 flex flex-col items-center justify-center p-6 space-y-4"
                         >
-                            <h4 className="text-xs font-black text-white uppercase tracking-widest">Zadejte součet 2 kostek</h4>
-                            <input
-                                type="number"
-                                autoFocus
-                                value={manualRollValue}
-                                onChange={(e) => setManualRollValue(e.target.value)}
-                                placeholder="2-12"
-                                className="w-24 bg-zinc-900 border border-zinc-700 p-3 text-center text-xl font-bold text-white rounded-xl outline-none focus:border-signal-cyan"
-                            />
-                            <div className="flex gap-2 w-full">
-                                <button onClick={() => setShowManualInput(false)} className="flex-1 py-3 bg-zinc-800 text-zinc-400 font-bold text-[10px] uppercase rounded-lg">Zrušit</button>
-                                <button onClick={handleManualSubmit} className="flex-1 py-3 bg-green-600 text-white font-bold text-[10px] uppercase rounded-lg">Potvrdit</button>
+                            <h4 className="text-xs font-black text-arc-yellow uppercase tracking-widest">Manual Override</h4>
+                            <div className="flex items-center gap-2">
+                                <span className="text-zinc-500 font-mono">[</span>
+                                <input
+                                    type="number"
+                                    autoFocus
+                                    value={manualRollValue}
+                                    onChange={(e) => setManualRollValue(e.target.value)}
+                                    placeholder="00"
+                                    className="w-20 bg-transparent border-b-2 border-arc-yellow text-center text-3xl font-mono text-white outline-none placeholder:text-zinc-800"
+                                />
+                                <span className="text-zinc-500 font-mono">]</span>
                             </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* DICE ANIMATION */}
-                <AnimatePresence>
-                    {isRolling && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.5 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 1.5 }}
-                            className="absolute inset-0 z-20 bg-black/80 flex items-center justify-center gap-4"
-                        >
-                            <div className="text-center">
-                                <div className="flex gap-2 justify-center mb-2">
-                                    <Dice5 className="w-12 h-12 text-white animate-spin" />
-                                    <Dice5 className="w-12 h-12 text-white animate-spin" style={{ animationDirection: 'reverse' }} />
-                                </div>
-                                <span className="text-2xl font-black text-white font-mono tracking-widest">
-                                    {diceValues ? `${diceValues[0]} + ${diceValues[1]}` : '? + ?'}
-                                </span>
+                            <div className="flex gap-2 w-full pt-2">
+                                <button onClick={() => setShowManualInput(false)} className="flex-1 py-3 text-zinc-500 hover:text-white font-mono text-[10px] uppercase transition-colors">Abort</button>
+                                <button onClick={handleManualSubmit} className="flex-1 py-3 bg-arc-yellow text-black font-black text-[10px] uppercase tracking-widest hover:bg-white transition-colors">Execute</button>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 {/* LOG */}
-                <div className="h-24 overflow-y-auto no-scrollbar space-y-1 font-mono text-[9px] text-zinc-400 mb-3 border-b border-zinc-800 pb-2">
-                    {combatLog.length === 0 ? (
-                        <span className="italic opacity-50">Zahajte útok...</span>
-                    ) : (
-                        combatLog.map((log, i) => (
-                            <div key={i} className={
-                                log.includes('KRITICKÝ') || log.includes('PENETRACE') ? 'text-yellow-400 font-bold' :
-                                    log.includes('NEPŘÍTEL') ? 'text-red-400' :
-                                        log.includes('POUŽIT') ? 'text-cyan-400' :
-                                            log.includes('ÚSPĚCH') ? 'text-green-400' :
-                                                log.includes('SELHÁNÍ') ? 'text-red-500' :
-                                                    log.includes('ŠTÍT') ? 'text-zinc-200' :
-                                                        'text-zinc-300'
-                            }>
+                <div className="flex-1 overflow-y-auto w-full p-3 font-mono text-[10px] space-y-1.5 custom-scrollbar">
+                    <AnimatePresence initial={false}>
+                        {combatLog.map((log, i) => (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                key={i}
+                                className={`border-l-2 pl-2 ${log.includes('KRITICKÝ') || log.includes('PENETRACE') ? 'border-arc-yellow text-arc-yellow font-bold' :
+                                        log.includes('NEPŘÍTEL') ? 'border-red-500 text-red-400' :
+                                            log.includes('POUŽIT') ? 'border-arc-cyan text-arc-cyan' :
+                                                log.includes('ÚSPĚCH') ? 'border-green-500 text-green-400' :
+                                                    log.includes('SELHÁNÍ') ? 'border-red-500 text-red-500' :
+                                                        log.includes('ŠTÍT') ? 'border-zinc-500 text-zinc-400' :
+                                                            'border-zinc-800 text-zinc-500'
+                                    }`}>
+                                <span className="mr-2 opacity-30 select-none">{(i + 1).toString().padStart(2, '0')}</span>
                                 {log}
-                            </div>
-                        ))
-                    )}
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                     <div ref={logEndRef} />
                 </div>
 
-                <div className="flex gap-2 h-16">
-                    {/* MANUAL INPUT - BIGGER PRIORITY */}
+                {/* CONTROLS */}
+                <div className="p-2 bg-white/[0.02] border-t border-white/5 flex gap-2">
                     <button
                         onClick={() => setShowManualInput(true)}
                         disabled={isRolling || isFleeing}
-                        className="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase text-[10px] tracking-[0.1em] rounded-xl flex items-center justify-center gap-2 border border-zinc-600 active:scale-95 transition-all"
+                        className="w-12 h-12 flex items-center justify-center border border-white/10 text-zinc-500 hover:text-white hover:border-white/30 transition-all custom-hover"
+                        title="Manual Input"
                     >
-                        <Keyboard className="w-5 h-5 text-zinc-400" />
-                        <span>ZADAT HOD</span>
+                        <Keyboard className="w-5 h-5" />
                     </button>
 
-                    {/* VIRTUAL DICE - SMALLER SQUARE */}
                     <button
                         onClick={handleAttack}
                         disabled={isRolling || isFleeing}
-                        className="w-20 bg-red-600 hover:bg-red-500 text-white rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] active:scale-95 transition-all flex flex-col items-center justify-center border border-red-400"
+                        className="flex-1 bg-arc-yellow text-black font-display font-black text-lg uppercase tracking-widest hover:bg-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(249,212,35,0.4)] flex items-center justify-center gap-2 clip-path-button"
                     >
-                        <Dice5 className="w-8 h-8" />
+                        <Dice5 className="w-5 h-5" /> ÚTOK
                     </button>
                 </div>
+            </div>
 
+            <div className="flex justify-between items-center px-1">
                 <button
                     onClick={handleFlee}
                     disabled={isRolling || fleeAttempted || isFleeing}
-                    className={`w-full py-2 mt-2 bg-zinc-900 border border-zinc-700 text-zinc-400 font-bold uppercase text-[9px] tracking-widest rounded-lg flex items-center justify-center gap-2 ${fleeAttempted ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800 hover:text-white'}`}
+                    className={`text-[9px] font-mono uppercase tracking-widest flex items-center gap-2 ${fleeAttempted ? 'text-zinc-600 cursor-not-allowed' : 'text-zinc-400 hover:text-white transition-colors'}`}
                 >
                     <Wind className="w-3 h-3" />
-                    {fleeAttempted ? 'ÚTĚK SELHAL' : `POKUSIT SE UTÉCT (${getFleeChance()}%)`}
+                    {fleeAttempted ? 'ÚTĚK NENÍ MOŽNÝ' : `ÚSTUP (${getFleeChance()}%)`}
                 </button>
-            </div>
 
-            {/* --- BACKPACK SUPPORT --- */}
-            {inventory && inventory.length > 0 && (
-                <div className="mt-2">
+                {inventory && inventory.length > 0 && (
                     <button
                         onClick={() => { setShowCombatInventory(!showCombatInventory); setPreviewItem(null); }}
-                        className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 font-bold uppercase text-[9px] tracking-widest rounded-lg flex items-center justify-center gap-2"
+                        className="text-[9px] font-mono uppercase tracking-widest flex items-center gap-2 text-arc-cyan hover:text-white transition-colors"
                     >
-                        <Package className="w-3 h-3" /> {showCombatInventory ? 'Zavřít Batoh' : 'Podpora z Batohu'}
+                        <Package className="w-3 h-3" /> {showCombatInventory ? 'ZAVŘÍT INVENTÁŘ' : 'PODPORA'}
                     </button>
+                )}
+            </div>
 
-                    <AnimatePresence>
-                        {showCombatInventory && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden bg-black/40 rounded-lg border border-zinc-800 mt-2"
-                            >
-                                {/* ITEM LIST OR PREVIEW */}
-                                {previewItem ? (
-                                    <div className="p-3 bg-zinc-900/80">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="text-white font-bold text-xs uppercase">{previewItem.title}</h4>
-                                            <button onClick={() => setPreviewItem(null)}><X className="w-4 h-4 text-zinc-500" /></button>
-                                        </div>
-                                        <p className="text-[10px] text-zinc-400 italic mb-3">{previewItem.description}</p>
+            {/* --- BACKPACK OVERLAY --- */}
+            <AnimatePresence>
+                {inventory && inventory.length > 0 && showCombatInventory && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden bg-black border border-zinc-800"
+                    >
+                        {/* ITEM LIST OR PREVIEW */}
+                        {previewItem ? (
+                            <div className="p-3 bg-zinc-900/50">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h4 className="text-white font-bold text-xs uppercase">{previewItem.title}</h4>
+                                    <button onClick={() => setPreviewItem(null)}><X className="w-4 h-4 text-zinc-500" /></button>
+                                </div>
+                                <p className="text-[10px] text-zinc-400 italic mb-3 font-mono">{previewItem.description}</p>
 
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                            {previewItem.stats?.map((s, i) => (
-                                                <span key={i} className="text-[9px] bg-black border border-zinc-700 px-2 py-1 rounded text-zinc-300 font-mono">
-                                                    {s.label}: {s.value}
-                                                </span>
-                                            ))}
-                                        </div>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {previewItem.stats?.map((s, i) => (
+                                        <span key={i} className="text-[9px] bg-black border border-zinc-800 px-2 py-1 text-zinc-300 font-mono">
+                                            {s.label}: {s.value}
+                                        </span>
+                                    ))}
+                                </div>
 
-                                        <div className="flex gap-2">
-                                            <button onClick={() => setPreviewItem(null)} className="flex-1 py-2 bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase rounded">Zpět</button>
-                                            <button onClick={confirmUseItem} className="flex-1 py-2 bg-green-600 text-white text-[10px] font-bold uppercase rounded hover:bg-green-500">POUŽÍT</button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-2 p-2 max-h-40 overflow-y-auto">
-                                        {combatInventory.map(item => {
-                                            const hpStat = item.stats?.find(s => ['HP', 'ZDRAVÍ', 'HEAL'].some(k => s.label.toUpperCase().includes(k)));
-                                            const dmgStat = item.stats?.find(s => ['DMG', 'ATK', 'POŠKOZENÍ'].some(k => s.label.toUpperCase().includes(k)));
-                                            const armorStat = item.stats?.find(s => ['ARMOR', 'ŠTÍT', 'BRNĚNÍ'].some(k => s.label.toUpperCase().includes(k)));
+                                <div className="flex gap-2">
+                                    <button onClick={() => setPreviewItem(null)} className="flex-1 py-2 bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase hover:bg-zinc-700">Zrušit</button>
+                                    <button onClick={confirmUseItem} className="flex-1 py-2 bg-arc-cyan text-black text-[10px] font-bold uppercase hover:bg-white">POUŽÍT</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-1 p-1 max-h-40 overflow-y-auto">
+                                {combatInventory.map(item => {
+                                    const hpStat = item.stats?.find(s => ['HP', 'ZDRAVÍ', 'HEAL'].some(k => s.label.toUpperCase().includes(k)));
+                                    const dmgStat = item.stats?.find(s => ['DMG', 'ATK', 'POŠKOZENÍ'].some(k => s.label.toUpperCase().includes(k)));
+                                    const armorStat = item.stats?.find(s => ['ARMOR', 'ŠTÍT', 'BRNĚNÍ'].some(k => s.label.toUpperCase().includes(k)));
 
-                                            if (!hpStat && !dmgStat && !armorStat && !item.isConsumable) return null;
+                                    if (!hpStat && !dmgStat && !armorStat && !item.isConsumable) return null;
 
-                                            return (
-                                                <button
-                                                    key={item.id}
-                                                    onClick={() => setPreviewItem(item)}
-                                                    className="flex flex-col items-start p-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-left active:scale-95 transition-all"
-                                                >
-                                                    <span className="text-[9px] font-bold text-white uppercase line-clamp-1">{item.title}</span>
-                                                    <div className="flex items-center gap-1 mt-1 flex-wrap">
-                                                        {dmgStat && <span className="text-[8px] font-mono text-orange-400 bg-orange-950/30 px-1 rounded flex items-center gap-0.5"><Swords className="w-2 h-2" /> {dmgStat.value}</span>}
-                                                        {hpStat && <span className="text-[8px] font-mono text-green-400 bg-green-950/30 px-1 rounded flex items-center gap-0.5"><Heart className="w-2 h-2" /> {hpStat.value}</span>}
-                                                        {armorStat && <span className="text-[8px] font-mono text-zinc-300 bg-zinc-700/50 px-1 rounded flex items-center gap-0.5"><Shield className="w-2 h-2" /> {armorStat.value}</span>}
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                        {combatInventory.length === 0 && <p className="col-span-2 text-center text-[9px] text-zinc-600 italic py-2">Žádné bojové předměty.</p>}
-                                    </div>
-                                )}
-                            </motion.div>
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => setPreviewItem(item)}
+                                            className="flex flex-col items-start p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 text-left transition-all group"
+                                        >
+                                            <span className="text-[9px] font-bold text-zinc-300 group-hover:text-white uppercase line-clamp-1">{item.title}</span>
+                                            <div className="flex items-center gap-1 mt-1 flex-wrap opacity-70 group-hover:opacity-100">
+                                                {dmgStat && <span className="text-[8px] font-mono text-orange-400 flex items-center gap-0.5"><Swords className="w-2 h-2" /> {dmgStat.value}</span>}
+                                                {hpStat && <span className="text-[8px] font-mono text-green-400 flex items-center gap-0.5"><Heart className="w-2 h-2" /> {hpStat.value}</span>}
+                                                {armorStat && <span className="text-[8px] font-mono text-blue-300 flex items-center gap-0.5"><Shield className="w-2 h-2" /> {armorStat.value}</span>}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                                {combatInventory.length === 0 && <p className="col-span-2 text-center text-[9px] text-zinc-600 italic py-2">Žádné použitelné předměty.</p>}
+                            </div>
                         )}
-                    </AnimatePresence>
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

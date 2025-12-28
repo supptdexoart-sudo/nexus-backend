@@ -32,7 +32,7 @@ export interface MerchantItemEntry {
 }
 
 export interface DilemmaReward {
-    type: 'HP' | 'GOLD' | 'MANA'; // REMOVED XP
+    type: 'HP' | 'GOLD'; // REMOVED XP, MANA
     value: number;
 }
 
@@ -261,8 +261,7 @@ export interface CharacterPerk {
     description: string;
     effect: {
         stat: string;              // např. "damage", "hp", "armor"
-        modifier: number;          // např. 5 pro +5, nebo 1.1 pro +10%
-        isPercentage: boolean;     // true = procenta, false = absolutní hodnota
+        modifier: number;          // např. 5 pro +5 flat bonus
         condition?: 'night' | 'day' | 'combat' | 'always';
     };
 }
@@ -275,11 +274,8 @@ export interface Character {
     imageUrl?: string;
     baseStats: {
         hp: number;
-        mana: number;
         armor: number;
         damage: number;
-        critChance: number;
-        speed: number;
     };
     perks: CharacterPerk[];
     timeVariant?: {
@@ -288,7 +284,6 @@ export interface Character {
             statChanges: Array<{
                 stat: string;
                 modifier: number;
-                isPercentage: boolean;
             }>;
             additionalPerks?: CharacterPerk[];
         };

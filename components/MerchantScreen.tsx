@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { GameEvent, GameEventType, PlayerClass, Stat } from '../types';
-import { ShoppingBag, Coins, X, Loader2, Package, Ban, ArrowRightLeft, DollarSign, Brain, Footprints, Activity, Heart, Zap, Shield, Swords } from 'lucide-react';
+import { ShoppingBag, Coins, X, Loader2, Package, Ban, ArrowRightLeft, DollarSign, Brain, Footprints, Activity, Heart, Shield, Swords } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as apiService from '../services/apiService';
 import { playSound } from '../services/soundService';
@@ -10,11 +10,11 @@ interface MerchantScreenProps {
     merchant: GameEvent;
     userGold: number;
     adminEmail: string;
-    inventory?: GameEvent[]; 
-    playerClass: PlayerClass | null; 
+    inventory?: GameEvent[];
+    playerClass: PlayerClass | null;
     onClose: () => void;
     onBuy: (item: GameEvent) => void;
-    onSell?: (item: GameEvent, price: number) => void; 
+    onSell?: (item: GameEvent, price: number) => void;
     onAddFreeItem?: (item: GameEvent) => void;
     masterCatalog?: GameEvent[]; // ADDED: Access to global item database
 }
@@ -92,8 +92,8 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                     resolvedItems.push({
                         ...item,
                         // Use merchant price if set, otherwise fallback to item price
-                        price: (entry.price !== undefined && entry.price > 0) ? entry.price : item.price, 
-                        _merchantEntry: entry 
+                        price: (entry.price !== undefined && entry.price > 0) ? entry.price : item.price,
+                        _merchantEntry: entry
                     });
                 } else {
                     console.log(`[Merchant] Could not resolve item ID: ${targetId}`);
@@ -112,7 +112,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
     const getCalculatedPrice = (item: GameEvent): { finalPrice: number, basePrice: number, discountType: string | null, isOnSale: boolean } => {
         // Use the price that was already resolved into the item object in useEffect
         const basePrice = item.price ?? 100;
-        
+
         let currentPrice = basePrice;
         let discountType: string | null = null;
 
@@ -120,31 +120,31 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
         // Check against the Merchant Entry ID (which might be the short ID) OR the resolved Item ID
         const entryId = item._merchantEntry?.id || item.id;
         const isOnSale = activeSales[entryId] || false;
-        
+
         if (isOnSale) {
             currentPrice = Math.floor(basePrice * 0.7); // 30% OFF
             discountType = 'SALE';
         }
-        
+
         // 2. Class Discounts
         if (playerClass === PlayerClass.WARRIOR) {
             const factor = (100 - config.warriorDiscount) / 100;
             currentPrice = Math.floor(currentPrice * factor);
-            if(!discountType) discountType = 'CLASS';
+            if (!discountType) discountType = 'CLASS';
         }
         if (playerClass === PlayerClass.CLERIC) {
             const isHealing = item.stats?.some(s => ['HP', 'HEAL', 'LÉČENÍ', 'ZDRAVÍ'].some(k => s.label.toUpperCase().includes(k)));
             if (isHealing) {
                 const factor = (100 - config.clericDiscount) / 100;
                 currentPrice = Math.floor(currentPrice * factor);
-                if(!discountType) discountType = 'CLASS';
+                if (!discountType) discountType = 'CLASS';
             }
         }
         if (playerClass === PlayerClass.MAGE) {
-            if (item.isConsumable || item.type === GameEventType.ITEM) { 
-                 const factor = (100 - config.mageDiscount) / 100;
-                 currentPrice = Math.floor(currentPrice * factor);
-                 if(!discountType) discountType = 'CLASS';
+            if (item.isConsumable || item.type === GameEventType.ITEM) {
+                const factor = (100 - config.mageDiscount) / 100;
+                currentPrice = Math.floor(currentPrice * factor);
+                if (!discountType) discountType = 'CLASS';
             }
         }
 
@@ -159,13 +159,13 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
 
         if (currentStock > 0 && userGold >= finalPrice) {
             let stockReduction = 1;
-            
+
             // Rogue Steal
             if (playerClass === PlayerClass.ROGUE && currentStock >= 2 && onAddFreeItem) {
                 const chance = Math.random() * 100;
-                if (chance < config.rogueStealChance) { 
-                    stockReduction = 2; 
-                    onAddFreeItem(item); 
+                if (chance < config.rogueStealChance) {
+                    stockReduction = 2;
+                    onAddFreeItem(item);
                     playSound('success');
                     setRogueMessage(`Získal jsi ${item.title} navíc zdarma! (Krádež)`);
                     setTimeout(() => setRogueMessage(null), 3000);
@@ -176,7 +176,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                 ...prev,
                 [stockId]: Math.max(0, prev[stockId] - stockReduction)
             }));
-            
+
             const itemToBuy = { ...item, price: finalPrice };
             onBuy(itemToBuy);
         }
@@ -186,13 +186,13 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
         setAppraisingItem(item);
         setAppraisalStatus('thinking');
         playSound('scan');
-        
+
         setTimeout(() => {
             // Check if merchant wants this specific item
             // Fuzzy match logic again for selling
             const targetId = item.id.split('__')[0]; // Base ID of item in bag
-            
-            const merchantEntry = merchant.merchantItems?.find(entry => 
+
+            const merchantEntry = merchant.merchantItems?.find(entry =>
                 entry.id === item.id || entry.id === targetId
             );
 
@@ -210,8 +210,8 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
     const confirmSell = () => {
         if (appraisingItem && onSell) {
             onSell(appraisingItem, offeredPrice);
-            playSound('success'); 
-            setAppraisingItem(null); 
+            playSound('success');
+            setAppraisingItem(null);
         }
     };
 
@@ -223,10 +223,9 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                     let icon = <Activity className="w-3 h-3" />;
                     let color = "text-zinc-400";
                     const label = s.label.toUpperCase();
-                    if (label.includes('HP') || label.includes('HEAL')) { icon = <Heart className="w-3 h-3"/>; color = "text-red-400"; }
-                    if (label.includes('DMG') || label.includes('ATK')) { icon = <Swords className="w-3 h-3"/>; color = "text-orange-400"; }
-                    if (label.includes('DEF') || label.includes('ARMOR')) { icon = <Shield className="w-3 h-3"/>; color = "text-blue-400"; }
-                    if (label.includes('MANA')) { icon = <Zap className="w-3 h-3"/>; color = "text-cyan-400"; }
+                    if (label.includes('HP') || label.includes('HEAL')) { icon = <Heart className="w-3 h-3" />; color = "text-red-400"; }
+                    if (label.includes('DMG') || label.includes('ATK')) { icon = <Swords className="w-3 h-3" />; color = "text-orange-400"; }
+                    if (label.includes('DEF') || label.includes('ARMOR')) { icon = <Shield className="w-3 h-3" />; color = "text-blue-400"; }
 
                     return (
                         <div key={idx} className={`flex items-center gap-1 text-[9px] bg-black/60 px-2 py-1 rounded border border-white/10 ${color} font-bold`}>
@@ -239,7 +238,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
     };
 
     return (
-        <motion.div 
+        <motion.div
             {...({
                 initial: { opacity: 0, y: '100%' },
                 animate: { opacity: 1, y: 0 },
@@ -249,17 +248,17 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
             className="fixed inset-0 z-[60] bg-zinc-950/95 flex flex-col pt-28" // Added pt-28 to clear global HUD
         >
             {/* Background Dots */}
-            <div className="absolute inset-0 pointer-events-none opacity-5 z-0" 
-                 style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+            <div className="absolute inset-0 pointer-events-none opacity-5 z-0"
+                style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
             </div>
 
             {/* --- HEADER --- */}
             <div className="p-4 bg-black border-b border-zinc-800 shadow-xl z-20 flex flex-col gap-4 relative">
-                
+
                 {/* Rogue Toast */}
                 <AnimatePresence>
                     {rogueMessage && (
-                        <motion.div 
+                        <motion.div
                             {...({ initial: { y: -20, opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: -20, opacity: 0 } } as any)}
                             className="absolute top-2 left-2 right-2 bg-green-900/90 border border-green-500 text-green-100 p-3 rounded-xl z-50 flex items-center gap-2 shadow-xl"
                         >
@@ -274,8 +273,8 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                         <h2 className="text-2xl font-display font-black text-white uppercase tracking-wider leading-none">{merchant.title}</h2>
                         {/* ID REMOVED FOR CLEANER UI */}
                     </div>
-                    <button 
-                        onClick={onClose} 
+                    <button
+                        onClick={onClose}
                         className="flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-500/50 rounded-lg text-red-500 hover:bg-red-900/40 active:scale-95 transition-all"
                     >
                         <span className="text-xs font-black uppercase tracking-widest">Odejít</span>
@@ -294,13 +293,13 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                 {/* TABS */}
                 {merchant.canSellToMerchant && (
                     <div className="flex bg-zinc-900 p-1 rounded-lg border border-zinc-800">
-                        <button 
+                        <button
                             onClick={() => setActiveTab('buy')}
                             className={`flex-1 py-2 text-xs font-bold uppercase rounded-md transition-all ${activeTab === 'buy' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-200'}`}
                         >
                             Nákup
                         </button>
-                        <button 
+                        <button
                             onClick={() => setActiveTab('sell')}
                             className={`flex-1 py-2 text-xs font-bold uppercase rounded-md transition-all ${activeTab === 'sell' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-200'}`}
                         >
@@ -344,31 +343,29 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                                         )}
 
                                         {/* Rarity Stripe */}
-                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                                            item.rarity === 'Legendary' ? 'bg-yellow-500' : 
-                                            item.rarity === 'Epic' ? 'bg-purple-500' : 
-                                            item.rarity === 'Rare' ? 'bg-blue-500' : 'bg-zinc-600'
-                                        }`}></div>
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${item.rarity === 'Legendary' ? 'bg-yellow-500' :
+                                            item.rarity === 'Epic' ? 'bg-purple-500' :
+                                                item.rarity === 'Rare' ? 'bg-blue-500' : 'bg-zinc-600'
+                                            }`}></div>
 
                                         <div className="pl-3">
                                             <div className="flex justify-between items-start mb-1">
                                                 <h3 className="font-bold text-white text-lg leading-tight">{item.title}</h3>
-                                                <div className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border ${
-                                                        isOutOfStock ? 'bg-red-900/20 text-red-500 border-red-900/40' : 'bg-zinc-800 text-zinc-200 border-zinc-700'
+                                                <div className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border ${isOutOfStock ? 'bg-red-900/20 text-red-500 border-red-900/40' : 'bg-zinc-800 text-zinc-200 border-zinc-700'
                                                     }`}>
-                                                        <Package className="w-3 h-3" />
-                                                        {isOutOfStock ? 'Vyprodáno' : `Skladem: ${currentStock}`}
+                                                    <Package className="w-3 h-3" />
+                                                    {isOutOfStock ? 'Vyprodáno' : `Skladem: ${currentStock}`}
                                                 </div>
                                             </div>
-                                            
+
                                             <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold block mb-2">{item.type} • {item.rarity}</span>
-                                            
+
                                             <p className="text-xs text-zinc-300 line-clamp-2 font-serif leading-relaxed mb-2 italic opacity-80">"{item.description}"</p>
-                                            
+
                                             {/* STATS */}
                                             {renderStats(item.stats)}
                                         </div>
-                                        
+
                                         {/* PRICE & BUY */}
                                         <div className="pl-3 mt-3 pt-3 border-t border-zinc-800 flex justify-between items-end">
                                             <div className="flex flex-col">
@@ -383,16 +380,15 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                                                 {discountType && <span className="text-[8px] text-green-500 font-bold uppercase">{discountType === 'SALE' ? 'Sleva' : 'Třídní Bonus'}</span>}
                                             </div>
 
-                                            <button 
+                                            <button
                                                 onClick={() => handleBuyClick(item)}
                                                 disabled={isOutOfStock || !canAfford}
-                                                className={`px-6 py-3 rounded-lg font-bold uppercase tracking-widest text-xs transition-all shadow-lg flex items-center justify-center gap-2 ${
-                                                    isOutOfStock
+                                                className={`px-6 py-3 rounded-lg font-bold uppercase tracking-widest text-xs transition-all shadow-lg flex items-center justify-center gap-2 ${isOutOfStock
                                                     ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
-                                                    : canAfford 
-                                                        ? 'bg-signal-cyan text-black hover:bg-white shadow-[0_0_15px_rgba(0,242,255,0.4)] active:scale-95' 
+                                                    : canAfford
+                                                        ? 'bg-signal-cyan text-black hover:bg-white shadow-[0_0_15px_rgba(0,242,255,0.4)] active:scale-95'
                                                         : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
-                                                }`}
+                                                    }`}
                                             >
                                                 {isOutOfStock ? 'Vyprodáno' : canAfford ? <><ShoppingBag className="w-4 h-4" /> Koupit</> : 'Drahé'}
                                             </button>
@@ -409,10 +405,10 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                             <ArrowRightLeft className="w-5 h-5 text-green-500" />
                             <p className="text-xs text-zinc-200 font-bold leading-relaxed">Vyberte předmět k prodeji.</p>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 gap-3">
                             {(inventory || []).filter(i => i.type === GameEventType.ITEM || i.type === 'PŘEDMĚT' as GameEventType).map(item => (
-                                <button 
+                                <button
                                     key={item.id}
                                     onClick={() => handleStartAppraisal(item)}
                                     className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex flex-col gap-2 relative overflow-hidden hover:border-green-500/50 transition-colors text-left group active:scale-95"
@@ -442,18 +438,18 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
             {/* APPRAISAL MODAL */}
             <AnimatePresence>
                 {appraisingItem && (
-                    <motion.div 
+                    <motion.div
                         {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)}
                         className="absolute inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-6"
                     >
-                        <motion.div 
+                        <motion.div
                             {...({ initial: { scale: 0.9, y: 20 }, animate: { scale: 1, y: 0 }, exit: { scale: 0.9, y: 20 } } as any)}
                             className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm text-center relative overflow-hidden"
                         >
-                            <button onClick={() => setAppraisingItem(null)} className="absolute top-4 right-4 text-zinc-400 hover:text-white"><X className="w-5 h-5"/></button>
-                            
+                            <button onClick={() => setAppraisingItem(null)} className="absolute top-4 right-4 text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+
                             <h3 className="text-xl font-bold text-white mb-1 uppercase tracking-tighter">{appraisingItem.title}</h3>
-                            
+
                             <div className="flex justify-center mb-4">
                                 {renderStats(appraisingItem.stats)}
                             </div>
@@ -483,7 +479,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                                         <div className="flex justify-between items-center bg-black/50 p-3 rounded border border-zinc-800">
                                             <span className="text-xs font-bold uppercase text-zinc-300 tracking-wider">Nabídka:</span>
                                             <span className="text-xl font-mono font-bold text-green-500 flex items-center gap-1">
-                                                {offeredPrice} <Coins className="w-4 h-4"/>
+                                                {offeredPrice} <Coins className="w-4 h-4" />
                                             </span>
                                         </div>
                                     </div>
