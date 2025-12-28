@@ -98,9 +98,9 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                             <User className="w-5 h-5 text-arc-cyan" />
                         </div>
                         <div>
-                            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-1">DATABASE_ENTRY_EDITOR</span>
+                            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-1">EDITOR_DATABÁZE_POSTAV</span>
                             <h2 className="text-2xl font-display font-black uppercase tracking-wider text-white leading-none">
-                                {character ? 'EDITOVAŤ PROFIL' : 'NOVÝ OPERÁTOR'}
+                                {character ? 'UPRAVIT POSTAVU' : 'NOVÁ POSTAVA'}
                             </h2>
                         </div>
                     </div>
@@ -117,35 +117,35 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                         <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/20"></div>
                         <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-2">
                             <FileText className="w-4 h-4 text-arc-cyan" />
-                            <h3 className="text-xs font-black uppercase text-arc-cyan tracking-[0.2em]">IDENTITY_DATA</h3>
+                            <h3 className="text-xs font-black uppercase text-arc-cyan tracking-[0.2em]">IDENTIFIKAČNÍ_ÚDAJE</h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-2">Code Name (Jméno) *</label>
+                                <label className="block text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-2">Jméno / Označení *</label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full bg-black border border-zinc-800 p-3 text-white font-mono text-sm outline-none focus:border-arc-cyan focus:bg-arc-cyan/5 transition-all"
-                                    placeholder="Enter Designation..."
+                                    placeholder="Zadejte jméno..."
                                 />
                             </div>
                             {character && (
                                 <div>
-                                    <label className="block text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-2">System ID</label>
+                                    <label className="block text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-2">Systémové ID</label>
                                     <div className="w-full bg-black/50 border border-zinc-900 p-3 text-zinc-600 font-mono text-xs select-all">
                                         {character.characterId}
                                     </div>
                                 </div>
                             )}
                             <div className="md:col-span-2">
-                                <label className="block text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-2">Service Record (Popis)</label>
+                                <label className="block text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-2">Služební záznam (Popis)</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     className="w-full bg-black border border-zinc-800 p-3 text-white font-mono text-sm outline-none focus:border-arc-cyan focus:bg-arc-cyan/5 transition-all h-24 resize-none"
-                                    placeholder="Enter biographical data..."
+                                    placeholder="Zadejte biografické údaje nebo popis..."
                                 />
                             </div>
                         </div>
@@ -156,14 +156,14 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                         <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-white/20"></div>
                         <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-2">
                             <Zap className="w-4 h-4 text-arc-yellow" />
-                            <h3 className="text-xs font-black uppercase text-arc-yellow tracking-[0.2em]">COMBAT_PARAMETERS</h3>
+                            <h3 className="text-xs font-black uppercase text-arc-yellow tracking-[0.2em]">BOJOVÉ_PARAMETRY</h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {[
-                                { id: 'hp', label: 'HIT POINTS', icon: Heart, color: 'text-red-500' },
-                                { id: 'armor', label: 'ARMOR PLATING', icon: Shield, color: 'text-zinc-400' },
-                                { id: 'damage', label: 'DAMAGE OUTPUT', icon: Swords, color: 'text-arc-yellow' }
+                                { id: 'hp', label: 'ZDRÁVÍ (HP)', icon: Heart, color: 'text-red-500' },
+                                { id: 'armor', label: 'PLÁTOVÁNÍ (BRNĚNÍ)', icon: Shield, color: 'text-zinc-400' },
+                                { id: 'damage', label: 'ÚTOČNÁ SÍLA (DMG)', icon: Swords, color: 'text-arc-yellow' }
                             ].map((stat) => (
                                 <div key={stat.id} className="bg-black/40 border border-white/5 p-3 flex items-center justify-between group focus-within:border-white/30 transition-colors">
                                     <div className="flex items-center gap-3">
@@ -191,13 +191,13 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                         <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-2">
                             <div className="flex items-center gap-2">
                                 <Plus className="w-4 h-4 text-teal-400" />
-                                <h3 className="text-xs font-black uppercase text-teal-400 tracking-[0.2em]">SPECIAL_ABILITIES</h3>
+                                <h3 className="text-xs font-black uppercase text-teal-400 tracking-[0.2em]">SPECIÁLNÍ_SCHOPNOSTI</h3>
                             </div>
                             <button
                                 onClick={addPerk}
                                 className="flex items-center gap-2 px-3 py-1.5 bg-teal-500/10 border border-teal-500/30 text-teal-400 text-[10px] font-bold uppercase hover:bg-teal-500 hover:text-black transition-all"
                             >
-                                <Plus className="w-3 h-3" /> Add Module
+                                <Plus className="w-3 h-3" /> Přidat Modul
                             </button>
                         </div>
 
@@ -205,7 +205,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                             {formData.perks.map((perk, index) => (
                                 <div key={index} className="bg-black/60 border border-white/10 p-4 relative group hover:border-teal-500/30 transition-all">
                                     <div className="flex justify-between items-start mb-3">
-                                        <span className="text-[9px] font-mono font-bold text-zinc-600 bg-black px-1 border border-zinc-800">MODULE_0{index + 1}</span>
+                                        <span className="text-[9px] font-mono font-bold text-zinc-600 bg-black px-1 border border-zinc-800">MODUL_0{index + 1}</span>
                                         <button
                                             onClick={() => removePerk(index)}
                                             className="p-1 text-zinc-600 hover:text-red-500 transition-colors"
@@ -219,7 +219,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                                             type="text"
                                             value={perk.name}
                                             onChange={(e) => updatePerk(index, { ...perk, name: e.target.value })}
-                                            placeholder="MODULE NAME"
+                                            placeholder="NÁZEV MODULU"
                                             className="bg-transparent border-b border-zinc-800 py-1 text-sm font-bold text-white uppercase placeholder-zinc-700 outline-none focus:border-teal-500"
                                         />
                                         <div className="flex gap-2">
@@ -228,16 +228,16 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                                                 onChange={(e) => updatePerk(index, { ...perk, effect: { ...perk.effect, stat: e.target.value } })}
                                                 className="bg-black border border-zinc-800 text-[10px] text-zinc-300 font-mono uppercase px-2 py-1 outline-none focus:border-teal-500"
                                             >
-                                                <option value="damage">DMG MOD</option>
-                                                <option value="hp">HP MOD</option>
-                                                <option value="armor">ARMOR MOD</option>
+                                                <option value="damage">MODIFIKÁTOR DMG</option>
+                                                <option value="hp">MODIFIKÁTOR HP</option>
+                                                <option value="armor">MODIFIKÁTOR ARMOR</option>
                                             </select>
                                             <input
                                                 type="number"
                                                 value={perk.effect.modifier}
                                                 onChange={(e) => updatePerk(index, { ...perk, effect: { ...perk.effect, modifier: parseFloat(e.target.value) || 0 } })}
                                                 className="w-20 bg-black border border-zinc-800 text-[10px] text-white font-mono text-center px-1 outline-none focus:border-teal-500"
-                                                placeholder="VAL"
+                                                placeholder="HODN"
                                             />
                                         </div>
                                     </div>
@@ -247,7 +247,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                                             type="text"
                                             value={perk.description}
                                             onChange={(e) => updatePerk(index, { ...perk, description: e.target.value })}
-                                            placeholder="EFFECT DESCRIPTION"
+                                            placeholder="POPIS ÚČINKU MODULU"
                                             className="bg-transparent border-b border-zinc-800 py-1 text-xs text-zinc-400 font-mono placeholder-zinc-700 outline-none focus:border-teal-500"
                                         />
                                         <select
@@ -255,17 +255,17 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                                             onChange={(e) => updatePerk(index, { ...perk, effect: { ...perk.effect, condition: e.target.value as any } })}
                                             className="bg-black border border-zinc-800 text-[10px] text-zinc-300 font-mono uppercase px-2 py-1 outline-none focus:border-teal-500"
                                         >
-                                            <option value="always">ALWAYS ACTIVE</option>
-                                            <option value="night">NIGHT ONLY</option>
-                                            <option value="day">DAY ONLY</option>
-                                            <option value="combat">COMBAT ONLY</option>
+                                            <option value="always">VŽDY AKTIVNÍ</option>
+                                            <option value="night">POUZE V NOCI</option>
+                                            <option value="day">POUZE VE DNE</option>
+                                            <option value="combat">POUZE V BOJI</option>
                                         </select>
                                     </div>
                                 </div>
                             ))}
                             {formData.perks.length === 0 && (
                                 <div className="text-center py-6 border border-dashed border-zinc-800">
-                                    <p className="text-[10px] text-zinc-600 font-mono uppercase">NO MODULES INSTALLED</p>
+                                    <p className="text-[10px] text-zinc-600 font-mono uppercase">ŽÁDNÉ MODULY NEBYLY NAINSTALOVÁNY</p>
                                 </div>
                             )}
                         </div>
@@ -279,10 +279,10 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                             </div>
                             <div className="flex-1">
                                 <span className={`text-xs font-black uppercase tracking-[0.2em] block mb-1 ${formData.timeVariant?.enabled ? 'text-indigo-400' : 'text-zinc-500'}`}>
-                                    NIGHT_OPS_MODE
+                                    REŽIM_NOČNÍ_OPERACE
                                 </span>
                                 <span className="text-[10px] font-mono text-zinc-600">
-                                    Enable specific modifiers during night cycle
+                                    Aktivujte specifické modifikátory během nočního cyklu
                                 </span>
                             </div>
                             <input
@@ -311,7 +311,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                         onClick={onClose}
                         className="px-8 py-4 bg-transparent border border-zinc-700 text-zinc-400 font-black uppercase text-xs tracking-[0.2em] hover:bg-white hover:text-black hover:border-white transition-all flex items-center gap-2"
                     >
-                        <X className="w-4 h-4" /> ABORT
+                        <X className="w-4 h-4" /> ZRUŠIT
                     </button>
                     <button
                         onClick={handleSave}
@@ -319,7 +319,7 @@ const CharacterCreator: React.FC<CharacterCreatorProps> = ({ character, onSave, 
                         className="flex-1 py-4 bg-arc-cyan/90 hover:bg-arc-cyan text-black font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-2 clip-path-button disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save className="w-4 h-4" />
-                        {isSaving ? 'PROCESSING...' : 'SAVE CONFIGURATION'}
+                        {isSaving ? 'ZPRACOVÁVÁM...' : 'ULOŽIT KONFIGURACI'}
                     </button>
                 </div>
             </div>

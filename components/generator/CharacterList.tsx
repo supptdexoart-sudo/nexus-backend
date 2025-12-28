@@ -14,7 +14,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
     const [showQR, setShowQR] = useState<Character | null>(null);
 
     const handleDelete = (char: Character) => {
-        if (confirm(`Delete character protocol "${char.name}"? This action cannot be undone.`)) {
+        if (confirm(`Opravdu chcete smazat postavu "${char.name}"? Tuto akci nelze vzít zpět.`)) {
             onDelete(char.characterId);
         }
     };
@@ -31,8 +31,8 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
                         <User className="w-6 h-6" />
                     </div>
                     <div>
-                        <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-0.5">ROSTER_MANAGEMENT</span>
-                        <h2 className="text-2xl font-black uppercase tracking-widest text-white">Operatives</h2>
+                        <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block mb-0.5">SPRÁVA_DATABÁZE</span>
+                        <h2 className="text-2xl font-black uppercase tracking-widest text-white">Postavy</h2>
                     </div>
                 </div>
                 <button
@@ -40,7 +40,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
                     className="flex items-center gap-2 px-6 py-3 bg-arc-yellow text-black font-black uppercase tracking-widest text-xs hover:bg-white transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    Initialize New
+                    Nová Postava
                 </button>
             </div>
 
@@ -50,8 +50,8 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
                         <div className="w-24 h-24 bg-zinc-900/50 rounded-full flex items-center justify-center mb-6">
                             <QrCode className="w-10 h-10 opacity-20" />
                         </div>
-                        <p className="text-xl font-black uppercase tracking-widest text-zinc-500">No Operatives Found</p>
-                        <p className="text-xs font-mono text-zinc-600 mt-2 uppercase">Database empty. Initialize new protocol to proceed.</p>
+                        <p className="text-xl font-black uppercase tracking-widest text-zinc-500">Žádné postavy nenalezeny</p>
+                        <p className="text-xs font-mono text-zinc-600 mt-2 uppercase">Databáze je prázdná. Vytvořte novou postavu.</p>
                     </div>
                 </div>
             ) : (
@@ -62,7 +62,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
                             className="bg-black border border-white/10 p-5 group hover:border-arc-cyan transition-all relative shadow-lg"
                         >
                             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-10 transition-opacity">
-                                <span className="text-[8px] font-mono text-arc-cyan uppercase">ACTIVE</span>
+                                <span className="text-[8px] font-mono text-arc-cyan uppercase">AKTIVNÍ</span>
                             </div>
 
                             <div className="flex justify-between items-start mb-6 border-b border-zinc-900 pb-4">
@@ -74,21 +74,21 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
                                     <button
                                         onClick={() => setShowQR(char)}
                                         className="p-2 hover:bg-purple-900/20 text-zinc-600 hover:text-purple-400 transition-colors border border-transparent hover:border-purple-500/30"
-                                        title="View QR"
+                                        title="Zobrazit QR"
                                     >
                                         <QrCode className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={() => onEdit(char)}
                                         className="p-2 hover:bg-arc-cyan/10 text-zinc-600 hover:text-arc-cyan transition-colors border border-transparent hover:border-arc-cyan/30"
-                                        title="Edit"
+                                        title="Upravit"
                                     >
                                         <Edit className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={() => handleDelete(char)}
                                         className="p-2 hover:bg-red-900/20 text-zinc-600 hover:text-red-500 transition-colors border border-transparent hover:border-red-500/30"
-                                        title="Delete"
+                                        title="Smazat"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -118,16 +118,16 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
                                 <div className="mb-4">
                                     <div className="text-[9px] font-black text-arc-cyan uppercase tracking-widest mb-2 flex items-center gap-2">
                                         <span className="w-1 h-1 bg-arc-cyan rounded-full"></span>
-                                        INSTALLED PERKS ({char.perks.length})
+                                        NAINSTALOVANÉ PERKY ({char.perks.length})
                                     </div>
                                     <div className="space-y-1 pl-2 border-l border-zinc-800">
                                         {char.perks.slice(0, 2).map((perk, i) => (
                                             <div key={i} className="text-[10px] text-zinc-400 font-mono truncate uppercase">
-                                                {perk.name || 'UNKNOWN_MOD'}
+                                                {perk.name || 'NEZNÁMÝ_MOD'}
                                             </div>
                                         ))}
                                         {char.perks.length > 2 && (
-                                            <div className="text-[9px] text-zinc-600 font-mono uppercase italic px-1">+{char.perks.length - 2} MORE</div>
+                                            <div className="text-[9px] text-zinc-600 font-mono uppercase italic px-1">+{char.perks.length - 2} DALŠÍ</div>
                                         )}
                                     </div>
                                 </div>
@@ -136,7 +136,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
                             {char.timeVariant?.enabled && (
                                 <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-purple-500 border-t border-zinc-900 pt-3">
                                     <div className="w-1.5 h-1.5 bg-purple-500 animate-pulse shadow-[0_0_5px_rgba(168,85,247,0.8)]" />
-                                    NIGHT_OPS_ACTIVE
+                                    NOČNÍ_REŽIM_AKTIVNÍ
                                 </div>
                             )}
                         </div>
@@ -177,7 +177,7 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, onEdit, onDel
                                 }}
                                 className="w-full py-4 bg-arc-cyan text-black font-black uppercase text-xs tracking-[0.2em] hover:bg-white transition-colors"
                             >
-                                DOWNLOAD_QR
+                                STÁHNOUT_QR
                             </button>
                         </div>
                     </div>
