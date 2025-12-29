@@ -186,7 +186,8 @@ export const useGameLogic = () => {
     const handleGoldChange = (amount: number) => setPlayerGold(prev => Math.max(0, prev + amount));
 
     const handleArmorChange = (amount: number) => {
-        const isMagneticStorm = roomState.activeSectorEvent?.type === 'MAGNETIC_STORM';
+        const now = Date.now();
+        const isMagneticStorm = roomState.activeSectorEvent?.type === 'MAGNETIC_STORM' && (roomState.activeSectorEvent.expiresAt || 0) > now;
         setPlayerArmor(prev => {
             if (isMagneticStorm && amount > 0) {
                 setNotification({ id: 'mag-storm-armor', type: 'warning', message: '⚠️ MAGNETICKÁ BOUŘE: Brnění nelze navýšit!' });
@@ -883,21 +884,14 @@ export const useGameLogic = () => {
         let newArmor = activeCharacter.baseStats.armor + perkBonuses.armor;
 
         // Apply magnetic storm effect if active (Magnetic Storm disables all armor)
-        if (roomState.activeSectorEvent?.type === 'MAGNETIC_STORM') {
-            const now = Date.now();
-            if (roomState.activeSectorEvent.expiresAt > now) {
-                newArmor = 0;
-            }
+        const isMagneticStorm = roomState.activeSectorEvent?.type === 'MAGNETIC_STORM' && (roomState.activeSectorEvent.expiresAt || 0) > Date.now();
+
+        if (isMagneticStorm) {
+            newArmor = 0;
         }
 
         setPlayerHp(newHp);
-
-        // Armor override for Magnetic Storm
-        if (roomState.activeSectorEvent?.type === 'MAGNETIC_STORM') {
-            setPlayerArmor(0);
-        } else {
-            setPlayerArmor(newArmor);
-        }
+        setPlayerArmor(newArmor);
 
         // Show notification about perk changes
         const activePerks = activeCharacter.perks?.filter((p: any) => {
