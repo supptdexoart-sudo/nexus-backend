@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { GameEvent, GameEventType, PlayerClass } from '../types';
 import { Box, ShoppingBag, BookOpen, Crown, RefreshCw, Loader2, Database, Swords, ArrowDownAZ, Star, Target, ArrowLeftRight, X, Zap, Satellite, Package, Filter, Layers, Copy, Globe } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { playSound, vibrate } from '../services/soundService';
 
 interface InventoryViewProps {
@@ -55,6 +55,42 @@ const getEventIcon = (type: GameEventType, isResource: boolean) => {
         case GameEventType.PLANET: return <Globe className="w-4 h-4" />;
         default: return <BookOpen className="w-4 h-4" />;
     }
+};
+
+const TiltCard: React.FC<{ children: React.ReactNode; onClick: () => void; className: string }> = ({ children, onClick, className }) => {
+    const x = useMotionValue(0.5);
+    const y = useMotionValue(0.5);
+    const mouseXSpring = useSpring(x);
+    const mouseYSpring = useSpring(y);
+    const rotateX = useTransform(mouseYSpring, [0, 1], [4, -4]);
+    const rotateY = useTransform(mouseXSpring, [0, 1], [-4, 4]);
+
+    const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+        x.set((clientX - rect.left) / rect.width);
+        y.set((clientY - rect.top) / rect.height);
+    };
+
+    const handleLeave = () => {
+        x.set(0.5);
+        y.set(0.5);
+    };
+
+    return (
+        <motion.div
+            onClick={onClick}
+            onMouseMove={handleMove}
+            onMouseLeave={handleLeave}
+            onTouchMove={handleMove}
+            onTouchEnd={handleLeave}
+            style={{ rotateX, rotateY, perspective: 800, transformStyle: 'preserve-3d', willChange: 'transform' }}
+            className={className}
+        >
+            {children}
+        </motion.div>
+    );
 };
 
 const InventoryView: React.FC<InventoryViewProps> = ({
@@ -362,10 +398,9 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                 const stackedItem = item as StackedGameEvent;
 
                                 return (
-                                    <motion.div
+                                    <TiltCard
                                         key={item.id}
                                         onClick={() => handleCardClick(item)}
-                                        {...({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } } as any)}
                                         className={`relative h-40 flex flex-col justify-end p-0 bg-[#0d0e12] border-2 ${config.border} rounded-lg overflow-hidden active:scale-95 transition-all group cursor-pointer ${isSelected ? 'scale-90 ring-4 ring-signal-cyan/30' : ''}`}
                                     >
                                         {/* NIGHT MODE INDICATOR */}
@@ -445,7 +480,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                                 </span>
                                             </div>
                                         )}
-                                    </motion.div>
+                                    </TiltCard>
                                 );
                             })
                         )}

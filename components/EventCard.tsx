@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { GameEvent, GameEventType, DilemmaOption, Stat, PlayerClass } from '../types';
 import { X, Info, Trash2, Skull, Crown, ShoppingBag, Zap, Swords, Coins, Heart, Scan, Map, CornerDownRight, Satellite, Radio, Hammer, Box, Globe, Rocket, Ban, AlertTriangle, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { playSound, vibrate } from '../services/soundService';
 import { CombatCard } from './cards/CombatCard';
 import { TrapCard } from './cards/TrapCard';
@@ -53,6 +53,52 @@ const EventCard: React.FC<EventCardProps> = ({
 
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [expandedStat, setExpandedStat] = useState<string | null>(null);
+
+    // PARALLAX VALUES
+    const x = useMotionValue(0.5);
+    const y = useMotionValue(0.5);
+
+    const mouseXSpring = useSpring(x);
+    const mouseYSpring = useSpring(y);
+
+    const rotateX = useTransform(mouseYSpring, [0, 1], [7, -7]);
+    const rotateY = useTransform(mouseXSpring, [0, 1], [-7, 7]);
+
+    // Glare Effect Values
+    const glareX = useTransform(mouseXSpring, [0, 1], [0, 100]);
+    const glareY = useTransform(mouseYSpring, [0, 1], [0, 100]);
+    const glareOpacity = useMotionValue(0);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        x.set(mouseX / width);
+        y.set(mouseY / height);
+        glareOpacity.set(0.25);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        const touchX = e.touches[0].clientX - rect.left;
+        const touchY = e.touches[0].clientY - rect.top;
+
+        // Clamp values to prevent extreme tilts
+        x.set(Math.max(0, Math.min(1, touchX / width)));
+        y.set(Math.max(0, Math.min(1, touchY / height)));
+        glareOpacity.set(0.25);
+    };
+
+    const handleMouseLeave = () => {
+        x.set(0.5);
+        y.set(0.5);
+        glareOpacity.set(0);
+    };
 
     useEffect(() => {
         playSound('open');
@@ -368,14 +414,38 @@ const EventCard: React.FC<EventCardProps> = ({
             className="fixed inset-0 z-[150] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm"
         >
             <motion.div
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleMouseLeave}
                 {...({
                     initial: { scale: 0.95, opacity: 0, y: 20 },
                     animate: { scale: 1, opacity: 1, y: 0 },
                     exit: { scale: 0.95, opacity: 0, y: 20 },
+                    style: {
+                        rotateX,
+                        rotateY,
+                        scale: useTransform([mouseXSpring, mouseYSpring], () => 1.02),
+                        perspective: 1000,
+                        transformStyle: 'preserve-3d',
+                        willChange: 'transform'
+                    },
                     transition: { type: 'spring', damping: 25, stiffness: 300 }
                 } as any)}
                 className={`w-full max-w-sm bg-black border ${theme.border} relative overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] min-h-[50vh] max-h-[90vh]`}
             >
+                {/* Glare Layer */}
+                <motion.div
+                    style={{
+                        background: useTransform(
+                            [glareX, glareY],
+                            ([latestX, latestY]) =>
+                                `radial-gradient(circle at ${latestX}% ${latestY}%, rgba(255,255,255,0.3) 0%, transparent 80%)`
+                        ),
+                        opacity: glareOpacity
+                    }}
+                    className="absolute inset-0 z-50 pointer-events-none"
+                />
                 {/* NIGHT MODE INDICATOR */}
                 {isNight && event.timeVariant?.enabled && (
                     <>
