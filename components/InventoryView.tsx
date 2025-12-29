@@ -368,6 +368,26 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                         {...({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } } as any)}
                                         className={`relative h-40 flex flex-col justify-end p-0 bg-[#0d0e12] border-2 ${config.border} rounded-lg overflow-hidden active:scale-95 transition-all group cursor-pointer ${isSelected ? 'scale-90 ring-4 ring-signal-cyan/30' : ''}`}
                                     >
+                                        {/* NIGHT MODE INDICATOR */}
+                                        {isNight && item.timeVariant?.enabled && (
+                                            <>
+                                                {/* Diagonal Stripe */}
+                                                <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden pointer-events-none z-20">
+                                                    <div className="absolute top-[-8px] right-[-32px] w-[100px] h-[24px] bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 rotate-45 flex items-center justify-center shadow-[0_0_15px_rgba(147,51,234,0.4)]">
+                                                    </div>
+                                                </div>
+
+                                                {/* Blinking NOC Label */}
+                                                <motion.div
+                                                    animate={{ opacity: [0.3, 1, 0.3] }}
+                                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                                    className="absolute top-1.5 right-1.5 z-30 flex items-center gap-1 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-full border border-blue-500/30"
+                                                >
+                                                    <div className="w-1 h-1 bg-blue-400 rounded-full shadow-[0_0_8px_#60a5fa] animate-pulse" />
+                                                    <span className="text-[8px] font-black text-blue-300 tracking-tighter uppercase">NOC</span>
+                                                </motion.div>
+                                            </>
+                                        )}
                                         {/* Gradient Overlay from Border Color */}
                                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isResource ? 'bg-gradient-to-b from-orange-500/10 to-transparent' :
                                             item.rarity === 'Legendary' ? 'bg-gradient-to-b from-yellow-500/10 to-transparent' :
