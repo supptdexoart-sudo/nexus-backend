@@ -1,24 +1,20 @@
-# Cleanup Nexus Game Companion
+# Nexus Game Companion Fixes
 
-The goal is to remove admin-related features from the companion app while keeping the "test-admin" account as a reference in the settings.
+## Night Rarity Override Fix
+The `getAdjustedItem` function is missing logic to apply `nightRarity` and `nightFlavorText` when night mode is active.
 
 ## Proposed Changes
 
 ### [nexus-game-companion](file:///c:/Users/Zbynek/Desktop/nexus-game-companion)
 
-#### [MODIFY] [SettingsView.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/SettingsView.tsx)
-- Re-add the "ADMIN_ÚČTY" section but only show "TEST ADMIN" (test@nexus.cz).
-- Ensure "Master Admin" is not displayed.
+#### [MODIFY] [useGameLogic.ts](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/hooks/useGameLogic.ts)
+- Update `getAdjustedItem` to apply `nightRarity` and `nightFlavorText` from `item.timeVariant`.
 
 ## Verification Plan
 
 ### Manual Verification
 1. Run `npm run dev` in `nexus-game-companion`.
-2. Open the app and go to the "SYS" (Settings) tab.
-3. Verify that:
-   - "ADMIN_ÚČTY" section is present.
-   - Only "TEST ADMIN" is listed.
-   - "MASTER ADMIN" and "REŽIM: MASTER DATABÁZE" are gone.
-   - The central button is a "SCANNER" (Scan icon) and not a "Fabrikace" (Hammer icon).
-4. Run `npm run deploy` to push the changes to GitHub Pages.
-5. Verify the live site at `https://supptdexoart-sudo.github.io/Nexuslink/`.
+2. In the Admin Terminal, set a card's Night Rarity to "RARE".
+3. Scan the card in the Companion app during night mode.
+4. Verify that the card displays "RARE" rarity and the correct flavor text.
+5. Deploy to GitHub Pages.

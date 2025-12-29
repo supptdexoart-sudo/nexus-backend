@@ -6,15 +6,15 @@ I have cleaned up the Nexus Game Companion application by removing admin-related
 
 ### [nexus-game-companion](file:///c:/Users/Zbynek/Desktop/nexus-game-companion)
 
-#### [SettingsView.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/SettingsView.tsx)
-- Added an "ADMIN_ÚČTY" section that exclusively shows the "Test Admin" account (`test@nexus.cz`).
-- Verified that "Master Admin" and related master database indicators are removed.
+#### [useGameLogic.ts](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/hooks/useGameLogic.ts)
+- Updated `getAdjustedItem` to correctly apply `nightRarity` and `nightFlavorText` overrides when night mode is active. This ensures rarity changes (e.g., Common to Rare) are visible to players.
 
 #### GitHub Source Push
-- Committed and pushed all source changes (including cleanup and security fixes) to the `main` branch of both the frontend and backend repositories.
+- Committed and pushed all source changes (including cleanup, security fixes, and the night rarity fix) to the `main` branch of both repositories.
 
-#### Artifacts Deployment
-- Copied `implementation_plan.md`, `walkthrough.md`, and `task.md` directly into the root folder of the project for easier access.
+#### [SettingsView.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/SettingsView.tsx)
+- Added an "ADMIN_ÚČTY" section that exclusively shows the "Test Admin" account (`test@nexus.cz`).
+- Verified that "Master Admin" and related master database indicators are removed (already removed in local source).
 
 ## Verification Results
 
