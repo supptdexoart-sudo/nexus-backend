@@ -159,17 +159,13 @@ const App: React.FC = () => {
         else if (['PALIVO', 'FUEL'].some(k => label.includes(k))) { logic.handleFuelChange(val); claimedCount++; }
         else if (['GOLD', 'ZLATO', 'MINCE'].some(k => label.includes(k))) { logic.handleGoldChange(val); claimedCount++; }
         else if (['O2', 'KYSLÍK'].some(k => label.includes(k))) { logic.setPlayerOxygen(prev => Math.min(100, Math.max(0, prev + val))); claimedCount++; }
-        else if (['ARMOR', 'BRNĚNÍ'].some(k => label.includes(k))) { logic.setPlayerArmor(prev => Math.max(0, prev + val)); claimedCount++; }
+        else if (['ARMOR', 'BRNĚNÍ'].some(k => label.includes(k))) { logic.handleArmorChange(val); claimedCount++; }
       }
     });
 
     if (claimedCount > 0) {
       logic.setNotification({ id: 'loot-claim-' + Date.now(), type: 'success', message: 'Kořist byla připsána do inventáře.' });
     }
-  };
-
-  const handleArmorChange = (amount: number) => {
-    logic.setPlayerArmor(prev => Math.max(0, prev + amount));
   };
 
   const handlePlanetLand = (planetId: string, eventType: GameEventType) => {
@@ -547,7 +543,7 @@ const App: React.FC = () => {
                 onPlayerDamage={logic.handleHpChange}
                 playerHp={logic.playerHp}
                 playerArmor={logic.playerArmor}
-                onArmorChange={handleArmorChange}
+                onArmorChange={logic.handleArmorChange}
                 playerClass={logic.playerClass}
                 inventory={logic.inventory}
                 onUseItem={(item) => logic.handleUseEvent(item)}

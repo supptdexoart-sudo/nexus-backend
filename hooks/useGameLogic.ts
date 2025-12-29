@@ -101,6 +101,7 @@ export const useGameLogic = () => {
     const hasNotifiedTurnRef = useRef(false);
     const prevTurnIndexRef = useRef<number>(-1);
     const lastSetEventTimeRef = useRef<number>(0);
+    const prevSectorEventRef = useRef<string | null>(null);
 
     // ... (useEffect refs updates unchanged)
     // ... (Initialization unchanged)
@@ -183,6 +184,21 @@ export const useGameLogic = () => {
 
     const handleFuelChange = (amount: number) => setPlayerFuel(prev => Math.min(100, Math.max(0, prev + amount)));
     const handleGoldChange = (amount: number) => setPlayerGold(prev => Math.max(0, prev + amount));
+
+    const handleArmorChange = (amount: number) => {
+        const isMagneticStorm = roomState.activeSectorEvent?.type === 'MAGNETIC_STORM';
+        setPlayerArmor(prev => {
+            if (isMagneticStorm && amount > 0) {
+                setNotification({ id: 'mag-storm-armor', type: 'warning', message: '⚠️ MAGNETICKÁ BOUŘE: Brnění nelze navýšit!' });
+                return prev;
+            }
+            const newVal = Math.max(0, prev + amount);
+            if (newVal > prev) setScreenFlash('blue');
+            else if (newVal < prev) setScreenFlash('red');
+            return newVal;
+        });
+        setTimeout(() => setScreenFlash(null), 300);
+    };
 
     // --- CRAFTING & PROGRESS ---
     const handleCraftItem = async (_recipeId: string, ingredients: string[], result: GameEvent) => {
@@ -558,6 +574,15 @@ export const useGameLogic = () => {
     const handleTriggerSectorEvent = async (type: string, duration: number = 5) => {
         if (!roomState.id) return;
         try {
+            // Optimistic update for the initiator
+            setRoomState(prev => ({
+                ...prev,
+                activeSectorEvent: {
+                    type,
+                    initiator: roomState.nickname,
+                    expiresAt: Date.now() + (duration * 60 * 1000)
+                }
+            }));
             await apiService.triggerSectorEvent(roomState.id, type, roomState.nickname, duration);
         } catch (e) {
             console.error("Trigger sector event failed", e);
@@ -756,7 +781,7 @@ export const useGameLogic = () => {
                     else if (['PALIVO', 'FUEL'].some(k => label.includes(k))) { handleFuelChange(val); effectApplied = true; }
                     else if (['GOLD', 'ZLATO'].some(k => label.includes(k))) { handleGoldChange(val); effectApplied = true; }
                     else if (['O2', 'KYSLÍK'].some(k => label.includes(k))) { setPlayerOxygen(prev => Math.min(100, Math.max(0, prev + val))); effectApplied = true; }
-                    else if (['ARMOR', 'BRNĚNÍ'].some(k => label.includes(k))) { setPlayerArmor(prev => Math.max(0, prev + val)); effectApplied = true; }
+                    else if (['ARMOR', 'BRNĚNÍ'].some(k => label.includes(k))) { handleArmorChange(val); effectApplied = true; }
                 }
             });
         }
@@ -866,7 +891,13 @@ export const useGameLogic = () => {
         }
 
         setPlayerHp(newHp);
-        setPlayerArmor(newArmor);
+
+        // Armor override for Magnetic Storm
+        if (roomState.activeSectorEvent?.type === 'MAGNETIC_STORM') {
+            setPlayerArmor(0);
+        } else {
+            setPlayerArmor(newArmor);
+        }
 
         // Show notification about perk changes
         const activePerks = activeCharacter.perks?.filter((p: any) => {
@@ -883,7 +914,23 @@ export const useGameLogic = () => {
             });
             playSound('scan');
         }
-    }, [isNight, activeCharacter, roomState.activeSectorEvent]); // Added roomState.activeSectorEvent dependency
+    }, [isNight, activeCharacter, roomState.activeSectorEvent]);
+
+    // SECTOR EVENT START EFFECTS
+    useEffect(() => {
+        const currentEvent = roomState.activeSectorEvent?.type || null;
+        if (currentEvent !== prevSectorEventRef.current) {
+            if (currentEvent === 'MAGNETIC_STORM') {
+                setScreenFlash('red');
+                playSound('error');
+                vibrate([500, 200, 500]);
+                setPlayerArmor(0);
+                setNotification({ id: 'mag-storm-start', type: 'error', message: '⚠️ DETEKTOVÁNA MAGNETICKÁ BOUŘE! Systémy brnění selhaly!' });
+                setTimeout(() => setScreenFlash(null), 1000);
+            }
+            prevSectorEventRef.current = currentEvent;
+        }
+    }, [roomState.activeSectorEvent]);
 
 
     const getAdjustedItem = (item: GameEvent, isNightNow: boolean, pClass: PlayerClass | null): GameEvent => {
@@ -1040,7 +1087,8 @@ export const useGameLogic = () => {
         playerHp, handleHpChange,
         playerFuel, handleFuelChange,
         playerGold, handleGoldChange,
-        playerArmor, setPlayerArmor,
+        playerArmor, handleArmorChange,
+        setPlayerArmor, // Still expose but primarily use handle
         playerOxygen, setPlayerOxygen,
         playerClass, setPlayerClass,
         activeCharacter, setActiveCharacter,
