@@ -10,13 +10,20 @@ Add a visual indicator to inventory cards when night mode is active:
 ### [nexus-game-companion](file:///c:/Users/Zbynek/Desktop/nexus-game-companion)
 
 #### [MODIFY] [InventoryView.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/InventoryView.tsx)
-- Add the diagonal stripe and blinking "NOC" text to the card rendering logic.
-- Use conditional rendering based on `isNight` and `item.timeVariant.enabled`.
+- (Completed) Added night mode indicators to backpack cards.
+
+#### [MODIFY] [App.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/App.tsx)
+- Pass `isNight={logic.isNight}` to `EventCard`.
+
+#### [MODIFY] [EventCard.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/EventCard.tsx)
+- Add `isNight` to props.
+- Implement the same diagonal stripe and blinking "NOC" label as in `InventoryView.tsx`.
 
 ## Verification Plan
 
 ### Manual Verification
 1. Run `npm run dev` in `nexus-game-companion`.
 2. Ensure night mode is active.
-3. Verify that cards with a night variant (like "111*") show the blinking "NOC" label and the purple/blue stripe in the backpack.
-4. Deploy to GitHub Pages.
+3. Open a card from the inventory or scan a card that has a night variant.
+4. Verify that the opened card shows the blinking "NOC" label and the purple/blue stripe in the top-right corner.
+5. Deploy to GitHub Pages.

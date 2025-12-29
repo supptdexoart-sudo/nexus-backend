@@ -6,9 +6,9 @@ I have cleaned up the Nexus Game Companion application by removing admin-related
 
 ### [nexus-game-companion](file:///c:/Users/Zbynek/Desktop/nexus-game-companion)
 
-#### [InventoryView.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/InventoryView.tsx)
-- Added a visual indicator for cards in night mode:
-    - **Purple/Blue Diagonal Stripe**: Located in the top-right corner of the card.
+#### [InventoryView.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/InventoryView.tsx) & [EventCard.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/EventCard.tsx)
+- Added a visual indicator for cards in night mode across the entire app:
+    - **Purple/Blue Diagonal Stripe**: Located in the top-right corner of the card (both in inventory and when expanded).
     - **Blinking "NOC" Label**: A pulsing indicator with a blue glow to clearly signal active night variants.
 
 #### [useGameLogic.ts](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/hooks/useGameLogic.ts)
