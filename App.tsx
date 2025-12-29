@@ -218,15 +218,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`h-screen w-screen bg-transparent overflow-hidden flex flex-col font-sans text-[#e0e0e0] relative`}>
-      {/* === GLOBAL VISUAL EFFECTS === */}
-      {/* 1. Grain/Noise Overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[9999] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
-
-      {/* 2. Vignette Effect (Dark corners) */}
-      <div className="absolute inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(0,0,0,0.8)_100%)]"></div>
-
-      {/* 3. Subtle Cream/White Tint in Center (HUD Feeling) */}
-      <div className="absolute inset-0 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_center,rgba(255,250,240,0.03)_0%,transparent_70%)]"></div>
+      {/* Effects are now global in index.html */}
 
 
       <AnimatePresence>
@@ -340,7 +332,7 @@ const App: React.FC = () => {
 
 
                 {logic.activeTab === Tab.ROOM && (
-                  <div className="absolute inset-0 bg-zinc-950/40">
+                  <div className="absolute inset-0 bg-zinc-950/20">
                     <Room
                       roomState={logic.roomState} inventory={logic.inventory} scanLog={logic.scanLog}
                       onExitToMenu={logic.handleExitToMenu} onSendMessage={logic.handleSendMessage} onStartGame={logic.handleStartGame}
@@ -359,7 +351,7 @@ const App: React.FC = () => {
                 )}
 
                 {logic.activeTab === Tab.SETTINGS && (
-                  <div className="absolute inset-0 bg-zinc-950/40">
+                  <div className="absolute inset-0 bg-zinc-950/20">
                     <SettingsView
                       onBack={() => logic.setActiveTab(Tab.SCANNER)} onLogout={logic.handleLogout}
                       soundEnabled={logic.soundEnabled} vibrationEnabled={logic.vibrationEnabled}
@@ -370,7 +362,7 @@ const App: React.FC = () => {
                 )}
 
                 {logic.activeTab === Tab.SPACESHIP && (
-                  <div className="absolute inset-0 bg-zinc-950/40">
+                  <div className="absolute inset-0 bg-zinc-950/20">
                     <SpaceshipView
                       playerFuel={logic.playerFuel}
                       inventory={logic.inventory}

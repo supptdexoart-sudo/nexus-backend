@@ -345,7 +345,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                         }}
                         className={`px-4 py-2.5 rounded-lg flex items-center gap-2 border transition-all whitespace-nowrap ${selectedCategory === opt.id
                             ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                            : 'bg-white/5 border-white/10 text-zinc-500 hover:text-white hover:border-white/30'
+                            : 'bg-white/5 border-white/10 text-zinc-500 hover:text-white hover:border-white/30 backdrop-blur-sm'
                             }`}
                     >
                         <opt.icon className="w-3 h-3" />
@@ -365,7 +365,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                         }}
                         className={`flex-1 py-2 flex flex-col items-center justify-center gap-1 border rounded transition-all ${sortMode === opt.id
                             ? 'bg-signal-cyan/20 border-signal-cyan text-signal-cyan shadow-[0_0_10px_rgba(0,242,255,0.2)]'
-                            : 'bg-white/5 border-white/10 text-white/40'
+                            : 'bg-white/5 border-white/10 text-white/40 backdrop-blur-sm'
                             }`}
                     >
                         <opt.icon className="w-3.5 h-3.5" />
