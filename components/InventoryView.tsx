@@ -371,9 +371,9 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                         {/* NIGHT MODE INDICATOR */}
                                         {isNight && item.timeVariant?.enabled && (
                                             <>
-                                                {/* Diagonal Stripe */}
-                                                <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden pointer-events-none z-20">
-                                                    <div className="absolute top-[-8px] right-[-32px] w-[100px] h-[24px] bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 rotate-45 flex items-center justify-center shadow-[0_0_15px_rgba(147,51,234,0.4)]">
+                                                {/* Diagonal Stripe (Enlarged) */}
+                                                <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+                                                    <div className="absolute top-[-2px] right-[-38px] w-[120px] h-[32px] bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 rotate-45 flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.5)] border-b border-purple-400/30">
                                                     </div>
                                                 </div>
 
