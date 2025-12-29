@@ -14,6 +14,11 @@ Vyčistil jsem aplikaci Nexus Game Companion odstraněním funkcí související
 #### [useGameLogic.ts](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/hooks/useGameLogic.ts)
 - Aktualizována funkce `getAdjustedItem`, aby správně aplikovala přepsání `nightRarity` a `nightFlavorText` při aktivním nočním režimu. To zajišťuje, že změny rarity (např. z Common na Rare) jsou pro hráče viditelné.
 
+### [nexus-backend](https://github.com/supptdexoart-sudo/nexus-backend)
+
+#### [server.js](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/nexus-backend/server.js)
+- **Anti-Spin-Down Mechanismus**: Implementován automatický self-ping (každých 14 minut). Pokud server běží na Render.com, aplikace periodicky volá své vlastní `/api/health` endpointy, což zabraňuje uspání služby (spin-down) u bezplatného tarifu Render.
+
 ## 📊 Analýza výkonu a optimalizace
 Rozdělení na dvě specializované aplikace přineslo významné zvýšení výkonu, zejména pro mobilní hráčskou aplikaci.
 
