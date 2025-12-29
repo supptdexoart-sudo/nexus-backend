@@ -13,24 +13,20 @@ import SpaceStationView from './components/SpaceStationView';
 import MerchantScreen from './components/MerchantScreen';
 import ServerLoader from './components/ServerLoader';
 import {
-  Scan, Box, Hammer, Users, Settings as SettingsIcon,
+  Scan, Box, Users, Settings as SettingsIcon,
   Sun, Moon, Heart, Coins, Shield,
-  Wind, Loader2, AlertTriangle, Rocket, Fuel, UserCircle, Activity
+  Wind, Loader2, AlertTriangle, Rocket, Fuel, Activity
 } from 'lucide-react';
 import { playSound, vibrate } from './services/soundService';
 import { GameEventType, GameEvent, Stat } from './types';
 
 // Lazy Loads
 const inventoryImport = () => import('./components/InventoryView');
-const generatorImport = () => import('./components/Generator');
-const characterManagementImport = () => import('./components/CharacterManagement');
 const roomImport = () => import('./components/Room');
 const settingsImport = () => import('./components/SettingsView');
 const spaceshipImport = () => import('./components/SpaceshipView');
 
 const InventoryView = lazy(inventoryImport);
-const Generator = lazy(generatorImport);
-const CharacterManagement = lazy(characterManagementImport);
 const Room = lazy(roomImport);
 const SettingsView = lazy(settingsImport);
 const SpaceshipView = lazy(spaceshipImport);
@@ -104,15 +100,9 @@ const App: React.FC = () => {
       inventoryImport().catch(() => { });
       roomImport().catch(() => { });
       spaceshipImport().catch(() => { });
-      if (logic.isAdmin) {
-        generatorImport().catch(() => { });
-        if (logic.userEmail === 'zbynekbal97@gmail.com') {
-          characterManagementImport().catch(() => { });
-        }
-      }
       settingsImport().catch(() => { });
     }
-  }, [bootComplete, logic.userEmail, isOnline, logic.isAdmin]);
+  }, [bootComplete, logic.userEmail, isOnline]);
 
   useEffect(() => {
     const updateOnlineStatus = () => setIsOnline(navigator.onLine);
@@ -278,15 +268,6 @@ const App: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div className={`w-1.5 h-1.5 ${isOnline ? 'bg-arc-cyan shadow-[0_0_8px_#00f2ff]' : 'bg-red-500 animate-ping'}`} />
                 <span className="text-[10px] font-mono tracking-widest text-zinc-500">NEXUS_LINK // v2.1</span>
-
-                {logic.isAdmin && (
-                  <div className={`ml-2 px-1.5 py-0.5 border text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${logic.isTestMode
-                    ? 'border-orange-500/30 text-orange-500 bg-orange-500/10'
-                    : 'border-arc-cyan/30 text-arc-cyan bg-arc-cyan/10'
-                    }`}>
-                    {logic.isTestMode ? 'TEST_ENV' : 'LIVE'}
-                  </div>
-                )}
               </div>
 
               {/* Removed Absolute Turn Indicator - Moved to Stats Grid */}
@@ -350,24 +331,15 @@ const App: React.FC = () => {
                   <div className="absolute inset-0 bg-black">
                     <InventoryView
                       inventory={logic.inventory} loadingInventory={false} isRefreshing={logic.isRefreshing}
-                      isAdmin={logic.isAdmin} isNight={logic.isNight} adminNightOverride={logic.adminNightOverride}
+                      isNight={logic.isNight}
                       playerClass={logic.playerClass} giftTarget={logic.giftTarget} onRefresh={logic.handleRefreshDatabase}
-                      onItemClick={logic.handleOpenInventoryItem} isTestMode={logic.isTestMode}
+                      onItemClick={logic.handleOpenInventoryItem}
                       getAdjustedItem={logic.getAdjustedItem}
                     />
                   </div>
                 )}
 
-                {logic.activeTab === Tab.GENERATOR && (
-                  <div className="absolute inset-0 bg-black">
-                    <Generator
-                      onSaveCard={(e) => { logic.handleSaveEvent(e, true); }}
-                      userEmail={logic.userEmail || ''} initialData={logic.editingEvent}
-                      onClearData={() => logic.setEditingEvent(null)} onDelete={(id) => { logic.handleDeleteEvent(id); }}
-                      masterCatalog={logic.masterCatalog}
-                    />
-                  </div>
-                )}
+
 
                 {logic.activeTab === Tab.ROOM && (
                   <div className="absolute inset-0 bg-black">
@@ -394,8 +366,7 @@ const App: React.FC = () => {
                       onBack={() => logic.setActiveTab(Tab.SCANNER)} onLogout={logic.handleLogout}
                       soundEnabled={logic.soundEnabled} vibrationEnabled={logic.vibrationEnabled}
                       onToggleSound={logic.handleToggleSound} onToggleVibration={logic.handleToggleVibration} userEmail={logic.userEmail}
-                      isAdmin={logic.isAdmin} isTestMode={logic.isTestMode} onToggleTestMode={logic.toggleTestMode}
-                      onHardReset={logic.handleHardReset} onWipeTestVault={logic.handleWipeTestVault}
+                      onHardReset={logic.handleHardReset}
                     />
                   </div>
                 )}
@@ -413,11 +384,7 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                {logic.activeTab === Tab.CHARACTERS && (
-                  <div className="absolute inset-0 bg-black">
-                    <CharacterManagement userEmail={logic.userEmail || ''} />
-                  </div>
-                )}
+
               </Suspense>
             </ModuleErrorBoundary>
           </div>
@@ -428,73 +395,42 @@ const App: React.FC = () => {
             <div className="h-full flex items-center justify-around px-6">
               {/* Left Group - Closer to center */}
               <div className="flex gap-1">
-                <NavButton active={logic.activeTab === Tab.INVENTORY} onClick={() => logic.setActiveTab(Tab.INVENTORY)} icon={<Box />} label={(logic.isAdmin && !logic.isTestMode) ? "DB" : "BATOH"} />
+                <NavButton active={logic.activeTab === Tab.INVENTORY} onClick={() => logic.setActiveTab(Tab.INVENTORY)} icon={<Box />} label="BATOH" />
                 <NavButton active={logic.activeTab === Tab.SPACESHIP} onClick={() => logic.setActiveTab(Tab.SPACESHIP)} icon={<Rocket />} label="LOĎ" />
-                {/* Admin: Scanner on edge */}
-                {(logic.isAdmin && !logic.isTestMode) && <NavButton active={logic.activeTab === Tab.SCANNER} onClick={() => logic.setActiveTab(Tab.SCANNER)} icon={<Scan />} label="SCAN" />}
               </div>
 
               {/* Right Group - Closer to center */}
               <div className="flex gap-1">
-                {(logic.userEmail === 'zbynekbal97@gmail.com' && !logic.isTestMode) && <NavButton active={logic.activeTab === Tab.CHARACTERS} onClick={() => logic.setActiveTab(Tab.CHARACTERS)} icon={<UserCircle />} label="CHAR" />}
                 <NavButton active={logic.activeTab === Tab.ROOM} onClick={() => logic.setActiveTab(Tab.ROOM)} icon={<Users />} label="TÝM" />
                 <NavButton active={logic.activeTab === Tab.SETTINGS} onClick={() => logic.setActiveTab(Tab.SETTINGS)} icon={<SettingsIcon />} label="SYS" />
               </div>
             </div>
 
-            {/* FLOATING CENTER BUTTON - Conditional: Scanner (normal) or FAB (admin) */}
-            {!(logic.isAdmin && !logic.isTestMode) && (
-              <button
-                onClick={() => logic.setActiveTab(Tab.SCANNER)}
-                className={`absolute left-1/2 -translate-x-1/2 -top-6 w-[68px] h-[68px] rounded-full transition-all duration-300 group ${logic.activeTab === Tab.SCANNER
-                  ? 'bg-gradient-to-br from-arc-cyan via-arc-yellow to-arc-cyan shadow-[0_8px_32px_rgba(0,242,255,0.5),0_0_60px_rgba(249,212,35,0.3)]'
-                  : 'bg-gradient-to-br from-zinc-900 to-black shadow-[0_8px_24px_rgba(0,0,0,0.6)]'
-                  }`}
-              >
-                <div className={`absolute inset-0 rounded-full transition-all duration-300 ${logic.activeTab === Tab.SCANNER
-                  ? 'border-2 border-arc-yellow animate-pulse'
-                  : 'border border-white/20 group-hover:border-arc-cyan/50'
-                  }`}></div>
+            <button
+              onClick={() => logic.setActiveTab(Tab.SCANNER)}
+              className={`absolute left-1/2 -translate-x-1/2 -top-6 w-[68px] h-[68px] rounded-full transition-all duration-300 group ${logic.activeTab === Tab.SCANNER
+                ? 'bg-gradient-to-br from-arc-cyan via-arc-yellow to-arc-cyan shadow-[0_8px_32px_rgba(0,242,255,0.5),0_0_60px_rgba(249,212,35,0.3)]'
+                : 'bg-gradient-to-br from-zinc-900 to-black shadow-[0_8px_24px_rgba(0,0,0,0.6)]'
+                }`}
+            >
+              <div className={`absolute inset-0 rounded-full transition-all duration-300 ${logic.activeTab === Tab.SCANNER
+                ? 'border-2 border-arc-yellow animate-pulse'
+                : 'border border-white/20 group-hover:border-arc-cyan/50'
+                }`}></div>
 
-                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-arc-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-arc-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-                <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${logic.activeTab === Tab.SCANNER ? 'text-black scale-110' : 'text-arc-cyan group-hover:rotate-180'
-                  }`}>
-                  <Scan size={28} strokeWidth={logic.activeTab === Tab.SCANNER ? 3 : 2} />
-                </div>
+              <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${logic.activeTab === Tab.SCANNER ? 'text-black scale-110' : 'text-arc-cyan group-hover:rotate-180'
+                }`}>
+                <Scan size={28} strokeWidth={logic.activeTab === Tab.SCANNER ? 3 : 2} />
+              </div>
 
-                {logic.activeTab === Tab.SCANNER && (
-                  <div className="absolute inset-0 rounded-full border-2 border-arc-yellow animate-ping opacity-75"></div>
-                )}
-              </button>
-            )}
+              {logic.activeTab === Tab.SCANNER && (
+                <div className="absolute inset-0 rounded-full border-2 border-arc-yellow animate-ping opacity-75"></div>
+              )}
+            </button>
 
-            {/* ADMIN: FAB in center */}
-            {(logic.isAdmin && !logic.isTestMode) && (
-              <button
-                onClick={() => logic.setActiveTab(Tab.GENERATOR)}
-                className={`absolute left-1/2 -translate-x-1/2 -top-6 w-[68px] h-[68px] rounded-full transition-all duration-300 group ${logic.activeTab === Tab.GENERATOR
-                  ? 'bg-gradient-to-br from-orange-500 via-arc-yellow to-orange-500 shadow-[0_8px_32px_rgba(249,115,22,0.5),0_0_60px_rgba(249,212,35,0.3)]'
-                  : 'bg-gradient-to-br from-zinc-900 to-black shadow-[0_8px_24px_rgba(0,0,0,0.6)]'
-                  }`}
-              >
-                <div className={`absolute inset-0 rounded-full transition-all duration-300 ${logic.activeTab === Tab.GENERATOR
-                  ? 'border-2 border-arc-yellow animate-pulse'
-                  : 'border border-white/20 group-hover:border-orange-500/50'
-                  }`}></div>
 
-                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${logic.activeTab === Tab.GENERATOR ? 'text-black scale-110' : 'text-orange-500 group-hover:rotate-180'
-                  }`}>
-                  <Hammer size={28} strokeWidth={logic.activeTab === Tab.GENERATOR ? 3 : 2} />
-                </div>
-
-                {logic.activeTab === Tab.GENERATOR && (
-                  <div className="absolute inset-0 rounded-full border-2 border-arc-yellow animate-ping opacity-75"></div>
-                )}
-              </button>
-            )}
 
             {/* VARIANT B: HEXAGON */}
             {/* <button
@@ -569,13 +505,12 @@ const App: React.FC = () => {
               <MerchantScreen
                 merchant={logic.activeMerchant}
                 userGold={logic.playerGold}
-                adminEmail={logic.isTestMode ? 'test1@nexus.cz' : 'zbynekbal97@gmail.com'}
+                adminEmail={logic.userEmail || ''}
                 inventory={logic.inventory}
                 playerClass={logic.playerClass}
                 onClose={() => logic.setActiveMerchant(null)}
                 onBuy={logic.handleBuyItem}
                 onSell={logic.handleSellItem}
-                onAddFreeItem={(item) => logic.handleSaveEvent(item, false)}
                 masterCatalog={logic.masterCatalog}
               />
             )}
@@ -589,12 +524,9 @@ const App: React.FC = () => {
                 onClaimRewards={logic.handleClaimStationRewards}
                 inventory={logic.inventory}
                 masterCatalog={logic.masterCatalog}
-                onCraft={(item) => { logic.handleCraftItem(item.id, [], item); }}
                 playerGold={logic.playerGold}
                 playerClass={logic.playerClass}
                 onInventoryUpdate={logic.handleRefreshDatabase}
-                isAdmin={logic.isAdmin}
-                isTestMode={logic.isTestMode}
                 onGoldChange={logic.handleGoldChange}
               />
             )}

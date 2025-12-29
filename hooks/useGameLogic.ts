@@ -3,8 +3,7 @@ import * as apiService from '../services/apiService';
 import { GameEvent, GameEventType, PlayerClass, RoomState, DilemmaOption } from '../types';
 import { playSound, toggleSoundSystem, toggleVibrationSystem, vibrate } from '../services/soundService';
 
-const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
-const TEST_ACCOUNT_EMAIL = 'test1@nexus.cz'; // Pro wipe testovacích dat
+
 
 // Helper to determine day/night based on real time
 const isNightTime = () => {
@@ -16,10 +15,6 @@ const isNightTime = () => {
 export enum Tab {
     SCANNER = 'scanner',
     INVENTORY = 'inventory',
-    MERCHANT = 'merchant',
-    GENERATOR = 'generator',
-    CHARACTERS = 'characters',
-    DATABASE = 'database',
     ROOM = 'room',
     SETTINGS = 'settings',
     SPACESHIP = 'spaceship'
@@ -28,15 +23,12 @@ export enum Tab {
 export const useGameLogic = () => {
     // --- STATE ---
     const [userEmail, setUserEmail] = useState<string | null>(localStorage.getItem('nexus_current_user'));
-    const [isAdmin, setIsAdmin] = useState(false);
     const [isGuest, setIsGuest] = useState(false);
-    const [isTestMode, setIsTestMode] = useState(false);
 
     const [isServerReady, setIsServerReady] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const [isNight, _setIsNight] = useState(isNightTime());
-    const [adminNightOverride, setAdminNightOverride] = useState<boolean | null>(null);
 
     // Game Stats
     // const [playerHP, setPlayerHP] = useState(100); // Internal state - REMOVED (Build Fix)
@@ -68,8 +60,7 @@ export const useGameLogic = () => {
     // Events & Inventory
     const [currentEvent, setCurrentEvent] = useState<GameEvent | null>(null);
     const [inventory, setInventory] = useState<GameEvent[]>([]);
-    const [masterCatalog, setMasterCatalog] = useState<GameEvent[]>([]);
-    const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null); // For Generator
+    const [masterCatalog] = useState<GameEvent[]>([]);
 
     // Multiplayer State
     const [roomState, setRoomState] = useState<RoomState>({
@@ -198,17 +189,15 @@ export const useGameLogic = () => {
         // Simple craft: remove ingredients, add result
         // Verify ingredients existence
         const hasAll = ingredients.every(ingId => inventory.some(i => i.id === ingId));
-        if (!hasAll && !isTestMode) {
+        if (!hasAll) {
             setNotification({ id: 'craft-err', message: 'Chybí suroviny!', type: 'error' });
             return;
         }
 
-        if (!isTestMode) {
-            for (const ingId of ingredients) {
-                // Find instance to remove
-                const toRemove = inventory.find(i => i.id === ingId);
-                if (toRemove) await handleDeleteEvent(toRemove.id);
-            }
+        for (const ingId of ingredients) {
+            // Find instance to remove
+            const toRemove = inventory.find(i => i.id === ingId);
+            if (toRemove) await handleDeleteEvent(toRemove.id);
         }
 
         await handleSaveEvent(result, true);
@@ -232,31 +221,7 @@ export const useGameLogic = () => {
         }
     };
 
-    const handleWipeTestVault = async () => {
-        if (!isAdmin) return;
-        if (!confirm("OPRAVDU SMAZAT CELÝ TESTOVACÍ BATOH (test1@nexus.cz)? Tuto akci nelze vzít zpět.")) return;
 
-        setIsRefreshing(true);
-        playSound('error');
-        try {
-            // Fetch current full test inventory to get IDs
-            const currentInv = await apiService.getInventory(TEST_ACCOUNT_EMAIL);
-
-            // Delete all items one by one (API doesn't have wipe endpoint yet, safer this way for now)
-            await Promise.all(currentInv.map(item => apiService.deleteCard(TEST_ACCOUNT_EMAIL, item.id)));
-
-            // Clear local
-            setInventory([]);
-            localStorage.setItem(`nexus_inv_${TEST_ACCOUNT_EMAIL}`, JSON.stringify([]));
-
-            setNotification({ id: 'wipe-ok', message: 'Testovací batoh byl kompletně vymazán.', type: 'success' });
-            playSound('success');
-        } catch (e) {
-            setNotification({ id: 'wipe-err', message: 'Chyba při mazání testovacích dat.', type: 'error' });
-        } finally {
-            setIsRefreshing(false);
-        }
-    };
 
     const handleHardReset = async () => {
         if (isGuest) {
@@ -457,9 +422,6 @@ export const useGameLogic = () => {
         setIsAIThinking(true);
         try {
             let item: GameEvent | null | undefined = masterCatalog.find(i => i.id === itemId);
-            if (!item) {
-                item = await apiService.getCardById(ADMIN_EMAIL, itemId);
-            }
             if (item) {
                 setCurrentEvent(getAdjustedItem(item, isNight, playerClass));
                 addToLog(`Inspekce: ${item.title} `);
@@ -684,9 +646,9 @@ export const useGameLogic = () => {
             return;
         }
 
-        if (navigator.onLine) {
+        if (navigator.onLine && userEmail) {
             try {
-                const cloudItem = await apiService.getCardById(ADMIN_EMAIL, code);
+                const cloudItem = await apiService.getCardById(userEmail, code);
                 if (cloudItem) {
                     handleFoundItem(cloudItem, 'scanner');
                     return;
@@ -873,11 +835,7 @@ export const useGameLogic = () => {
         setIsServerReady(gStatus);
     };
 
-    // Admin Detection
-    useEffect(() => {
-        const adminEmails = ['zbynekbal97@gmail.com', 'test1@nexus.cz'];
-        setIsAdmin(userEmail ? adminEmails.includes(userEmail) : false);
-    }, [userEmail]);
+
 
     // Dynamic Day/Night Perk Updates
     useEffect(() => {
@@ -910,7 +868,6 @@ export const useGameLogic = () => {
         }
     }, [isNight, activeCharacter]);
 
-    const toggleTestMode = () => setIsTestMode(p => !p);
 
     const getAdjustedItem = (item: GameEvent, isNightNow: boolean, pClass: PlayerClass | null): GameEvent => {
         let adjusted = { ...item };
@@ -939,16 +896,20 @@ export const useGameLogic = () => {
             const inv = await apiService.getInventory(target);
             setInventory(inv);
             localStorage.setItem(`nexus_inv_${target}`, JSON.stringify(inv));
-            if (isAdmin && !isTestMode) {
-                const catalog = await apiService.getMasterCatalog();
-                setMasterCatalog(catalog);
-            }
         } catch (e) { console.error(e); }
         finally { setIsRefreshing(false); }
     };
 
     const handleDeleteEvent = async (id: string) => {
         const target = userEmail || 'guest';
+        const MASTER_ADMIN_EMAIL = 'zbynekbal97@gmail.com';
+
+        // Ochrana Master Katalogu: Pokud je to admin, nic nemažeme (ani v DB, ani lokálně)
+        if (userEmail?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+            console.log("🛡️ Master Catalog Protected: Deletion skipped for admin.");
+            return;
+        }
+
         // Optimistic
         setInventory(prev => {
             const next = prev.filter(i => i.id !== id);
@@ -1036,25 +997,19 @@ export const useGameLogic = () => {
     }, [activeTab, roomState.isInRoom, roomState.id, isServerReady]);
 
     // AUTO-SYNC INVENTORY FOR REGULAR PLAYERS
-    // Admin and test mode users have manual control, regular players get automatic sync
     useEffect(() => {
-        const isRegularPlayer = !isAdmin || isTestMode;
-
-        if (activeTab === Tab.INVENTORY && isRegularPlayer && isServerReady && userEmail && !isGuest) {
-            console.log('[AUTO-SYNC] Triggering inventory sync for regular player');
+        if (activeTab === Tab.INVENTORY && isServerReady && userEmail && !isGuest) {
+            console.log('[AUTO-SYNC] Triggering inventory sync');
             handleRefreshDatabase();
         }
-    }, [activeTab, isAdmin, isTestMode, isServerReady, userEmail, isGuest]);
+    }, [activeTab, isServerReady, userEmail, isGuest]);
 
     return {
         userEmail, setUserEmail,
-        isAdmin, setIsAdmin,
         isGuest, setIsGuest,
-        isTestMode, toggleTestMode,
         isServerReady, setIsServerReady,
         isRefreshing, handleRefreshDatabase,
         isNight,
-        adminNightOverride, setAdminNightOverride,
         playerHp, handleHpChange,
         playerFuel, handleFuelChange,
         playerGold, handleGoldChange,
@@ -1072,7 +1027,6 @@ export const useGameLogic = () => {
         currentEvent, setCurrentEvent,
         inventory,
         masterCatalog,
-        editingEvent, setEditingEvent,
         roomState, setRoomState,
         activeTrade,
         handleInitTrade, handleCancelTrade, handleConfirmTrade, handleTradeSelectOffer,
@@ -1084,7 +1038,6 @@ export const useGameLogic = () => {
         handleScanCode,
 
         handleSaveEvent, handleDeleteEvent, handleUseEvent,
-
         handlePlanetProgress,
         getAdjustedItem,
         handleGameSetup,
@@ -1097,14 +1050,12 @@ export const useGameLogic = () => {
         handleSendMessage,
         closeEvent,
         handleOpenInventoryItem: (item: GameEvent) => {
-            if (isAdmin && !isTestMode) { setEditingEvent(item); setActiveTab(Tab.GENERATOR); }
-            else { setCurrentEvent(item); }
+            setCurrentEvent(item);
         },
         handleSwapItems,
         handleInspectItem,
         handleCraftItem,
         handleHardReset,
-        handleWipeTestVault,
         handleSwitchToOffline: () => { setIsGuest(true); setIsServerReady(true); setNotification({ id: 'offline', message: 'Offline Mode', type: 'warning' }); },
 
         // --- ADDED MISSING EXPORTS ---

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Volume2, VolumeX, Vibrate, VibrateOff, LogOut, ChevronRight, ArrowLeft, Shield, Maximize, Minimize, FlaskConical, Database, RefreshCw, Trash2 } from 'lucide-react';
+import { BookOpen, Volume2, VolumeX, Vibrate, VibrateOff, LogOut, ChevronRight, ArrowLeft, Shield, Maximize, Minimize, RefreshCw } from 'lucide-react';
 import ManualView from './ManualView';
 
 interface SettingsViewProps {
@@ -12,16 +12,12 @@ interface SettingsViewProps {
   onToggleSound: () => void;
   onToggleVibration: () => void;
   userEmail: string | null;
-  isAdmin?: boolean;
-  isTestMode?: boolean;
-  onToggleTestMode?: () => void;
   onHardReset?: () => void;
-  onWipeTestVault?: () => void; // Added prop
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
   onBack, onLogout, soundEnabled, vibrationEnabled, onToggleSound, onToggleVibration, userEmail,
-  isAdmin, isTestMode, onToggleTestMode, onHardReset, onWipeTestVault
+  onHardReset
 }) => {
   const [showManual, setShowManual] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -81,64 +77,26 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </div>
 
-          {/* ADMIN ACCOUNT SWITCHER */}
-          {isAdmin && (
-            <div className="space-y-2">
-              <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] pl-1">Admin_Účty</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    localStorage.setItem('nexus_current_user', 'test1@nexus.cz');
-                    window.location.reload();
-                  }}
-                  className={`p-4 tactical-card border-2 flex flex-col items-center gap-2 transition-all active:scale-95 ${userEmail === 'test1@nexus.cz' ? 'border-orange-500 bg-orange-950/20' : 'border-zinc-700 bg-zinc-900/50'}`}
-                >
-                  <FlaskConical className={`w-6 h-6 ${userEmail === 'test1@nexus.cz' ? 'text-orange-500' : 'text-zinc-500'}`} />
-                  <div className="text-center">
-                    <span className={`text-[10px] font-black uppercase block ${userEmail === 'test1@nexus.cz' ? 'text-orange-500' : 'text-zinc-400'}`}>Test Admin</span>
-                    <span className="text-[8px] text-zinc-600 uppercase font-mono">test1@nexus.cz</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    localStorage.setItem('nexus_current_user', 'zbynekbal97@gmail.com');
-                    window.location.reload();
-                  }}
-                  className={`p-4 tactical-card border-2 flex flex-col items-center gap-2 transition-all active:scale-95 ${userEmail === 'zbynekbal97@gmail.com' ? 'border-purple-500 bg-purple-950/20' : 'border-zinc-700 bg-zinc-900/50'}`}
-                >
-                  <Database className={`w-6 h-6 ${userEmail === 'zbynekbal97@gmail.com' ? 'text-purple-500' : 'text-zinc-500'}`} />
-                  <div className="text-center">
-                    <span className={`text-[10px] font-black uppercase block ${userEmail === 'zbynekbal97@gmail.com' ? 'text-purple-500' : 'text-zinc-400'}`}>Master Admin</span>
-                    <span className="text-[8px] text-zinc-600 uppercase font-mono">zbynekbal97@gmail.com</span>
-                  </div>
-                </button>
+          {/* ADMIN ACCOUNTS SECTION */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-[1px] flex-1 bg-white/5"></div>
+              <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Admin_Účty</span>
+              <div className="h-[1px] flex-1 bg-white/5"></div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              <div className="p-4 tactical-card border-white/5 bg-white/[0.01] flex items-center gap-4 opacity-60">
+                <div className="p-2 bg-zinc-800 rounded-lg">
+                  <Shield className="w-4 h-4 text-zinc-500" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Test Admin</p>
+                  <p className="text-xs font-mono text-zinc-500">test@nexus.cz</p>
+                </div>
               </div>
             </div>
-          )}
-
-          {/* ADMIN TEST MODE SWITCH */}
-          {isAdmin && (
-            <div className="space-y-4">
-              {onToggleTestMode && (
-                <button
-                  onClick={onToggleTestMode}
-                  className={`w-full p-4 tactical-card border-2 flex items-center justify-between group active:scale-[0.98] transition-all ${isTestMode ? 'border-orange-500 bg-orange-950/20' : 'border-purple-500 bg-purple-900/20'}`}
-                >
-                  <div className="flex items-center gap-4">
-                    {isTestMode ? <FlaskConical className="w-6 h-6 text-orange-500 animate-pulse" /> : <Database className="w-6 h-6 text-purple-500" />}
-                    <div className="text-left">
-                      <span className={`text-sm font-black uppercase tracking-wider block ${isTestMode ? 'text-orange-500' : 'text-purple-500'}`}>
-                        {isTestMode ? 'Režim: TESTOVACÍ BATOH' : 'Režim: MASTER DATABÁZE'}
-                      </span>
-                      <span className="text-[9px] text-zinc-400 uppercase font-bold tracking-tight">
-                        {isTestMode ? 'Používáte virtuální testovací účet' : 'Používáte hlavní účet (Live)'}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              )}
-            </div>
-          )}
+          </div>
 
           <button
             onClick={() => setShowManual(true)}
@@ -177,24 +135,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             </button>
           </div>
 
-          {/* WIPE TEST VAULT BUTTON - ONLY FOR TEST MODE ADMIN */}
-          {isTestMode && isAdmin && onWipeTestVault && (
-            <button
-              onClick={onWipeTestVault}
-              className="w-full p-4 border border-red-500/50 bg-red-950/20 rounded-xl flex items-center justify-between group active:scale-[0.98] transition-all hover:bg-red-900/30"
-            >
-              <div className="flex items-center gap-4">
-                <Trash2 className="w-5 h-5 text-red-500" />
-                <div className="text-left">
-                  <span className="text-sm font-black uppercase tracking-wider block text-red-500">VYMAZAT TESTOVACÍ DATA</span>
-                  <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-tight">Smaže všechen testovací inventář ze serveru.</span>
-                </div>
-              </div>
-            </button>
-          )}
-
           {/* HARD RESET BUTTON */}
-          {onHardReset && !isTestMode && (
+          {onHardReset && (
             <button
               onClick={onHardReset}
               className="w-full p-4 border border-orange-500/30 bg-orange-950/20 rounded-xl flex items-center justify-between group active:scale-[0.98] transition-all hover:bg-orange-900/30"

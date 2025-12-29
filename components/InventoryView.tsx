@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { GameEvent, GameEventType, PlayerClass } from '../types';
-import { Box, ShoppingBag, BookOpen, Crown, RefreshCw, Loader2, Database, Swords, ArrowDownAZ, Star, Target, ArrowLeftRight, X, Zap, Satellite, Hammer, Filter, Layers, Copy, FlaskConical, Globe } from 'lucide-react';
+import { Box, ShoppingBag, BookOpen, Crown, RefreshCw, Loader2, Database, Swords, ArrowDownAZ, Star, Target, ArrowLeftRight, X, Zap, Satellite, Package, Filter, Layers, Copy, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playSound, vibrate } from '../services/soundService';
 
@@ -9,9 +9,7 @@ interface InventoryViewProps {
     inventory: GameEvent[];
     loadingInventory: boolean;
     isRefreshing: boolean;
-    isAdmin: boolean;
     isNight: boolean;
-    adminNightOverride: boolean | null;
     playerClass: PlayerClass | null;
     giftTarget: string | null;
     onRefresh: () => void;
@@ -20,7 +18,6 @@ interface InventoryViewProps {
     getAdjustedItem: (item: GameEvent, isNight: boolean, pClass: PlayerClass | null) => GameEvent;
     userNickname?: string;
     roomMembers?: { name: string, hp: number }[];
-    isTestMode?: boolean; // New prop
 }
 
 type SortMode = 'DEFAULT' | 'RARITY' | 'SPECIALIZATION';
@@ -47,7 +44,7 @@ const getRarityConfig = (rarity: string, type: string) => {
 };
 
 const getEventIcon = (type: GameEventType, isResource: boolean) => {
-    if (isResource) return <Hammer className="w-4 h-4" />;
+    if (isResource) return <Package className="w-4 h-4" />;
     switch (type) {
         case GameEventType.BOSS: return <Crown className="w-4 h-4" />;
         case GameEventType.ITEM: return <Box className="w-4 h-4" />;
@@ -62,7 +59,7 @@ const getEventIcon = (type: GameEventType, isResource: boolean) => {
 
 const InventoryView: React.FC<InventoryViewProps> = ({
     inventory, loadingInventory, isRefreshing, playerClass,
-    onRefresh, onItemClick, isTestMode, isNight, getAdjustedItem
+    onRefresh, onItemClick, isNight, getAdjustedItem
 }) => {
     const [selectedCategory, setSelectedCategory] = useState<FilterCategory>('ALL');
     const [sortMode, setSortMode] = useState<SortMode>('DEFAULT');
@@ -172,7 +169,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
     const filterOptions = [
         { id: 'ALL', label: 'VŠE', icon: Layers },
-        { id: 'RESOURCES', label: 'SUROVINY', icon: Hammer },
+        { id: 'RESOURCES', label: 'SUROVINY', icon: Package },
         { id: 'ITEMS', label: 'VYBAVENÍ', icon: Box },
         { id: 'OTHERS', label: 'OSTATNÍ', icon: Filter },
     ];
@@ -267,17 +264,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                 <div className="flex flex-col">
                     <h2 className="text-2xl font-black uppercase tracking-tighter text-white font-sans chromatic-text leading-none">MŮJ BATOH</h2>
                     <div className="flex items-center gap-3 mt-1.5">
-                        {isTestMode ? (
-                            <>
-                                <FlaskConical className="w-4 h-4 text-orange-500 animate-pulse" />
-                                <span className="text-[10px] text-orange-500 font-mono font-bold uppercase tracking-[0.4em]">TESTOVACÍ_PROFIL</span>
-                            </>
-                        ) : (
-                            <>
-                                <Database className="w-4 h-4 text-signal-cyan/50" />
-                                <span className="text-[10px] text-white/40 font-mono font-bold uppercase tracking-[0.4em]">Osobní_Zásoby</span>
-                            </>
-                        )}
+                        <Database className="w-4 h-4 text-signal-cyan/50" />
+                        <span className="text-[10px] text-white/40 font-mono font-bold uppercase tracking-[0.4em]">Osobní_Zásoby</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -294,14 +282,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                 </div>
             </div>
 
-            {/* Warning Banner for Test Mode */}
-            {isTestMode && (
-                <div className="mb-4 bg-orange-950/30 border border-orange-500/50 p-2 rounded text-center relative z-20">
-                    <p className="text-[9px] text-orange-500 font-bold uppercase tracking-widest">
-                        POZOR: Operujete v testovacím trezoru. Data zde neovlivňují Master Databázi.
-                    </p>
-                </div>
-            )}
 
             {isCompareMode && (
                 <motion.div {...({ initial: { opacity: 0, y: -10 }, animate: { opacity: 1, y: 0 } } as any)} className="mb-4 p-3 bg-signal-cyan/10 border border-signal-cyan/30 rounded-xl flex items-center justify-between relative z-20">
@@ -390,18 +370,18 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                     >
                                         {/* Gradient Overlay from Border Color */}
                                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isResource ? 'bg-gradient-to-b from-orange-500/10 to-transparent' :
-                                                item.rarity === 'Legendary' ? 'bg-gradient-to-b from-yellow-500/10 to-transparent' :
-                                                    item.rarity === 'Epic' ? 'bg-gradient-to-b from-purple-500/10 to-transparent' :
-                                                        item.rarity === 'Rare' ? 'bg-gradient-to-b from-cyan-500/10 to-transparent' :
-                                                            'bg-gradient-to-b from-white/5 to-transparent'
+                                            item.rarity === 'Legendary' ? 'bg-gradient-to-b from-yellow-500/10 to-transparent' :
+                                                item.rarity === 'Epic' ? 'bg-gradient-to-b from-purple-500/10 to-transparent' :
+                                                    item.rarity === 'Rare' ? 'bg-gradient-to-b from-cyan-500/10 to-transparent' :
+                                                        'bg-gradient-to-b from-white/5 to-transparent'
                                             }`} />
 
                                         {/* Subtle Background Gradient */}
                                         <div className={`absolute inset-0 ${isResource ? 'bg-gradient-to-br from-orange-500/5 via-transparent to-transparent' :
-                                                item.rarity === 'Legendary' ? 'bg-gradient-to-br from-yellow-500/5 via-transparent to-transparent' :
-                                                    item.rarity === 'Epic' ? 'bg-gradient-to-br from-purple-500/5 via-transparent to-transparent' :
-                                                        item.rarity === 'Rare' ? 'bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent' :
-                                                            ''
+                                            item.rarity === 'Legendary' ? 'bg-gradient-to-br from-yellow-500/5 via-transparent to-transparent' :
+                                                item.rarity === 'Epic' ? 'bg-gradient-to-br from-purple-500/5 via-transparent to-transparent' :
+                                                    item.rarity === 'Rare' ? 'bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent' :
+                                                        ''
                                             }`} />
 
                                         {/* Compare Mode Selection Overlay */}
@@ -417,7 +397,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                         <div className="relative z-10 p-4 flex flex-col gap-2">
                                             {/* Item Title - Larger and More Prominent */}
                                             <h3 className={`font-black text-base uppercase leading-tight line-clamp-2 transition-colors ${isResource ? 'text-orange-100 group-hover:text-orange-400' :
-                                                    'text-white group-hover:text-signal-cyan'
+                                                'text-white group-hover:text-signal-cyan'
                                                 }`}>
                                                 {item.title}
                                             </h3>
