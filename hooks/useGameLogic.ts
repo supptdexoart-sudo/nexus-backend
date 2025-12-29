@@ -877,6 +877,8 @@ export const useGameLogic = () => {
             if (item.timeVariant.nightDescription) adjusted.description = item.timeVariant.nightDescription;
             if (item.timeVariant.nightType) adjusted.type = item.timeVariant.nightType;
             if (item.timeVariant.nightStats) adjusted.stats = item.timeVariant.nightStats;
+            if (item.timeVariant.nightRarity) adjusted.rarity = item.timeVariant.nightRarity;
+            if (item.timeVariant.nightFlavorText) adjusted.flavorText = item.timeVariant.nightFlavorText;
         }
         // Class Variant
         if (pClass && item.classVariants && item.classVariants[pClass]) {
