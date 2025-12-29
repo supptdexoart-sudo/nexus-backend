@@ -123,7 +123,7 @@ const ManualView: React.FC<ManualViewProps> = ({ onBack }) => {
               <div className="p-2 bg-white/5 rounded text-yellow-500 shrink-0 h-fit"><Sun className="w-4 h-4" /></div>
               <div>
                 <span className="text-white font-bold block text-xs uppercase tracking-widest mb-1">Denní/Noční Cyklus</span>
-                <p className="text-xs">Aplikace v reálném čase mění pravidla hry. V noci (po 20:00) mají monstra vyšší útok a karty mohou vykazovat jiné efekty a vizuální varianty.</p>
+                <p className="text-xs">Aplikace v reálném čase mění pravidla hry. V noci (po 20:00) mají monstra vyšší útok a karty mohou vykazovat jiné efekty. Noční variantu poznáš podle <span className="text-purple-400 font-bold">fialového pruhu</span> a blikajícího štítku <span className="text-blue-400 font-bold">NOC</span> v rohu karty.</p>
               </div>
             </li>
             <li className="flex gap-3">
@@ -145,7 +145,7 @@ const ManualView: React.FC<ManualViewProps> = ({ onBack }) => {
             <ul className="list-disc pl-5 space-y-2 text-xs">
               <li>Využívej <span className="text-white font-bold underline">Sektorovou burzu</span> pro zbavení se nepotřebných karet za kredity.</li>
               <li>Některé karty jsou <span className="text-signal-hazard font-bold">SPOTŘEBOVATELNÉ</span> – po jednom použití zmizí z tvého Batohu navždy.</li>
-              <li>Při skenování kódu se dívej na <span className="text-signal-cyan font-bold">RARITU</span>. Legendární karty mají často skryté noční bonusy.</li>
+              <li>Při skenování kódu se dívej na <span className="text-signal-cyan font-bold">RARITU</span>. Noční varianty označené štítkem <span className="text-blue-400 font-bold">NOC</span> mají často unikátní statistiky.</li>
               <li>Pozor na <span className="text-orange-500 font-bold">PALIVO</span> – pokud ti dojde, nebude možné skenovat žádné nové karty!</li>
             </ul>
           </div>
