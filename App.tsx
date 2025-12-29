@@ -381,6 +381,14 @@ const App: React.FC = () => {
 
           {/* BOTTOM NAVIGATION - REDESIGNED WITH FLOATING SCANNER */}
           <div className="h-16 bg-black/10 backdrop-blur-sm border-t border-white/10 relative z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+            {/* Sci-Fi Edge Effects */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-10"></div>
+              <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black/80 via-black/40 to-transparent z-10"></div>
+              <div className="absolute left-0 top-2 bottom-2 w-[1px] bg-arc-cyan/30 shadow-[0_0_10px_#00f2ff] animate-pulse z-20"></div>
+              <div className="absolute right-0 top-2 bottom-2 w-[1px] bg-arc-cyan/30 shadow-[0_0_10px_#00f2ff] animate-pulse z-20"></div>
+            </div>
+
             {/* Navigation Buttons Container */}
             <div className="h-full flex items-center justify-around px-6">
               {/* Left Group - Closer to center */}
