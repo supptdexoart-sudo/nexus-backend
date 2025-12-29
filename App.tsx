@@ -332,7 +332,7 @@ const App: React.FC = () => {
 
 
                 {logic.activeTab === Tab.ROOM && (
-                  <div className="absolute inset-0 bg-zinc-950/20">
+                  <div className="absolute inset-0 bg-transparent">
                     <Room
                       roomState={logic.roomState} inventory={logic.inventory} scanLog={logic.scanLog}
                       onExitToMenu={logic.handleExitToMenu} onSendMessage={logic.handleSendMessage} onStartGame={logic.handleStartGame}
@@ -351,7 +351,7 @@ const App: React.FC = () => {
                 )}
 
                 {logic.activeTab === Tab.SETTINGS && (
-                  <div className="absolute inset-0 bg-zinc-950/20">
+                  <div className="absolute inset-0 bg-transparent">
                     <SettingsView
                       onBack={() => logic.setActiveTab(Tab.SCANNER)} onLogout={logic.handleLogout}
                       soundEnabled={logic.soundEnabled} vibrationEnabled={logic.vibrationEnabled}
@@ -362,7 +362,7 @@ const App: React.FC = () => {
                 )}
 
                 {logic.activeTab === Tab.SPACESHIP && (
-                  <div className="absolute inset-0 bg-zinc-950/20">
+                  <div className="absolute inset-0 bg-transparent">
                     <SpaceshipView
                       playerFuel={logic.playerFuel}
                       inventory={logic.inventory}
@@ -380,7 +380,7 @@ const App: React.FC = () => {
           </div>
 
           {/* BOTTOM NAVIGATION - REDESIGNED WITH FLOATING SCANNER */}
-          <div className="h-16 bg-zinc-950/80 backdrop-blur-md border-t border-white/10 relative z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+          <div className="h-16 bg-black/10 backdrop-blur-sm border-t border-white/10 relative z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
             {/* Navigation Buttons Container */}
             <div className="h-full flex items-center justify-around px-6">
               {/* Left Group - Closer to center */}
