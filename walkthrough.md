@@ -6,6 +6,11 @@ I have cleaned up the Nexus Game Companion application by removing admin-related
 
 ### [nexus-game-companion](file:///c:/Users/Zbynek/Desktop/nexus-game-companion)
 
+#### [InventoryView.tsx](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/components/InventoryView.tsx)
+- Added a visual indicator for cards in night mode:
+    - **Purple/Blue Diagonal Stripe**: Located in the top-right corner of the card.
+    - **Blinking "NOC" Label**: A pulsing indicator with a blue glow to clearly signal active night variants.
+
 #### [useGameLogic.ts](file:///c:/Users/Zbynek/Desktop/nexus-game-companion/hooks/useGameLogic.ts)
 - Updated `getAdjustedItem` to correctly apply `nightRarity` and `nightFlavorText` overrides when night mode is active. This ensures rarity changes (e.g., Common to Rare) are visible to players.
 
