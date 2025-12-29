@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Volume2, VolumeX, Vibrate, VibrateOff, LogOut, ChevronRight, ArrowLeft, Shield, Maximize, Minimize, RefreshCw } from 'lucide-react';
+import { BookOpen, Volume2, VolumeX, Vibrate, VibrateOff, LogOut, ChevronRight, ArrowLeft, Shield, Maximize, Minimize, RefreshCw, AlertTriangle } from 'lucide-react';
 import ManualView from './ManualView';
 
 interface SettingsViewProps {
@@ -13,11 +13,12 @@ interface SettingsViewProps {
   onToggleVibration: () => void;
   userEmail: string | null;
   onHardReset?: () => void;
+  onTriggerSectorEvent?: (type: string, duration: number) => void;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
   onBack, onLogout, soundEnabled, vibrationEnabled, onToggleSound, onToggleVibration, userEmail,
-  onHardReset
+  onHardReset, onTriggerSectorEvent
 }) => {
   const [showManual, setShowManual] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -150,6 +151,28 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
             </button>
           )}
+
+          {/* SECTOR ANOMALY TRIGGER */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-[1px] flex-1 bg-red-500/20"></div>
+              <span className="text-[10px] font-black text-red-500/40 uppercase tracking-widest">Sektorové_Anomálie</span>
+              <div className="h-[1px] flex-1 bg-red-500/20"></div>
+            </div>
+
+            <button
+              onClick={() => onTriggerSectorEvent?.('MAGNETIC_STORM', 5)}
+              className="w-full p-4 border border-red-500/30 bg-red-950/20 rounded-xl flex items-center justify-between group active:scale-[0.98] transition-all hover:bg-red-900/30"
+            >
+              <div className="flex items-center gap-4">
+                <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
+                <div className="text-left">
+                  <span className="text-sm font-black uppercase tracking-wider block text-red-500">MAGNETICKÁ BOUŘE</span>
+                  <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-tight">Globální event (5 min) // Deaktivuje brnění týmu</span>
+                </div>
+              </div>
+            </button>
+          </div>
 
           <button
             onClick={onLogout}

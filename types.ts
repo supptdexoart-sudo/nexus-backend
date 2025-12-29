@@ -238,6 +238,12 @@ export interface RoomMember {
     isReady?: boolean;
 }
 
+export interface SectorEvent {
+    type: string | null;
+    initiator: string | null;
+    expiresAt: number;
+}
+
 export interface RoomState {
     id: string;
     isInRoom: boolean;
@@ -253,6 +259,7 @@ export interface RoomState {
     host: string;
     activeEncounter?: GameEvent | null;
     activeTrades?: any[]; // Array of active trade sessions
+    activeSectorEvent?: SectorEvent;
 }
 
 // CHARACTER CREATOR INTERFACES

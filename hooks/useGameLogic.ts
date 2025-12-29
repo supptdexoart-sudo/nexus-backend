@@ -554,7 +554,16 @@ export const useGameLogic = () => {
         }
     };
 
-    // --- MOVED OUT OF HANDLE START GAME ---
+
+    const handleTriggerSectorEvent = async (type: string, duration: number = 5) => {
+        if (!roomState.id) return;
+        try {
+            await apiService.triggerSectorEvent(roomState.id, type, roomState.nickname, duration);
+        } catch (e) {
+            console.error("Trigger sector event failed", e);
+        }
+    };
+
     const handleScanCode = async (code: string) => {
         if (isBlocked && !code.startsWith('friend:')) {
             const msg = !roomState.isGameStarted ? "MISE NEZAČALA: Čekejte na hostitele." : "NEMŮŽEŠ SKENOVAT: Nejseš na tahu!";
@@ -846,7 +855,15 @@ export const useGameLogic = () => {
 
         // Apply base stats + perks
         const newHp = activeCharacter.baseStats.hp + perkBonuses.hp;
-        const newArmor = activeCharacter.baseStats.armor + perkBonuses.armor;
+        let newArmor = activeCharacter.baseStats.armor + perkBonuses.armor;
+
+        // Apply magnetic storm effect if active (Magnetic Storm disables all armor)
+        if (roomState.activeSectorEvent?.type === 'MAGNETIC_STORM') {
+            const now = Date.now();
+            if (roomState.activeSectorEvent.expiresAt > now) {
+                newArmor = 0;
+            }
+        }
 
         setPlayerHp(newHp);
         setPlayerArmor(newArmor);
@@ -866,7 +883,7 @@ export const useGameLogic = () => {
             });
             playSound('scan');
         }
-    }, [isNight, activeCharacter]);
+    }, [isNight, activeCharacter, roomState.activeSectorEvent]); // Added roomState.activeSectorEvent dependency
 
 
     const getAdjustedItem = (item: GameEvent, isNightNow: boolean, pClass: PlayerClass | null): GameEvent => {
@@ -971,10 +988,18 @@ export const useGameLogic = () => {
                 }
 
                 setRoomState(prev => ({
-                    ...prev, members: status.members, turnIndex: status.turnIndex,
-                    messages, isGameStarted: status.isGameStarted, roundNumber: status.roundNumber,
-                    turnOrder: status.turnOrder, readyForNextRound: status.readyForNextRound,
-                    host: status.host, activeEncounter: status.activeEncounter, activeTrades: status.activeTrades
+                    ...prev,
+                    members: status.members,
+                    turnIndex: status.turnIndex,
+                    messages: messages, // Use messages from getRoomMessages
+                    isGameStarted: status.isGameStarted,
+                    roundNumber: status.roundNumber,
+                    turnOrder: status.turnOrder,
+                    readyForNextRound: status.readyForNextRound,
+                    host: status.host,
+                    activeEncounter: status.activeEncounter,
+                    activeTrades: status.activeTrades,
+                    activeSectorEvent: status.activeSectorEvent // NEW: Sync active sector event
                 }));
             } catch (e) { }
         }, 1000);
@@ -1050,6 +1075,7 @@ export const useGameLogic = () => {
         handleResolveDilemma,
         handleEndTurn,
         handleSendMessage,
+        handleTriggerSectorEvent,
         closeEvent,
         handleOpenInventoryItem: (item: GameEvent) => {
             setCurrentEvent(item);

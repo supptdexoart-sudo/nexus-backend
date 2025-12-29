@@ -18,7 +18,7 @@ import {
   Wind, Loader2, AlertTriangle, Rocket, Fuel, Activity
 } from 'lucide-react';
 import { playSound, vibrate } from './services/soundService';
-import { GameEventType, GameEvent, Stat } from './types';
+import { GameEventType, GameEvent, Stat, SectorEvent } from './types';
 
 // Lazy Loads
 const inventoryImport = () => import('./components/InventoryView');
@@ -318,6 +318,8 @@ const App: React.FC = () => {
             </div>
           </div>
 
+          <SectorEventBanner event={logic.roomState.activeSectorEvent} />
+
           <div className="flex-1 relative overflow-hidden flex flex-col">
             <ModuleErrorBoundary>
               <Suspense fallback={<TabLoader />}>
@@ -366,7 +368,7 @@ const App: React.FC = () => {
                       onBack={() => logic.setActiveTab(Tab.SCANNER)} onLogout={logic.handleLogout}
                       soundEnabled={logic.soundEnabled} vibrationEnabled={logic.vibrationEnabled}
                       onToggleSound={logic.handleToggleSound} onToggleVibration={logic.handleToggleVibration} userEmail={logic.userEmail}
-                      onHardReset={logic.handleHardReset}
+                      onHardReset={logic.handleHardReset} onTriggerSectorEvent={logic.handleTriggerSectorEvent}
                     />
                   </div>
                 )}
@@ -615,5 +617,70 @@ const NavButton: React.FC<{ active: boolean, onClick: () => void, icon: React.Re
     </span>
   </button>
 );
+
+const SectorEventBanner: React.FC<{ event?: SectorEvent }> = ({ event }) => {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (!event || !event.type || event.expiresAt <= Date.now()) {
+      setTimeLeft(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, event.expiresAt - Date.now());
+      setTimeLeft(remaining);
+      if (remaining <= 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [event]);
+
+  if (!event || !event.type || timeLeft <= 0) return null;
+
+  const formatTime = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${min}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const isMagnetic = event.type === 'MAGNETIC_STORM';
+
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className={`relative overflow-hidden border-b border-white/10 ${isMagnetic ? 'bg-red-950/20' : 'bg-arc-cyan/5'}`}
+    >
+      <div className="flex items-center justify-between px-4 py-3 relative z-10">
+        <div className="flex items-center gap-3">
+          <div className={`p-1.5 rounded bg-zinc-950 border ${isMagnetic ? 'border-red-500 text-red-500' : 'border-arc-cyan text-arc-cyan'}`}>
+            <AlertTriangle className={`w-4 h-4 ${isMagnetic ? 'animate-pulse' : ''}`} />
+          </div>
+          <div>
+            <h4 className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${isMagnetic ? 'text-red-500' : 'text-arc-cyan'}`}>
+              SEKTOROVÁ ANOMÁLIE: {isMagnetic ? 'MAGNETICKÁ BOUŘE' : event.type}
+            </h4>
+            <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-tighter">
+              Iniciátor: <span className="text-white">{event.initiator}</span> // Končí za: <span className="font-bold text-white font-mono">{formatTime(timeLeft)}</span>
+            </p>
+          </div>
+        </div>
+        {isMagnetic && (
+          <div className="flex flex-col items-end">
+            <span className="text-[8px] font-black text-red-500/80 uppercase animate-pulse">ŠTÍTY_DEAKTIVOVÁNY</span>
+          </div>
+        )}
+      </div>
+
+      {/* Progress bar background animation */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-20 overflow-hidden">
+        <div className={`absolute inset-0 translate-x-[-100%] animate-slide-right ${isMagnetic ? 'bg-gradient-to-r from-transparent via-red-600 to-transparent' : 'bg-gradient-to-r from-transparent via-arc-cyan to-transparent'}`} style={{ animationDuration: '3s', animationIterationCount: 'infinite' }} />
+      </div>
+    </motion.div>
+  );
+};
 
 export default App;

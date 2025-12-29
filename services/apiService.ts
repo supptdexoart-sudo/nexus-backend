@@ -116,6 +116,7 @@ export const createRoom = async (roomId: string, hostName: string, hostEmail?: s
 export const joinRoom = async (roomId: string, userName: string, hp?: number, password?: string, email?: string): Promise<any> => fetchData(`${BASE_API_URL}/rooms/${roomId}/join`, { method: 'POST', body: JSON.stringify({ userName, email, hp: hp || 100, password }) });
 export const toggleReady = async (roomId: string, userName: string, isReady: boolean): Promise<any> => fetchData(`${BASE_API_URL}/rooms/${roomId}/ready`, { method: 'POST', body: JSON.stringify({ userName, isReady }) }, true);
 export const setRoomEncounter = async (roomId: string, encounter: GameEvent | null): Promise<void> => { await fetchData(`${BASE_API_URL}/rooms/${roomId}/encounter`, { method: 'POST', body: JSON.stringify({ encounter }) }, true).catch(() => { }); };
+export const triggerSectorEvent = async (roomId: string, type: string, initiator: string, durationMinutes: number): Promise<any> => fetchData(`${BASE_API_URL}/rooms/${roomId}/sector-event`, { method: 'POST', body: JSON.stringify({ type, initiator, durationMinutes }) });
 
 export const attackRaidBoss = async (roomId: string, damage: number, userName: string): Promise<any> => {
   return fetchData(`${BASE_API_URL}/rooms/${roomId}/attack-boss`, { method: 'POST', body: JSON.stringify({ damage, userName }) });
