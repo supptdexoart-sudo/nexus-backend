@@ -551,6 +551,7 @@ const App: React.FC = () => {
                 onUseItem={(item) => logic.handleUseEvent(item)}
                 onClaimLoot={handleClaimLoot}
                 activeCharacter={logic.activeCharacter}
+                isNight={logic.isNight}
               />
             )}
           </AnimatePresence>

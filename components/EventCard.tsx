@@ -25,6 +25,7 @@ interface EventCardProps {
     onUseItem?: (item: GameEvent) => void;
     onClaimLoot?: (stats: Stat[]) => void;
     activeCharacter?: any | null; // ADDED for combat perks
+    isNight?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
@@ -43,7 +44,8 @@ const EventCard: React.FC<EventCardProps> = ({
     inventory,
     onUseItem,
     onClaimLoot,
-    activeCharacter
+    activeCharacter,
+    isNight
 }) => {
     const [dilemmaStep, setDilemmaStep] = useState<'CHOICE' | 'RESULT'>('CHOICE');
     const [selectedOption, setSelectedOption] = useState<DilemmaOption | null>(null);
@@ -374,6 +376,26 @@ const EventCard: React.FC<EventCardProps> = ({
                 } as any)}
                 className={`w-full max-w-sm bg-black border ${theme.border} relative overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] min-h-[50vh] max-h-[90vh]`}
             >
+                {/* NIGHT MODE INDICATOR */}
+                {isNight && event.timeVariant?.enabled && (
+                    <>
+                        {/* Diagonal Stripe (Enlarged) */}
+                        <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+                            <div className="absolute top-[-2px] right-[-38px] w-[120px] h-[32px] bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 rotate-45 flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.5)] border-b border-purple-400/30">
+                            </div>
+                        </div>
+
+                        {/* Blinking NOC Label */}
+                        <motion.div
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute top-1.5 right-1.5 z-30 flex items-center gap-1 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-full border border-blue-500/30"
+                        >
+                            <div className="w-1 h-1 bg-blue-400 rounded-full shadow-[0_0_8px_#60a5fa] animate-pulse" />
+                            <span className="text-[8px] font-black text-blue-300 tracking-tighter uppercase">NOC</span>
+                        </motion.div>
+                    </>
+                )}
 
                 {/* DECORATIVE CORNERS */}
                 <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white/20 pointer-events-none z-20"></div>
