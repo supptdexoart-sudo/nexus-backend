@@ -85,7 +85,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScanCode, isAIThinking, isPaused })
   };
 
   return (
-    <div className="relative h-full w-full bg-black flex flex-col items-center justify-center p-6">
+    <div className="relative h-full w-full bg-transparent flex flex-col items-center justify-center p-6">
 
       <div className="absolute top-10 left-0 right-0 z-20 flex justify-center pointer-events-none">
         <div className="bg-white/5 backdrop-blur px-4 py-2 border border-white/10 rounded-full flex items-center gap-3">
@@ -107,7 +107,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScanCode, isAIThinking, isPaused })
           <div id="qr-reader" className="w-full h-full object-cover" />
 
           {cameraStatus !== 'active' && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-10 text-center gap-6 bg-zinc-900">
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-10 text-center gap-6 bg-zinc-900/40">
               {cameraStatus === 'error' ? (
                 <AlertTriangle className="w-12 h-12 text-red-500" />
               ) : (
