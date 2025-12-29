@@ -382,12 +382,12 @@ const EventCard: React.FC<EventCardProps> = ({
             {event.stats && event.stats.length > 0 && (
                 <div className="grid grid-cols-2 gap-2">
                     {event.stats.map((stat, idx) => (
-                        <div key={idx} className="flex flex-col group">
+                        <div key={idx} className="flex flex-col group active:scale-95 transition-transform">
                             <motion.button
                                 onClick={() => handleStatClick(stat.label)}
-                                className={`bg-white/5 border p-2 flex flex-col items-start transition-all hover:bg-white/10 ${expandedStat === stat.label ? 'border-signal-cyan bg-signal-cyan/5' : 'border-white/10'}`}
+                                className={`bg-white/5 border p-2 flex flex-col items-start transition-all ${expandedStat === stat.label ? 'border-signal-cyan bg-signal-cyan/5' : 'border-white/10'}`}
                             >
-                                <span className="text-[8px] uppercase font-black text-zinc-500 tracking-widest mb-1 group-hover:text-zinc-300">{stat.label}</span>
+                                <span className="text-[8px] uppercase font-black text-zinc-500 tracking-widest mb-1">{stat.label}</span>
                                 <span className={`text-xl font-black font-mono ${getStatColor(stat.label)}`}>{stat.value}</span>
                             </motion.button>
                             {renderStatExplain(stat.label, stat.value)}

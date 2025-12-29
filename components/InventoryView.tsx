@@ -401,7 +401,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                     <TiltCard
                                         key={item.id}
                                         onClick={() => handleCardClick(item)}
-                                        className={`relative h-40 flex flex-col justify-end p-0 bg-[#0d0e12] border-2 ${config.border} rounded-lg overflow-hidden active:scale-95 transition-all group cursor-pointer ${isSelected ? 'scale-90 ring-4 ring-signal-cyan/30' : ''}`}
+                                        className={`relative h-40 flex flex-col justify-end p-0 bg-[#0d0e12] border-2 ${config.border} rounded-lg overflow-hidden active:scale-95 transition-all cursor-pointer ${isSelected ? 'scale-90 ring-4 ring-signal-cyan/30' : ''}`}
                                     >
                                         {/* NIGHT MODE INDICATOR */}
                                         {isNight && item.timeVariant?.enabled && (
@@ -424,7 +424,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                             </>
                                         )}
                                         {/* Gradient Overlay from Border Color */}
-                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isResource ? 'bg-gradient-to-b from-orange-500/10 to-transparent' :
+                                        <div className={`absolute inset-0 opacity-40 transition-opacity duration-300 ${isResource ? 'bg-gradient-to-b from-orange-500/10 to-transparent' :
                                             item.rarity === 'Legendary' ? 'bg-gradient-to-b from-yellow-500/10 to-transparent' :
                                                 item.rarity === 'Epic' ? 'bg-gradient-to-b from-purple-500/10 to-transparent' :
                                                     item.rarity === 'Rare' ? 'bg-gradient-to-b from-cyan-500/10 to-transparent' :

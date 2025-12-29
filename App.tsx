@@ -573,13 +573,13 @@ const StatSlot: React.FC<{ icon: React.ReactNode, value: number, max?: number, c
   const percent = max ? Math.min(100, Math.max(0, (value / max) * 100)) : 100;
 
   return (
-    <div className="relative overflow-hidden bg-black/80 border border-white/5 flex flex-col items-center justify-center py-2 h-[52px] group transition-colors hover:bg-white/5">
+    <div className="relative overflow-hidden bg-black/80 border border-white/5 flex flex-col items-center justify-center py-2 h-[52px] group transition-colors active:bg-white/5 shadow-inner">
       {/* Ambient Backlight */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity" style={{ backgroundColor: color }} />
+      <div className="absolute inset-0 opacity-0 transition-opacity" style={{ backgroundColor: color }} />
 
       <div className="flex flex-col items-center gap-0 z-10 relative w-full px-2">
         <div className="flex items-center justify-center gap-2 w-full">
-          <div className="opacity-70 group-hover:opacity-100 transition-opacity" style={{ color }}>{icon}</div>
+          <div className="opacity-80 transition-opacity" style={{ color }}>{icon}</div>
           <span className="font-black text-xl leading-none text-white tracking-wide">
             {value}
           </span>
@@ -601,10 +601,10 @@ const StatSlot: React.FC<{ icon: React.ReactNode, value: number, max?: number, c
 };
 
 const NavButton: React.FC<{ active: boolean, onClick: () => void, icon: React.ReactNode, label: string }> = ({ active, onClick, icon, label }) => (
-  <button onClick={onClick} className="flex flex-col items-center gap-1 group w-14">
+  <button onClick={onClick} className="flex flex-col items-center gap-1 group w-14 active:scale-95 transition-transform">
     <div className={`p-2 transition-all duration-200 ${active
       ? 'text-arc-yellow bg-arc-yellow/10 border border-arc-yellow shadow-[0_0_15px_rgba(249,212,35,0.15)]'
-      : 'text-zinc-500 group-hover:text-zinc-300 border border-transparent'
+      : 'text-zinc-500 border border-transparent'
       }`}>
       {React.cloneElement(icon as React.ReactElement, { size: 18, strokeWidth: active ? 2.5 : 2 })}
     </div>

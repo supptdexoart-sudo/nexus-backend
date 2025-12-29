@@ -101,13 +101,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
           <button
             onClick={() => setShowManual(true)}
-            className="w-full p-4 tactical-card border-white/10 bg-white/5 flex items-center justify-between group active:scale-[0.98] transition-all"
+            className="w-full p-4 tactical-card border-white/10 bg-white/5 flex items-center justify-between group active:scale-[0.98] active:bg-white/10 transition-all"
           >
             <div className="flex items-center gap-4">
               <BookOpen className="w-5 h-5 text-signal-amber" />
               <span className="text-sm font-bold uppercase tracking-wider">Taktický_Manuál</span>
             </div>
-            <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-signal-amber transition-colors" />
+            <ChevronRight className="w-5 h-5 text-zinc-600 group-active:text-signal-amber transition-colors" />
           </button>
 
           <div className="grid grid-cols-2 gap-4">
@@ -140,7 +140,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           {onHardReset && (
             <button
               onClick={onHardReset}
-              className="w-full p-4 border border-orange-500/30 bg-orange-950/20 rounded-xl flex items-center justify-between group active:scale-[0.98] transition-all hover:bg-orange-900/30"
+              className="w-full p-4 border border-orange-500/30 bg-orange-950/20 rounded-xl flex items-center justify-between group active:scale-[0.98] transition-all active:bg-orange-900/30"
             >
               <div className="flex items-center gap-4">
                 <RefreshCw className="w-5 h-5 text-orange-500" />

@@ -118,9 +118,8 @@ const Scanner: React.FC<ScannerProps> = ({ onScanCode, isAIThinking, isPaused })
                 {cameraStatus === 'error' ? errorMessage : 'Kamera v pohotovostním režimu'}
               </p>
 
-              <button onClick={startScanner} className="button-primary py-3 px-8 text-xs relative overflow-hidden group">
+              <button onClick={startScanner} className="button-primary py-3 px-8 text-xs relative overflow-hidden active:scale-95 transition-transform">
                 <span className="relative z-10">{cameraStatus === 'error' ? 'Zkusit znovu' : 'Aktivovat Senzor'}</span>
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform" />
               </button>
             </div>
           )}
@@ -136,7 +135,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScanCode, isAIThinking, isPaused })
         </div>
       </div>
 
-      <button onClick={() => setShowManualInput(true)} className="mt-12 flex items-center gap-3 text-white/40 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest active:scale-95">
+      <button onClick={() => setShowManualInput(true)} className="mt-12 flex items-center gap-3 text-white/60 transition-colors text-xs font-bold uppercase tracking-widest active:scale-95 active:text-white">
         <Keyboard className="w-5 h-5" /> Manuální Identifikace
       </button>
 

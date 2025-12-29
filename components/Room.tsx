@@ -135,7 +135,7 @@ const Room: React.FC<RoomProps> = ({
                             {!isSolo && !roomState.isGameStarted && (
                                 <div className="mt-6 flex gap-2">
                                     {onToggleReady && (
-                                        <button onClick={onToggleReady} className={`flex-1 py-4 font-black uppercase rounded-xl transition-all active:scale-95 border ${(roomState.members || []).find(m => m.name === roomState.nickname)?.isReady ? 'bg-green-500/10 border-green-500 text-green-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'}`}>
+                                        <button onClick={onToggleReady} className={`flex-1 py-4 font-black uppercase rounded-xl transition-all active:scale-95 border ${(roomState.members || []).find(m => m.name === roomState.nickname)?.isReady ? 'bg-green-500/10 border-green-500 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-zinc-800 border-zinc-700 text-zinc-400 active:text-white'}`}>
                                             {(roomState.members || []).find(m => m.name === roomState.nickname)?.isReady ? 'JSME PŘIPRAVENI' : 'POTVRDIT PŘIPRAVENOST'}
                                         </button>
                                     )}
@@ -161,12 +161,12 @@ const Room: React.FC<RoomProps> = ({
                                                     <span className={`font-bold text-sm ${isMe ? 'text-signal-cyan' : 'text-zinc-200'}`}>{member.name}</span>
                                                     <div className="flex items-center gap-2">
                                                         {!isMe && (
-                                                            <button onClick={() => handleStartTradeWith(member.name)} className="px-3 py-1 bg-zinc-800 hover:bg-signal-amber/20 hover:text-signal-amber border border-zinc-700 rounded text-[10px] uppercase font-bold transition-all flex items-center gap-1">
+                                                            <button onClick={() => handleStartTradeWith(member.name)} className="px-3 py-1 bg-zinc-800 active:bg-signal-amber/30 active:text-signal-amber border border-zinc-700 rounded text-[10px] uppercase font-bold transition-all flex items-center gap-1 active:scale-95">
                                                                 <Handshake className="w-3 h-3" /> Obchod
                                                             </button>
                                                         )}
                                                         {isHost && !isMe && onKickPlayer && (
-                                                            <button onClick={() => onKickPlayer(member.name)} className="p-1.5 bg-red-900/10 text-red-500 rounded border border-red-900/20 hover:bg-red-900/30 transition-colors"><UserMinus className="w-3 h-3" /></button>
+                                                            <button onClick={() => onKickPlayer(member.name)} className="p-1.5 bg-red-900/10 text-red-500 rounded border border-red-900/20 active:bg-red-900/30 transition-colors active:scale-90"><UserMinus className="w-3 h-3" /></button>
                                                         )}
                                                         <span className={`font-mono font-bold text-xs ${member.hp < 30 ? 'text-red-500' : 'text-green-500'}`}>{member.hp} HP</span>
                                                     </div>
@@ -222,7 +222,7 @@ const Room: React.FC<RoomProps> = ({
                         </div>
                         <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
                             {inventory.map((item) => (
-                                <button key={item.id} onClick={() => handleItemPicked(item)} className="w-full p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl flex gap-4 text-left active:scale-[0.98] hover:border-signal-cyan/50 transition-all">
+                                <button key={item.id} onClick={() => handleItemPicked(item)} className="w-full p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl flex gap-4 text-left active:scale-[0.98] active:border-signal-cyan/50 transition-all">
                                     <div className="flex-1 min-w-0">
                                         <span className="text-sm font-black uppercase text-white truncate block">{item.title}</span>
                                         <p className="text-[10px] text-zinc-500 font-mono line-clamp-2 uppercase">{item.description}</p>
