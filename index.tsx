@@ -41,7 +41,7 @@ window.onerror = function (msg, url, line, col, error) {
   errorTitle.textContent = 'CRITICAL ERROR';
 
   const errorMessage = document.createElement('h3');
-  errorMessage.textContent = msg;
+  errorMessage.textContent = String(msg); // Convert to string to handle Event | string type
 
   const errorLocation = document.createElement('p');
   errorLocation.textContent = `${url}:${line}:${col}`;
