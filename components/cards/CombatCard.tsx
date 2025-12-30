@@ -368,7 +368,7 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                     {rewards.length > 0 ? (
                         <div className="grid grid-cols-2 gap-1 p-2">
                             {rewards.map((stat, idx) => (
-                                <div key={idx} className="bg-arc-panel p-3 border border-white/5 flex items-center justify-between group hover:border-arc-yellow/30 transition-colors">
+                                <div key={idx} className="bg-arc-panel p-3 border border-white/5 flex items-center justify-between active:border-arc-yellow/30 transition-colors">
                                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{stat.label}</span>
                                     <span className="text-base font-mono font-bold text-arc-yellow">{stat.value}</span>
                                 </div>
@@ -382,7 +382,7 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                 <button
                     onClick={handleClaimClick}
                     disabled={isLootClaimed}
-                    className={`w-full py-5 font-black uppercase text-sm tracking-[0.2em] relative group overflow-hidden transition-all ${isLootClaimed ? 'bg-green-600 text-white' : 'bg-arc-yellow hover:bg-white hover:text-black text-black'}`}
+                    className={`w-full py-5 font-black uppercase text-sm tracking-[0.2em] relative group overflow-hidden transition-all ${isLootClaimed ? 'bg-green-600 text-white' : 'bg-arc-yellow active:bg-white active:text-black text-black active:scale-95'}`}
                     style={{ clipPath: 'polygon(0 0, 100% 0, 100% 85%, 95% 100%, 5% 100%, 0 85%)' }}
                 >
                     <div className="relative z-10 flex items-center justify-center gap-3">
@@ -469,12 +469,12 @@ export const CombatCard: React.FC<CombatCardProps> = ({
 
             {/* --- ENEMY STATS --- */}
             <div className="grid grid-cols-2 gap-1 my-2">
-                <div className="bg-black/40 border border-white/5 p-2 flex justify-between items-center group">
-                    <span className="text-[8px] text-zinc-600 uppercase font-black tracking-widest group-hover:text-zinc-400 transition-colors">ATK POWER</span>
+                <div className="bg-black/40 border border-white/5 p-2 flex justify-between items-center group active:bg-white/5 transition-colors">
+                    <span className="text-[8px] text-zinc-600 uppercase font-black tracking-widest group-active:text-zinc-400 transition-colors">ATK POWER</span>
                     <span className="text-sm font-mono font-black text-orange-500">{atk}</span>
                 </div>
-                <div className="bg-black/40 border border-white/5 p-2 flex justify-between items-center relative overflow-hidden group">
-                    <span className="text-[8px] text-zinc-600 uppercase font-black tracking-widest group-hover:text-zinc-400 transition-colors">DEFENSE</span>
+                <div className="bg-black/40 border border-white/5 p-2 flex justify-between items-center relative overflow-hidden group active:bg-white/5 transition-colors">
+                    <span className="text-[8px] text-zinc-600 uppercase font-black tracking-widest group-active:text-zinc-400 transition-colors">DEFENSE</span>
                     <span className={`text-sm font-mono font-black text-blue-400 ${hasWeakness ? 'pr-6' : ''}`}>{def}</span>
                     {hasWeakness && (
                         <div className="absolute right-0 top-0 bottom-0 bg-green-500/10 w-6 flex items-center justify-center border-l border-green-500/20">
@@ -550,8 +550,8 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                                 <span className="text-zinc-500 font-mono">]</span>
                             </div>
                             <div className="flex gap-2 w-full pt-2">
-                                <button onClick={() => setShowManualInput(false)} className="flex-1 py-3 text-zinc-500 hover:text-white font-mono text-[10px] uppercase transition-colors">Abort</button>
-                                <button onClick={handleManualSubmit} className="flex-1 py-3 bg-arc-yellow text-black font-black text-[10px] uppercase tracking-widest hover:bg-white transition-colors">Execute</button>
+                                <button onClick={() => setShowManualInput(false)} className="flex-1 py-3 text-zinc-500 active:text-white font-mono text-[10px] uppercase transition-colors">Abort</button>
+                                <button onClick={handleManualSubmit} className="flex-1 py-3 bg-arc-yellow text-black font-black text-[10px] uppercase tracking-widest active:bg-white transition-colors">Execute</button>
                             </div>
                         </motion.div>
                     )}
@@ -566,12 +566,12 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                                 animate={{ opacity: 1, x: 0 }}
                                 key={i}
                                 className={`border-l-2 pl-2 ${log.includes('KRITICKÝ') || log.includes('PENETRACE') ? 'border-arc-yellow text-arc-yellow font-bold' :
-                                        log.includes('NEPŘÍTEL') ? 'border-red-500 text-red-400' :
-                                            log.includes('POUŽIT') ? 'border-arc-cyan text-arc-cyan' :
-                                                log.includes('ÚSPĚCH') ? 'border-green-500 text-green-400' :
-                                                    log.includes('SELHÁNÍ') ? 'border-red-500 text-red-500' :
-                                                        log.includes('ŠTÍT') ? 'border-zinc-500 text-zinc-400' :
-                                                            'border-zinc-800 text-zinc-500'
+                                    log.includes('NEPŘÍTEL') ? 'border-red-500 text-red-400' :
+                                        log.includes('POUŽIT') ? 'border-arc-cyan text-arc-cyan' :
+                                            log.includes('ÚSPĚCH') ? 'border-green-500 text-green-400' :
+                                                log.includes('SELHÁNÍ') ? 'border-red-500 text-red-500' :
+                                                    log.includes('ŠTÍT') ? 'border-zinc-500 text-zinc-400' :
+                                                        'border-zinc-800 text-zinc-500'
                                     }`}>
                                 <span className="mr-2 opacity-30 select-none">{(i + 1).toString().padStart(2, '0')}</span>
                                 {log}
@@ -586,7 +586,7 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                     <button
                         onClick={() => setShowManualInput(true)}
                         disabled={isRolling || isFleeing}
-                        className="w-12 h-12 flex items-center justify-center border border-white/10 text-zinc-500 hover:text-white hover:border-white/30 transition-all custom-hover"
+                        className="w-12 h-12 flex items-center justify-center border border-white/10 text-zinc-500 active:text-white active:border-white/30 transition-all active:scale-95"
                         title="Manual Input"
                     >
                         <Keyboard className="w-5 h-5" />
@@ -595,7 +595,7 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                     <button
                         onClick={handleAttack}
                         disabled={isRolling || isFleeing}
-                        className="flex-1 bg-arc-yellow text-black font-display font-black text-lg uppercase tracking-widest hover:bg-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(249,212,35,0.4)] flex items-center justify-center gap-2 clip-path-button"
+                        className="flex-1 bg-arc-yellow text-black font-display font-black text-lg uppercase tracking-widest active:bg-white transition-all disabled:opacity-50 disabled:cursor-not-allowed active:shadow-[0_0_20px_rgba(249,212,35,0.4)] flex items-center justify-center gap-2 clip-path-button active:scale-95 transition-transform"
                     >
                         <Dice5 className="w-5 h-5" /> ÚTOK
                     </button>
@@ -606,7 +606,7 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                 <button
                     onClick={handleFlee}
                     disabled={isRolling || fleeAttempted || isFleeing}
-                    className={`text-[9px] font-mono uppercase tracking-widest flex items-center gap-2 ${fleeAttempted ? 'text-zinc-600 cursor-not-allowed' : 'text-zinc-400 hover:text-white transition-colors'}`}
+                    className={`text-[9px] font-mono uppercase tracking-widest flex items-center gap-2 ${fleeAttempted ? 'text-zinc-600 cursor-not-allowed' : 'text-zinc-400 active:text-white transition-colors'}`}
                 >
                     <Wind className="w-3 h-3" />
                     {fleeAttempted ? 'ÚTĚK NENÍ MOŽNÝ' : `ÚSTUP (${getFleeChance()}%)`}
@@ -615,7 +615,7 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                 {inventory && inventory.length > 0 && (
                     <button
                         onClick={() => { setShowCombatInventory(!showCombatInventory); setPreviewItem(null); }}
-                        className="text-[9px] font-mono uppercase tracking-widest flex items-center gap-2 text-arc-cyan hover:text-white transition-colors"
+                        className="text-[9px] font-mono uppercase tracking-widest flex items-center gap-2 text-arc-cyan active:text-white transition-colors"
                     >
                         <Package className="w-3 h-3" /> {showCombatInventory ? 'ZAVŘÍT INVENTÁŘ' : 'PODPORA'}
                     </button>
@@ -649,8 +649,8 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <button onClick={() => setPreviewItem(null)} className="flex-1 py-2 bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase hover:bg-zinc-700">Zrušit</button>
-                                    <button onClick={confirmUseItem} className="flex-1 py-2 bg-arc-cyan text-black text-[10px] font-bold uppercase hover:bg-white">POUŽÍT</button>
+                                    <button onClick={() => setPreviewItem(null)} className="flex-1 py-2 bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase active:bg-zinc-700">Zrušit</button>
+                                    <button onClick={confirmUseItem} className="flex-1 py-2 bg-arc-cyan text-black text-[10px] font-bold uppercase active:bg-white">POUŽÍT</button>
                                 </div>
                             </div>
                         ) : (
@@ -666,10 +666,10 @@ export const CombatCard: React.FC<CombatCardProps> = ({
                                         <button
                                             key={item.id}
                                             onClick={() => setPreviewItem(item)}
-                                            className="flex flex-col items-start p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 text-left transition-all group"
+                                            className="flex flex-col items-start p-2 bg-zinc-900 active:bg-zinc-800 border border-zinc-800 active:border-zinc-600 text-left transition-all group active:scale-[0.98]"
                                         >
-                                            <span className="text-[9px] font-bold text-zinc-300 group-hover:text-white uppercase line-clamp-1">{item.title}</span>
-                                            <div className="flex items-center gap-1 mt-1 flex-wrap opacity-70 group-hover:opacity-100">
+                                            <span className="text-[9px] font-bold text-zinc-300 group-active:text-white uppercase line-clamp-1">{item.title}</span>
+                                            <div className="flex items-center gap-1 mt-1 flex-wrap opacity-70 group-active:opacity-100">
                                                 {dmgStat && <span className="text-[8px] font-mono text-orange-400 flex items-center gap-0.5"><Swords className="w-2 h-2" /> {dmgStat.value}</span>}
                                                 {hpStat && <span className="text-[8px] font-mono text-green-400 flex items-center gap-0.5"><Heart className="w-2 h-2" /> {hpStat.value}</span>}
                                                 {armorStat && <span className="text-[8px] font-mono text-blue-300 flex items-center gap-0.5"><Shield className="w-2 h-2" /> {armorStat.value}</span>}

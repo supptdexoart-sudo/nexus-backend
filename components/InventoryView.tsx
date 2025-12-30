@@ -232,7 +232,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                         <h2 className="text-2xl font-black uppercase text-signal-cyan chromatic-text">Taktické Srovnání</h2>
                         <p className="text-[10px] text-white/40 font-mono uppercase tracking-widest">Analýza_Assetů_v1.0</p>
                     </div>
-                    <button onClick={() => setSelectedForCompare([])} className="p-3 bg-white/5 rounded-full text-zinc-400 hover:text-white"><X className="w-6 h-6" /></button>
+                    <button onClick={() => setSelectedForCompare([])} className="p-3 bg-white/5 rounded-full text-zinc-400 active:text-white transition-colors active:scale-95"><X className="w-6 h-6" /></button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
@@ -312,7 +312,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                     >
                         <ArrowLeftRight className="w-4 h-4" />
                     </button>
-                    <button onClick={() => onRefresh()} disabled={isRefreshing} className="p-3 tactical-card bg-white/5 border-white/10 hover:border-signal-cyan transition-all active:scale-90 disabled:opacity-50">
+                    <button onClick={() => onRefresh()} disabled={isRefreshing} className="p-3 tactical-card bg-white/5 border-white/10 active:border-signal-cyan transition-all active:scale-95 disabled:opacity-50">
                         <RefreshCw className={`w-4 h-4 text-signal-cyan ${isRefreshing ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
@@ -345,7 +345,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                         }}
                         className={`px-4 py-2.5 rounded-lg flex items-center gap-2 border transition-all whitespace-nowrap ${selectedCategory === opt.id
                             ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                            : 'bg-white/5 border-white/10 text-zinc-500 hover:text-white hover:border-white/30 backdrop-blur-sm'
+                            : 'bg-white/5 border-white/10 text-zinc-500 active:text-white active:border-white/30 backdrop-blur-sm transition-all active:scale-95'
                             }`}
                     >
                         <opt.icon className="w-3 h-3" />
@@ -451,8 +451,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({
                                         {/* Content Container */}
                                         <div className="relative z-10 p-4 flex flex-col gap-2">
                                             {/* Item Title - Larger and More Prominent */}
-                                            <h3 className={`font-black text-base uppercase leading-tight line-clamp-2 transition-colors ${isResource ? 'text-orange-100 group-hover:text-orange-400' :
-                                                'text-white group-hover:text-signal-cyan'
+                                            <h3 className={`font-black text-base uppercase leading-tight line-clamp-2 transition-colors ${isResource ? 'text-orange-100 group-active:text-orange-400' :
+                                                'text-white group-active:text-signal-cyan'
                                                 }`}>
                                                 {item.title}
                                             </h3>

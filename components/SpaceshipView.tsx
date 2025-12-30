@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, Fuel, Shield, Navigation, AlertTriangle, Crosshair, ChevronRight, Lock, Map, Check, Layers } from 'lucide-react';
@@ -35,13 +34,13 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
     // Unlock logic + Phase Logic
     const unlockedPlanets = PLANETS_DB.map(dbPlanet => {
         const unlockCard = inventory.find(i => i.type === GameEventType.PLANET && i.planetConfig?.planetId === dbPlanet.id);
-        
+
         // Parse Phases
         const phases = unlockCard?.planetConfig?.phases || [];
         const currentPhaseIndex = unlockCard?.planetProgress || 0;
         const totalPhases = phases.length;
         const isComplete = totalPhases > 0 && currentPhaseIndex >= totalPhases;
-        
+
         // Determine Next Event ID
         let nextEventId: string | null = null;
         if (phases.length > 0 && currentPhaseIndex < phases.length) {
@@ -72,7 +71,7 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
             playSound('error');
             return;
         }
-        
+
         const FUEL_COST = 20;
 
         if (playerFuel < FUEL_COST) {
@@ -82,16 +81,16 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
         }
 
         setIsTraveling(true);
-        playSound('scan'); 
-        vibrate([50, 100, 200, 50, 100]); 
-        
+        playSound('scan');
+        vibrate([50, 100, 200, 50, 100]);
+
         onFuelConsume(-FUEL_COST);
 
         setTimeout(() => {
             setIsTraveling(false);
             playSound('success');
             vibrate(50);
-            
+
             // 1. TRIGGER EVENT
             // If nextEventId exists (from phases or legacy link), find that card and trigger it
             if (selectedPlanetData.nextEventId) {
@@ -101,7 +100,7 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
                     // For now, let generic handler proceed.
                 }
             }
-            
+
             // Trigger generic land (logic will handle specific phase card selection if I update logic)
             onPlanetLand(selectedPlanetData.id, selectedPlanetData.fallbackEventType);
 
@@ -110,7 +109,7 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
                 onProgressPlanet(selectedPlanetData.navCardId);
             }
 
-        }, 3500); 
+        }, 3500);
     };
 
     return (
@@ -130,11 +129,11 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
 
             {/* Dashboard Content */}
             <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6 relative z-10">
-                
+
                 {/* Ship Visual */}
                 <div className="relative aspect-video bg-zinc-900/50 rounded-2xl border border-white/10 overflow-hidden group">
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-signal-cyan/10 via-transparent to-transparent opacity-50" />
-                    
+
                     <div className="absolute inset-0 flex items-center justify-center">
                         <Rocket className={`w-32 h-32 text-zinc-700 transition-all duration-1000 ${isTraveling ? 'animate-pulse text-signal-cyan translate-y-[-10px]' : ''}`} />
                     </div>
@@ -146,7 +145,7 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
                                     Cestování hyperprostorem...
                                 </div>
                                 <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                    <motion.div 
+                                    <motion.div
                                         className="h-full bg-signal-cyan"
                                         initial={{ width: 0 }}
                                         animate={{ width: "100%" }}
@@ -163,21 +162,21 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent flex justify-between items-end">
                         <div className="flex gap-4">
                             <div>
-                                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 uppercase font-bold mb-1"><Shield className="w-3 h-3 text-cyan-400"/> Štíty</div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 uppercase font-bold mb-1"><Shield className="w-3 h-3 text-cyan-400" /> Štíty</div>
                                 <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                                     <div className="h-full bg-cyan-400" style={{ width: `${shields}%` }} />
                                 </div>
                             </div>
                             <div>
-                                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 uppercase font-bold mb-1"><AlertTriangle className="w-3 h-3 text-red-500"/> Trup</div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 uppercase font-bold mb-1"><AlertTriangle className="w-3 h-3 text-red-500" /> Trup</div>
                                 <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                                     <div className="h-full bg-white" style={{ width: `${hull}%` }} />
                                 </div>
                             </div>
                         </div>
                         <div className="text-right">
-                             <div className="flex items-center justify-end gap-1.5 text-[10px] text-zinc-400 uppercase font-bold mb-1"><Fuel className="w-3 h-3 text-signal-amber"/> Palivo</div>
-                             <span className="text-xl font-mono font-bold text-signal-amber">{playerFuel}%</span>
+                            <div className="flex items-center justify-end gap-1.5 text-[10px] text-zinc-400 uppercase font-bold mb-1"><Fuel className="w-3 h-3 text-signal-amber" /> Palivo</div>
+                            <span className="text-xl font-mono font-bold text-signal-amber">{playerFuel}%</span>
                         </div>
                     </div>
                 </div>
@@ -195,13 +194,12 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
                                 key={planet.id}
                                 disabled={!planet.isUnlocked || isTraveling}
                                 onClick={() => { setSelectedPlanetId(planet.id); playSound('click'); }}
-                                className={`w-full p-4 rounded-xl border flex flex-col gap-3 transition-all active:scale-[0.98] relative overflow-hidden ${
-                                    !planet.isUnlocked 
-                                        ? 'bg-black/40 border-zinc-800 opacity-60 grayscale'
-                                        : selectedPlanetId === planet.id 
-                                            ? `bg-zinc-800 ${planet.border} ring-1 ring-white/20` 
-                                            : 'bg-black/40 border-white/5 hover:bg-white/5'
-                                }`}
+                                className={`w-full p-4 rounded-xl border flex flex-col gap-3 transition-all active:scale-[0.98] relative overflow-hidden ${!planet.isUnlocked
+                                    ? 'bg-black/40 border-zinc-800 opacity-60 grayscale'
+                                    : selectedPlanetId === planet.id
+                                        ? `bg-zinc-800 ${planet.border} ring-1 ring-white/20`
+                                        : 'bg-black/40 border-white/5 active:bg-white/5'
+                                    }`}
                             >
                                 <div className="flex items-center justify-between w-full relative z-10">
                                     <div className="flex items-center gap-4">
@@ -233,8 +231,8 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
                                     <div className="w-full bg-black/50 p-2 rounded-lg border border-white/5 flex items-center gap-3">
                                         <Layers className="w-3 h-3 text-zinc-500" />
                                         <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                            <div 
-                                                className={`h-full ${planet.isComplete ? 'bg-green-500' : 'bg-signal-cyan'}`} 
+                                            <div
+                                                className={`h-full ${planet.isComplete ? 'bg-green-500' : 'bg-signal-cyan'}`}
                                                 style={{ width: `${Math.min(100, (planet.currentPhaseIndex / planet.totalPhases) * 100)}%` }}
                                             />
                                         </div>
@@ -246,7 +244,7 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
                             </button>
                         ))}
                     </div>
-                    
+
                     {!unlockedPlanets.some(p => p.isUnlocked) && (
                         <div className="mt-4 p-3 bg-zinc-900/50 border border-white/5 rounded-lg flex items-start gap-3">
                             <Map className="w-4 h-4 text-zinc-500 mt-0.5" />
@@ -268,11 +266,10 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
                             <button
                                 disabled={isTraveling || playerFuel < 20}
                                 onClick={handleTravel}
-                                className={`w-full py-4 font-black uppercase text-xs tracking-[0.2em] rounded-xl shadow-lg transition-all flex items-center justify-center gap-3 ${
-                                    playerFuel < 20 
-                                        ? 'bg-red-900/50 text-red-500 border border-red-900 cursor-not-allowed' 
-                                        : 'bg-white text-black hover:bg-signal-cyan border border-white/50'
-                                }`}
+                                className={`w-full py-4 font-black uppercase text-xs tracking-[0.2em] rounded-xl shadow-lg transition-all flex items-center justify-center gap-3 ${playerFuel < 20
+                                    ? 'bg-red-900/50 text-red-500 border border-red-900 cursor-not-allowed'
+                                    : 'bg-white text-black active:bg-signal-cyan border border-white/50 active:scale-95 transition-transform'
+                                    }`}
                             >
                                 {isTraveling ? (
                                     <>Iniciace Motorů...</>
@@ -289,8 +286,8 @@ const SpaceshipView: React.FC<SpaceshipViewProps> = ({ playerFuel, inventory, on
             </div>
 
             {/* Background Grid */}
-            <div className="absolute inset-0 pointer-events-none opacity-5 z-0" 
-                 style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+            <div className="absolute inset-0 pointer-events-none opacity-5 z-0"
+                style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
             </div>
         </div>
     );

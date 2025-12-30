@@ -53,7 +53,7 @@ const Toast: React.FC<ToastProps> = ({ data, onClose }) => {
             {style.icon}
             <span className="text-[10px] font-black tracking-[0.3em]">{style.label}</span>
           </div>
-          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="opacity-40 hover:opacity-100 transition-opacity p-1"><X className="w-4 h-4" /></button>
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="opacity-40 active:opacity-100 transition-opacity p-1"><X className="w-4 h-4" /></button>
         </div>
         <p className="text-[12px] font-bold uppercase leading-tight py-1 break-words">{data.message}</p>
 

@@ -20,7 +20,7 @@ const ManualSection: React.FC<{
 }> = ({ icon, title, children, color }) => (
   <div className="mb-10 group animate-in fade-in slide-in-from-right-4 duration-500">
     <div className="flex items-center gap-3 mb-4 border-b border-zinc-800 pb-2">
-      <div className={`${color} p-2.5 bg-zinc-900 rounded-xl group-hover:scale-110 transition-transform shadow-lg shadow-black/50`}>
+      <div className={`${color} p-2.5 bg-zinc-900 rounded-xl shadow-lg shadow-black/50`}>
         {icon}
       </div>
       <h3 className="font-display font-black uppercase tracking-widest text-white text-base">{title}</h3>
@@ -42,7 +42,7 @@ const ManualView: React.FC<ManualViewProps> = ({ onBack }) => {
       className="absolute inset-0 bg-zinc-950 z-[120] flex flex-col p-6 overflow-y-auto no-scrollbar"
     >
       <div className="flex items-center gap-4 mb-8 sticky top-0 bg-zinc-950/90 backdrop-blur-xl pb-4 z-10 border-b border-white/10">
-        <button onClick={onBack} className="p-2.5 bg-white/5 rounded-full text-zinc-400 hover:text-white transition-colors active:scale-90 border border-white/5">
+        <button onClick={onBack} className="p-2.5 bg-white/5 rounded-full text-zinc-400 active:text-white transition-colors active:scale-90 border border-white/5">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>

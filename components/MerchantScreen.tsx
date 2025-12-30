@@ -275,7 +275,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                     </div>
                     <button
                         onClick={onClose}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-500/50 rounded-lg text-red-500 hover:bg-red-900/40 active:scale-95 transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-500/50 rounded-lg text-red-500 active:bg-red-900/40 active:scale-95 transition-all"
                     >
                         <span className="text-xs font-black uppercase tracking-widest">Odejít</span>
                         <X className="w-4 h-4" />
@@ -295,13 +295,13 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                     <div className="flex bg-zinc-900 p-1 rounded-lg border border-zinc-800">
                         <button
                             onClick={() => setActiveTab('buy')}
-                            className={`flex-1 py-2 text-xs font-bold uppercase rounded-md transition-all ${activeTab === 'buy' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-200'}`}
+                            className={`flex-1 py-2 text-xs font-bold uppercase rounded-md transition-all ${activeTab === 'buy' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 active:text-zinc-200'}`}
                         >
                             Nákup
                         </button>
                         <button
                             onClick={() => setActiveTab('sell')}
-                            className={`flex-1 py-2 text-xs font-bold uppercase rounded-md transition-all ${activeTab === 'sell' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-200'}`}
+                            className={`flex-1 py-2 text-xs font-bold uppercase rounded-md transition-all ${activeTab === 'sell' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 active:text-zinc-200'}`}
                         >
                             Prodej
                         </button>
@@ -334,7 +334,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                                 const canAfford = userGold >= finalPrice;
 
                                 return (
-                                    <div key={item.id} className={`bg-zinc-900 border border-zinc-800 p-4 rounded-xl relative overflow-hidden transition-all ${isOutOfStock ? 'opacity-50 grayscale' : 'hover:border-zinc-600'}`}>
+                                    <div key={item.id} className={`bg-zinc-900 border border-zinc-800 p-4 rounded-xl relative overflow-hidden transition-all ${isOutOfStock ? 'opacity-50 grayscale' : 'active:border-zinc-600'}`}>
                                         {/* Sale Badge */}
                                         {isOnSale && !isOutOfStock && (
                                             <div className="absolute top-0 right-0 bg-pink-600 text-white text-[9px] font-black px-2 py-1 rounded-bl-xl uppercase tracking-wider animate-pulse shadow-[0_0_10px_#db2777]">
@@ -386,7 +386,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                                                 className={`px-6 py-3 rounded-lg font-bold uppercase tracking-widest text-xs transition-all shadow-lg flex items-center justify-center gap-2 ${isOutOfStock
                                                     ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
                                                     : canAfford
-                                                        ? 'bg-signal-cyan text-black hover:bg-white shadow-[0_0_15px_rgba(0,242,255,0.4)] active:scale-95'
+                                                        ? 'bg-signal-cyan text-black active:bg-white shadow-[0_0_15px_rgba(0,242,255,0.4)] active:scale-95'
                                                         : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
                                                     }`}
                                             >
@@ -411,12 +411,12 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                                 <button
                                     key={item.id}
                                     onClick={() => handleStartAppraisal(item)}
-                                    className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex flex-col gap-2 relative overflow-hidden hover:border-green-500/50 transition-colors text-left group active:scale-95"
+                                    className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex flex-col gap-2 relative overflow-hidden active:border-green-500/50 transition-colors text-left group active:scale-95"
                                 >
                                     <div className="flex justify-between items-start w-full">
                                         <div className="flex items-center gap-3">
-                                            <div className="bg-black p-2 rounded-lg border border-zinc-800 group-hover:border-green-500/30 transition-colors">
-                                                <Package className="w-5 h-5 text-zinc-400 group-hover:text-green-400" />
+                                            <div className="bg-black p-2 rounded-lg border border-zinc-800 group-active:border-green-500/30 transition-colors">
+                                                <Package className="w-5 h-5 text-zinc-400 group-active:text-green-400" />
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-white text-sm uppercase tracking-tight">{item.title}</h4>
@@ -446,7 +446,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                             {...({ initial: { scale: 0.9, y: 20 }, animate: { scale: 1, y: 0 }, exit: { scale: 0.9, y: 20 } } as any)}
                             className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm text-center relative overflow-hidden"
                         >
-                            <button onClick={() => setAppraisingItem(null)} className="absolute top-4 right-4 text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+                            <button onClick={() => setAppraisingItem(null)} className="absolute top-4 right-4 text-zinc-400 active:text-white"><X className="w-5 h-5" /></button>
 
                             <h3 className="text-xl font-bold text-white mb-1 uppercase tracking-tighter">{appraisingItem.title}</h3>
 
@@ -485,7 +485,7 @@ const MerchantScreen: React.FC<MerchantScreenProps> = ({ merchant, userGold, adm
                                     </div>
                                     <div className="flex gap-2 w-full">
                                         <button onClick={() => setAppraisingItem(null)} className="flex-1 py-3 bg-zinc-800 text-zinc-300 font-bold uppercase rounded-lg border border-zinc-700 text-xs tracking-widest">Odmítnout</button>
-                                        <button onClick={confirmSell} className="flex-1 py-3 bg-green-600 hover:bg-green-500 text-white font-bold uppercase rounded-lg shadow-[0_0_15px_rgba(34,197,94,0.4)] text-xs tracking-widest">PRODAT</button>
+                                        <button onClick={confirmSell} className="flex-1 py-3 bg-green-600 active:bg-green-500 text-white font-bold uppercase rounded-lg shadow-[0_0_15px_rgba(34,197,94,0.4)] text-xs tracking-widest active:scale-95 transition-transform">PRODAT</button>
                                     </div>
                                 </div>
                             )}

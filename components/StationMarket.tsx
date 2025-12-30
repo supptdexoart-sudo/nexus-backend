@@ -151,13 +151,13 @@ const StationMarket: React.FC<StationMarketProps> = ({
         <div className="fixed inset-0 z-[250] bg-zinc-950 text-white flex flex-col font-sans overflow-hidden">
 
             {/* --- HEADER --- */}
-            <header className={`bg - zinc - 900 border - b ${borderColor} p - 4 flex justify - between items - center relative overflow - hidden`}>
+            <header className={`bg-zinc-900 border-b ${borderColor} p-4 flex justify-between items-center relative overflow-hidden`}>
                 <div className="absolute inset-0 opacity-10 pointer-events-none"
                     style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 0, #000 10px, #eab308 10px, #eab308 20px)' }}>
                 </div>
 
-                <div className={`flex items - center gap - 3 relative z - 10 ${themeColor} `}>
-                    <div className={`p - 2 ${bgColor} border ${borderColor} rounded`}>
+                <div className={`flex items-center gap-3 relative z-10 ${themeColor}`}>
+                    <div className={`p-2 ${bgColor} border ${borderColor} rounded`}>
                         <ShoppingCart className="w-6 h-6" />
                     </div>
                     <div>
@@ -166,7 +166,7 @@ const StationMarket: React.FC<StationMarketProps> = ({
                     </div>
                 </div>
 
-                <button onClick={onClose} className="p-2 relative z-10 bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors">
+                <button onClick={onClose} className="p-2 relative z-10 bg-zinc-800 rounded-full active:bg-zinc-700 transition-colors active:scale-95">
                     <X className="w-6 h-6 text-zinc-400" />
                 </button>
             </header>
@@ -182,13 +182,13 @@ const StationMarket: React.FC<StationMarketProps> = ({
                     <div className="flex bg-black rounded-lg p-1 border border-zinc-800">
                         <button
                             onClick={() => { setMode('BUY'); playSound('click'); }}
-                            className={`px - 6 py - 2 rounded - md text - xs font - bold uppercase tracking - wider transition - all ${mode === 'BUY' ? 'bg-yellow-600 text-black shadow-lg' : 'text-zinc-500 hover:text-white'} `}
+                            className={`px-6 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${mode === 'BUY' ? 'bg-yellow-600 text-black shadow-lg' : 'text-zinc-500 active:text-white'}`}
                         >
                             Nákup
                         </button>
                         <button
                             onClick={() => { setMode('RECYCLE'); playSound('click'); }}
-                            className={`px - 6 py - 2 rounded - md text - xs font - bold uppercase tracking - wider transition - all ${mode === 'RECYCLE' ? 'bg-orange-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'} `}
+                            className={`px-6 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${mode === 'RECYCLE' ? 'bg-orange-600 text-white shadow-lg' : 'text-zinc-500 active:text-white'}`}
                         >
                             Drtička
                         </button>
@@ -203,7 +203,7 @@ const StationMarket: React.FC<StationMarketProps> = ({
                             <button
                                 key={f}
                                 onClick={() => setFilterType(f)}
-                                className={`px - 3 py - 1 rounded text - [10px] font - bold uppercase border transition - colors whitespace - nowrap ${filterType === f ? 'border-yellow-500 text-yellow-500 bg-yellow-950/20' : 'border-zinc-800 text-zinc-500'} `}
+                                className={`px-3 py-1 rounded text-[10px] font-bold uppercase border transition-colors whitespace-nowrap ${filterType === f ? 'border-yellow-500 text-yellow-500 bg-yellow-950/20' : 'border-zinc-800 text-zinc-500 active:border-zinc-600'}`}
                             >
                                 {f === 'ALL' ? 'Vše' : f}
                             </button>
@@ -232,7 +232,7 @@ const StationMarket: React.FC<StationMarketProps> = ({
                                     <button
                                         key={item.id}
                                         onClick={() => { setSelectedItem(item); playSound('click'); }}
-                                        className={`relative flex flex - col text - left p - 3 rounded - xl border transition - all active: scale - 95 group ${canAfford ? 'bg-zinc-900 border-zinc-800 hover:border-yellow-500/50' : 'bg-zinc-900/50 border-red-900/30 opacity-70'} `}
+                                        className={`relative flex flex-col text-left p-3 rounded-xl border transition-all active:scale-95 group ${canAfford ? 'bg-zinc-900 border-zinc-800 active:border-yellow-500/50' : 'bg-zinc-900/50 border-red-900/30 opacity-70'}`}
                                     >
                                         {isOnSale && (
                                             <div className="absolute top-2 right-2 bg-pink-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider animate-pulse shadow-[0_0_10px_#db2777]">
@@ -240,8 +240,8 @@ const StationMarket: React.FC<StationMarketProps> = ({
                                             </div>
                                         )}
 
-                                        <div className="mb-2 p-3 bg-black rounded-lg border border-zinc-800 self-start group-hover:border-yellow-500/30 transition-colors">
-                                            <Package className={`w - 6 h - 6 ${canAfford ? 'text-zinc-200' : 'text-red-900'} `} />
+                                        <div className="mb-2 p-3 bg-black rounded-lg border border-zinc-800 self-start group-active:border-yellow-500/30 transition-colors">
+                                            <Package className={`w-6 h-6 ${canAfford ? 'text-zinc-200' : 'text-red-900'}`} />
                                         </div>
 
                                         <div className="flex-1 w-full">
@@ -266,7 +266,7 @@ const StationMarket: React.FC<StationMarketProps> = ({
                                             {discountLabel && <span className="text-[8px] text-green-500 font-bold uppercase block mb-1">{discountLabel}</span>}
 
                                             <div className="flex items-end justify-between">
-                                                <div className={`flex items - center gap - 1 font - mono font - bold ${canAfford ? 'text-yellow-500' : 'text-red-500'} `}>
+                                                <div className={`flex items-center gap-1 font-mono font-bold ${canAfford ? 'text-yellow-500' : 'text-red-500'}`}>
                                                     <span>{finalPrice}</span>
                                                     <Coins className="w-3 h-3" />
                                                 </div>
@@ -304,9 +304,9 @@ const StationMarket: React.FC<StationMarketProps> = ({
                                 <button
                                     key={item.id}
                                     onClick={() => { setSelectedItem(item); playSound('click'); }}
-                                    className="w-full flex items-center gap-4 p-3 bg-zinc-900 border border-zinc-800 hover:border-orange-500/50 rounded-xl transition-all active:scale-95 group text-left"
+                                    className="w-full flex items-center gap-4 p-3 bg-zinc-900 border border-zinc-800 active:border-orange-500/50 rounded-xl transition-all active:scale-95 group text-left"
                                 >
-                                    <div className="p-2 bg-black border border-zinc-700 rounded text-zinc-500 group-hover:text-orange-500 transition-colors">
+                                    <div className="p-2 bg-black border border-zinc-700 rounded text-zinc-500 active:text-orange-500 transition-colors">
                                         <Package className="w-5 h-5" />
                                     </div>
                                     <div className="flex-1">
@@ -319,7 +319,7 @@ const StationMarket: React.FC<StationMarketProps> = ({
                                             ))}
                                         </div>
                                     </div>
-                                    <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-orange-500" />
+                                    <ArrowRight className="w-4 h-4 text-zinc-600 active:text-orange-500" />
                                 </button>
                             ))
                         )}
@@ -340,12 +340,12 @@ const StationMarket: React.FC<StationMarketProps> = ({
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className={`bg - zinc - 900 border w - full max - w - sm rounded - 2xl p - 6 relative shadow - 2xl flex flex - col ${mode === 'BUY' ? 'border-yellow-500/50' : 'border-orange-500/50'} `}
+                            className={`bg-zinc-900 border w-full max-w-sm rounded-2xl p-6 relative shadow-2xl flex flex-col ${mode === 'BUY' ? 'border-yellow-500/50' : 'border-orange-500/50'}`}
                         >
-                            <button onClick={() => setSelectedItem(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
+                            <button onClick={() => setSelectedItem(null)} className="absolute top-4 right-4 text-zinc-500 active:text-white transition-colors active:scale-90"><X className="w-5 h-5" /></button>
 
                             <div className="flex flex-col items-center text-center mb-6">
-                                <div className={`w - 20 h - 20 bg - black border - 2 rounded - xl flex items - center justify - center mb - 4 ${mode === 'BUY' ? 'border-yellow-500/30 text-yellow-500' : 'border-orange-500/30 text-orange-500'} `}>
+                                <div className={`w-20 h-20 bg-black border-2 rounded-xl flex items-center justify-center mb-4 ${mode === 'BUY' ? 'border-yellow-500/30 text-yellow-500' : 'border-orange-500/30 text-orange-500'}`}>
                                     {mode === 'BUY' ? <Package className="w-10 h-10" /> : <Trash2 className="w-10 h-10" />}
                                 </div>
                                 <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-1">{selectedItem.title}</h2>
@@ -381,7 +381,7 @@ const StationMarket: React.FC<StationMarketProps> = ({
                                                 </span>
                                             )}
                                         </div>
-                                        <div className={`flex items - center gap - 2 text - xl font - mono font - black ${playerGold >= getPriceInfo(selectedItem).finalPrice ? 'text-yellow-500' : 'text-red-500'} `}>
+                                        <div className={`flex items-center gap-2 text-xl font-mono font-black ${playerGold >= getPriceInfo(selectedItem).finalPrice ? 'text-yellow-500' : 'text-red-500'}`}>
                                             {getPriceInfo(selectedItem).finalPrice} <Coins className="w-5 h-5" />
                                         </div>
                                     </div>
@@ -407,12 +407,12 @@ const StationMarket: React.FC<StationMarketProps> = ({
                             <button
                                 onClick={handleTransaction}
                                 disabled={isProcessing || (mode === 'BUY' && playerGold < getPriceInfo(selectedItem).finalPrice)}
-                                className={`w - full py - 4 mt - 6 font - black uppercase text - xs tracking - [0.2em] rounded - xl flex items - center justify - center gap - 2 transition - all ${isProcessing
-                                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                                        : mode === 'BUY'
-                                            ? (playerGold >= getPriceInfo(selectedItem).finalPrice ? 'bg-yellow-600 hover:bg-yellow-500 text-black shadow-lg shadow-yellow-500/20' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed')
-                                            : 'bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                                    } `}
+                                className={`w-full py-4 mt-6 font-black uppercase text-xs tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 ${isProcessing
+                                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                                    : mode === 'BUY'
+                                        ? (playerGold >= getPriceInfo(selectedItem).finalPrice ? 'bg-yellow-600 active:bg-yellow-500 text-black shadow-lg shadow-yellow-500/20' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed')
+                                        : 'bg-orange-600 active:bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                                    }`}
                             >
                                 {isProcessing ? (
                                     <span className="animate-pulse">Zpracování...</span>

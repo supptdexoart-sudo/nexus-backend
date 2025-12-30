@@ -250,7 +250,7 @@ const SpaceStationView: React.FC<SpaceStationViewProps> = ({
                         disabled={rewardsClaimed}
                         className={`w-full py-5 font-black uppercase text-sm tracking-[0.3em] rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg ${rewardsClaimed
                             ? 'bg-green-600 text-white cursor-default'
-                            : 'bg-white text-black hover:bg-cyan-400 active:scale-95'
+                            : 'bg-white text-black active:bg-cyan-400 active:scale-95'
                             }`}
                     >
                         {rewardsClaimed ? (
@@ -271,21 +271,21 @@ const SpaceStationView: React.FC<SpaceStationViewProps> = ({
                         <Activity className="w-4 h-4" /> Doplňkové Služby
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => setShowMarket(true)} className="bg-zinc-900/50 border border-white/5 hover:bg-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
-                            <ShoppingCart className="w-6 h-6 text-zinc-500 group-hover:text-cyan-400 transition-colors" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 group-hover:text-white">Tržiště & Scrap</span>
+                        <button onClick={() => setShowMarket(true)} className="bg-zinc-900/50 border border-white/5 active:bg-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
+                            <ShoppingCart className="w-6 h-6 text-zinc-500 group-active:text-cyan-400 transition-colors" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 group-active:text-white">Tržiště & Scrap</span>
                         </button>
-                        <button onClick={() => handleUnderConstruction('Výroba')} className="bg-zinc-900/50 border border-white/5 hover:bg-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
-                            <Hammer className="w-6 h-6 text-zinc-500 group-hover:text-orange-500 transition-colors" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 group-hover:text-white">Výroba (Factory)</span>
+                        <button onClick={() => handleUnderConstruction('Výroba')} className="bg-zinc-900/50 border border-white/5 active:bg-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
+                            <Hammer className="w-6 h-6 text-zinc-500 group-active:text-orange-500 transition-colors" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 group-active:text-white">Výroba (Factory)</span>
                         </button>
-                        <button onClick={() => handleUnderConstruction('Loděnice')} className="bg-zinc-900/50 border border-white/5 hover:bg-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
-                            <ArrowUpCircle className="w-6 h-6 text-zinc-500 group-hover:text-signal-cyan transition-colors" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Vylepšit Loď</span>
+                        <button onClick={() => handleUnderConstruction('Loděnice')} className="bg-zinc-900/50 border border-white/5 active:bg-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
+                            <ArrowUpCircle className="w-6 h-6 text-zinc-500 group-active:text-signal-cyan transition-colors" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 group-active:text-white">Vylepšit Loď</span>
                         </button>
-                        <button onClick={() => handleUnderConstruction('Kartografie')} className="bg-zinc-900/50 border border-white/5 hover:bg-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
-                            <Globe className="w-6 h-6 text-zinc-500 group-hover:text-purple-500 transition-colors" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Registr Planet</span>
+                        <button onClick={() => handleUnderConstruction('Kartografie')} className="bg-zinc-900/50 border border-white/5 active:bg-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
+                            <Globe className="w-6 h-6 text-zinc-500 group-active:text-purple-500 transition-colors" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 group-active:text-white">Registr Planet</span>
                         </button>
                     </div>
                 </div>
@@ -314,7 +314,7 @@ const SpaceStationView: React.FC<SpaceStationViewProps> = ({
             <footer className="relative z-10 p-6 bg-black/80 backdrop-blur-xl border-t border-white/10">
                 <button
                     onClick={handleUndockClick}
-                    className="w-full py-4 bg-cyan-600/10 hover:bg-cyan-600/20 border border-cyan-600/30 text-cyan-400 font-black uppercase text-sm tracking-[0.3em] rounded-xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-[0_0_20px_rgba(8,145,178,0.2)]"
+                    className="w-full py-4 bg-cyan-600/10 active:bg-cyan-600/20 border border-cyan-600/30 text-cyan-400 font-black uppercase text-sm tracking-[0.3em] rounded-xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-[0_0_20px_rgba(8,145,178,0.2)]"
                 >
                     <LogOut className="w-5 h-5" />
                     Opustit Stanici (Undock)
@@ -340,10 +340,10 @@ const SpaceStationView: React.FC<SpaceStationViewProps> = ({
                                 Opravdu chcete opustit stanici? Ujistěte se, že máte doplněno palivo a zásoby.
                             </p>
                             <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => setShowConfirmLeave(false)} className="py-3 bg-zinc-800 text-zinc-400 font-bold uppercase text-[10px] rounded-lg hover:bg-zinc-700 transition-colors">
+                                <button onClick={() => setShowConfirmLeave(false)} className="py-3 bg-zinc-800 text-zinc-400 font-bold uppercase text-[10px] rounded-lg active:bg-zinc-700 transition-colors transition-transform active:scale-95">
                                     Zůstat
                                 </button>
-                                <button onClick={confirmUndock} className="py-3 bg-cyan-600 text-white font-bold uppercase text-[10px] rounded-lg hover:bg-cyan-500 transition-colors shadow-lg shadow-cyan-500/20">
+                                <button onClick={confirmUndock} className="py-3 bg-cyan-600 text-white font-bold uppercase text-[10px] rounded-lg active:bg-cyan-500 transition-colors transition-transform active:scale-95 shadow-lg shadow-cyan-500/20">
                                     Odletět
                                 </button>
                             </div>

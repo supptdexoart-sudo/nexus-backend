@@ -53,7 +53,7 @@ class ModuleErrorBoundary extends Component<ModuleErrorBoundaryProps, ModuleErro
           <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest mb-8 leading-relaxed">
             CRITICAL_FAILURE: MODULE_LOAD<br />Spojení se sektorem ztraceno.
           </p>
-          <button onClick={() => window.location.reload()} className="py-4 px-10 bg-red-600 text-black font-black uppercase text-xs hover:bg-white transition-colors">
+          <button onClick={() => window.location.reload()} className="py-4 px-10 bg-red-600 text-black font-black uppercase text-xs active:bg-white transition-colors">
             RESTARTOVAT SYSTÉM
           </button>
         </div>
@@ -284,7 +284,7 @@ const App: React.FC = () => {
 
                 {/* Center Slot: Turn Indicator */}
                 {logic.roomState.isInRoom && logic.roomState.isGameStarted ? (
-                  <div className={`relative overflow-hidden bg-black/80 border border-white/5 flex flex-col items-center justify-center py-2 h-[52px] group transition-colors hover:bg-white/5 ${logic.isMyTurn ? 'border-arc-yellow/30 bg-arc-yellow/5' : ''}`}>
+                  <div className={`relative overflow-hidden bg-black/80 border border-white/5 flex flex-col items-center justify-center py-2 h-[52px] group transition-colors active:bg-white/5 ${logic.isMyTurn ? 'border-arc-yellow/30 bg-arc-yellow/5' : ''}`}>
                     <div className="flex flex-col items-center gap-0 z-10 relative w-full px-2">
                       <div className={`flex items-center justify-center gap-2 w-full ${logic.isMyTurn ? 'text-arc-yellow' : 'text-zinc-600'}`}>
                         {logic.isMyTurn ? <Activity className="w-3.5 h-3.5 animate-pulse" /> : <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -413,14 +413,18 @@ const App: React.FC = () => {
             >
               <div className={`absolute inset-0 rounded-full transition-all duration-300 ${logic.activeTab === Tab.SCANNER
                 ? 'border-2 border-arc-yellow animate-pulse'
-                : 'border border-white/20 group-hover:border-arc-cyan/50'
-                }`}></div>
-
-              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-arc-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-              <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${logic.activeTab === Tab.SCANNER ? 'text-black scale-110' : 'text-arc-cyan group-hover:rotate-180'
-                }`}>
-                <Scan size={28} strokeWidth={logic.activeTab === Tab.SCANNER ? 3 : 2} />
+                : 'border border-white/20 group-active:border-arc-cyan/50'}
+            relative shadow-[0_0_15px_rgba(0,0,0,0.5)]`}
+              >
+                <AnimatePresence>
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-arc-cyan/20 to-transparent opacity-0 group-active:opacity-100 transition-opacity"></div>
+                </AnimatePresence>
+                <div className="relative z-10 flex items-center justify-center h-full">
+                  <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${logic.activeTab === Tab.SCANNER ? 'text-black scale-110' : 'text-arc-cyan group-active:rotate-180'
+                    }`}>
+                    <Scan size={28} strokeWidth={logic.activeTab === Tab.SCANNER ? 3 : 2} />
+                  </div>
+                </div>
               </div>
 
               {logic.activeTab === Tab.SCANNER && (
@@ -438,8 +442,9 @@ const App: React.FC = () => {
             >
               <div className={`w-full h-full transition-all ${logic.activeTab === Tab.SCANNER
                   ? 'bg-arc-yellow shadow-[0_0_40px_rgba(249,212,35,0.6)]'
-                  : 'bg-black border-2 border-arc-cyan/30 group-hover:border-arc-cyan'
-                }`}>
+                  : 'bg-black border-2 border-arc-cyan/30 group-active:border-arc-cyan'}
+                flex items-center justify-center shadow-lg transition-transform active:scale-90`}
+              >
                 <div className="w-full h-full flex items-center justify-center">
                   <Scan size={28} className={logic.activeTab === Tab.SCANNER ? 'text-black' : 'text-arc-cyan'} strokeWidth={2.5} />
                 </div>
@@ -455,14 +460,12 @@ const App: React.FC = () => {
               onClick={() => logic.setActiveTab(Tab.SCANNER)}
               className={`absolute left-1/2 -translate-x-1/2 -top-5 w-16 h-16 rounded-2xl transition-all duration-300 group ${logic.activeTab === Tab.SCANNER
                   ? 'bg-gradient-to-br from-arc-cyan to-black shadow-[0_4px_12px_rgba(0,242,255,0.3),0_8px_24px_rgba(0,0,0,0.4),0_12px_40px_rgba(0,242,255,0.2)] scale-105'
-                  : 'bg-gradient-to-br from-zinc-900 to-black shadow-[0_4px_12px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.2)] hover:scale-105'
-                }`}
+                  : 'bg-gradient-to-br from-zinc-900 to-black shadow-[0_4px_12px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.2)] active:scale-105'}
+                relative transition-all active:scale-95`}
             >
-              <div className={`absolute inset-0 rounded-2xl border transition-all ${logic.activeTab === Tab.SCANNER ? 'border-arc-cyan' : 'border-white/10 group-hover:border-arc-cyan/50'
-                }`}></div>
-
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Scan size={26} className={logic.activeTab === Tab.SCANNER ? 'text-arc-cyan' : 'text-zinc-400 group-hover:text-arc-cyan'} strokeWidth={2} />
+              <div className={`absolute inset-0 rounded-2xl border transition-all ${logic.activeTab === Tab.SCANNER ? 'border-arc-cyan' : 'border-white/10 group-active:border-arc-cyan/50'}`}></div>
+              <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
+                <Scan size={26} className={logic.activeTab === Tab.SCANNER ? 'text-arc-cyan' : 'text-zinc-400 group-active:text-arc-cyan'} strokeWidth={2} />
               </div>
             </button> */}
 
@@ -472,8 +475,8 @@ const App: React.FC = () => {
               className={`absolute left-1/2 -translate-x-1/2 -top-6 w-[70px] h-[70px] rotate-45 transition-all duration-300 group ${
                 logic.activeTab === Tab.SCANNER
                   ? 'bg-black border-2 border-arc-yellow shadow-[0_0_40px_rgba(249,212,35,0.5)]'
-                  : 'bg-zinc-900 border border-white/20 group-hover:border-arc-cyan/50'
-              }`}
+                  : 'bg-zinc-900 border border-white/20 group-active:border-arc-cyan/50'}
+                flex flex-col items-center justify-center gap-1.5 transition-all transition-transform active:scale-90`}
             >
               <div className="absolute inset-0 flex items-center justify-center -rotate-45">
                 <Scan size={28} className={logic.activeTab === Tab.SCANNER ? 'text-arc-yellow animate-pulse' : 'text-arc-cyan'} strokeWidth={2.5} />

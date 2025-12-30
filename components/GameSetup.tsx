@@ -159,7 +159,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                                 <button
                                     key={c.id}
                                     onClick={() => handleClassSelect(c.id)}
-                                    className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden group ${selectedClass === c.id ? `bg-zinc-900 ${c.border}` : 'bg-black border-zinc-800 hover:border-zinc-700'}`}
+                                    className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden group active:scale-[0.98] ${selectedClass === c.id ? `bg-zinc-900 ${c.border}` : 'bg-black border-zinc-800 active:border-zinc-700'}`}
                                 >
                                     <div className="flex items-center gap-4 relative z-10">
                                         <div className={`p-3 rounded-lg bg-zinc-900 ${c.color} border border-white/5`}>
@@ -216,7 +216,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                                         }
                                     }}
                                     disabled={!characterId.trim() || isLoadingCharacter}
-                                    className="px-6 py-3 bg-signal-cyan text-black rounded-lg font-bold uppercase text-xs hover:bg-white transition-colors disabled:opacity-50"
+                                    className="px-6 py-3 bg-signal-cyan text-black rounded-lg font-bold uppercase text-xs active:bg-white transition-colors disabled:opacity-50"
                                 >
                                     {isLoadingCharacter ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Načíst'}
                                 </button>
@@ -226,7 +226,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                             )}
                             <button
                                 onClick={() => setShowScanner(true)}
-                                className="mt-3 w-full py-3 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-lg font-bold uppercase text-xs hover:bg-purple-500/20 transition-colors flex items-center justify-center gap-2"
+                                className="mt-3 w-full py-3 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-lg font-bold uppercase text-xs active:bg-purple-500/20 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Camera className="w-4 h-4" />
                                 Skenovat QR kód
@@ -270,7 +270,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                                 />
                                 <button
                                     onClick={() => setShowScanner(false)}
-                                    className="absolute top-6 right-6 z-50 px-4 py-2 bg-red-500 text-white rounded-lg font-bold uppercase text-xs hover:bg-red-600 transition-colors"
+                                    className="absolute top-6 right-6 z-50 px-4 py-2 bg-red-500 text-white rounded-lg font-bold uppercase text-xs active:bg-red-600 transition-colors active:scale-95"
                                 >
                                     Zavřít
                                 </button>
@@ -283,7 +283,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                 {step === 'action' && (
                     <div className="flex flex-col gap-4">
                         <div className="text-center mb-6">
-                            <button onClick={() => { setStep('class'); setLoadedCharacter(null); setCharacterId(''); }} className="text-[10px] text-zinc-500 uppercase tracking-widest hover:text-white mb-2 font-bold underline underline-offset-4">Změnit {loadedCharacter ? 'Postavu' : 'Třídu'}</button>
+                            <button onClick={() => { setStep('class'); setLoadedCharacter(null); setCharacterId(''); }} className="text-[10px] text-zinc-500 uppercase tracking-widest active:text-white mb-2 font-bold underline underline-offset-4">Změnit {loadedCharacter ? 'Postavu' : 'Třídu'}</button>
                             <h2 className="text-3xl font-black text-white uppercase tracking-wider">PŘÍPRAVA</h2>
                             <div className="flex justify-center items-center gap-2 mt-2">
                                 <span className="text-white font-bold tracking-tight">{nickname}</span>
@@ -313,7 +313,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                         </div>
 
                         {/* CREATE ROOM */}
-                        <div className="p-5 bg-zinc-900/90 border-2 border-zinc-800 hover:border-signal-cyan rounded-2xl transition-all shadow-xl backdrop-blur-sm">
+                        <div className="p-5 bg-zinc-900/90 border-2 border-zinc-800 active:border-signal-cyan rounded-2xl transition-all shadow-xl backdrop-blur-sm">
                             <div onClick={() => !isPrivateRoom && handleAction('create')} className={`cursor-pointer ${isPrivateRoom ? '' : 'flex flex-col'}`}>
                                 <div className="flex items-center gap-4 mb-2">
                                     <Users className="w-7 h-7 text-signal-cyan" />
@@ -361,9 +361,9 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                         <button
                             onClick={() => handleAction('join_mode')}
                             disabled={isLoading}
-                            className="group relative overflow-hidden w-full p-5 bg-zinc-900/80 border-2 border-zinc-800 hover:border-signal-amber rounded-2xl text-left transition-all active:scale-[0.98] shadow-lg"
+                            className="group relative overflow-hidden w-full p-5 bg-zinc-900/80 border-2 border-zinc-800 active:border-signal-amber rounded-2xl text-left transition-all active:scale-[0.98] shadow-lg"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-signal-amber/10 to-transparent translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-signal-amber/10 to-transparent translate-x-[-100%] group-active:translate-x-0 transition-transform duration-500"></div>
                             <Hash className="w-7 h-7 text-signal-amber mb-2 relative z-10" />
                             <h3 className="text-lg font-bold text-white relative z-10 uppercase tracking-tighter">Vstoupit do Sektoru</h3>
                             <p className="text-[10px] text-zinc-400 mt-1 relative z-10 font-bold uppercase tracking-wider">Připojit se k existující jednotce.</p>
@@ -373,9 +373,9 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                         <button
                             onClick={() => handleAction('solo-online')}
                             disabled={isLoading}
-                            className="group relative overflow-hidden w-full p-5 bg-zinc-900/80 border-2 border-zinc-800 hover:border-white rounded-2xl text-left transition-all active:scale-[0.98] shadow-lg"
+                            className="group relative overflow-hidden w-full p-5 bg-zinc-900/80 border-2 border-zinc-800 active:border-white rounded-2xl text-left transition-all active:scale-[0.98] shadow-lg"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent translate-x-[-100%] group-active:translate-x-0 transition-transform duration-500"></div>
                             <Globe className="w-7 h-7 text-white mb-2 relative z-10" />
                             <h3 className="text-lg font-bold text-white relative z-10 uppercase tracking-tighter">Samostatná_Mise (Online)</h3>
                             <p className="text-[10px] text-zinc-400 mt-1 relative z-10 font-bold uppercase tracking-wider">Solo hra se synchronizací Vaultu.</p>
@@ -389,7 +389,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
 
                         <button
                             onClick={() => handleAction('solo')}
-                            className="w-full py-3 text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"
+                            className="w-full py-3 text-zinc-500 active:text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors active:scale-95"
                         >
                             <Gamepad2 className="w-4 h-4" /> Samostatná_Mise (Offline)
                         </button>
@@ -399,7 +399,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                 {/* --- STEP 4: JOIN INPUT --- */}
                 {step === 'join' && (
                     <div className="text-center mt-10">
-                        <button onClick={() => setStep('action')} className="text-zinc-500 text-[10px] font-black uppercase mb-6 hover:text-white tracking-widest underline underline-offset-4">← Zpět do Lobby</button>
+                        <button onClick={() => setStep('action')} className="text-zinc-500 text-[10px] font-black uppercase mb-6 active:text-white tracking-widest underline underline-offset-4">← Zpět do Lobby</button>
 
                         <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest">Připojení k Sektoru</h2>
 
@@ -441,7 +441,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-white"
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 active:text-white"
                                 >
                                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>

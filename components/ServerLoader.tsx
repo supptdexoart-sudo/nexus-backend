@@ -75,16 +75,16 @@ const ServerLoader: React.FC<ServerLoaderProps> = ({ onConnected, onSwitchToOffl
 
             <div className="flex flex-col gap-3 w-full mt-4">
               <button
-                onClick={() => setRetryCount(c => c + 1)}
-                className="py-4 bg-white text-black font-black uppercase text-xs tracking-widest hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
+                onClick={() => window.location.reload()}
+                className="py-4 bg-white text-black font-black uppercase text-xs tracking-widest active:bg-zinc-200 transition-colors flex items-center justify-center gap-2 active:scale-95"
               >
-                <RefreshCcw className="w-4 h-4" /> Zkusit Znovu
+                <RefreshCw className="w-4 h-4" /> ZKUSIT ZNOVU
               </button>
               <button
-                onClick={onSwitchToOffline}
-                className="py-4 bg-zinc-900 text-zinc-500 font-bold uppercase text-[10px] tracking-widest border border-zinc-800 hover:text-white hover:border-zinc-600 transition-colors"
+                onClick={() => { localStorage.clear(); window.location.reload(); }}
+                className="py-4 bg-zinc-900 text-zinc-500 font-bold uppercase text-[10px] tracking-widest border border-zinc-800 active:text-white active:border-zinc-600 transition-colors active:scale-95"
               >
-                Spustit Offline Režim
+                ODHLÁSIT A VYČISTIT MEZIPAMĚŤ
               </button>
             </div>
           </motion.div>

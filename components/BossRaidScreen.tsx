@@ -17,7 +17,7 @@ const BossRaidScreen: React.FC<BossRaidScreenProps> = ({ roomId, playerNickname,
     const [damageInput, setDamageInput] = useState<string>('');
     const [isAttacking, setIsAttacking] = useState(false);
     const [localLog, setLocalLog] = useState<string[]>([]);
-    
+
     // Auto-scroll log
     const logEndRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +37,7 @@ const BossRaidScreen: React.FC<BossRaidScreenProps> = ({ roomId, playerNickname,
 
     const handleAttack = async () => {
         if (!isMyTurn || !damageInput) return;
-        
+
         const dmg = parseInt(damageInput);
         if (isNaN(dmg) || dmg < 0) return;
 
@@ -58,12 +58,12 @@ const BossRaidScreen: React.FC<BossRaidScreenProps> = ({ roomId, playerNickname,
     const handleCloseRaid = async () => {
         if (confirm("Opravdu ukončit tento Raid pro celou místnost?")) {
             await apiService.endRaid(roomId);
-            if(onClose) onClose();
+            if (onClose) onClose();
         }
     };
 
     return (
-        <motion.div 
+        <motion.div
             {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)}
             className="fixed inset-0 z-[80] bg-black/95 flex flex-col items-center justify-center p-4 overflow-hidden"
         >
@@ -71,10 +71,10 @@ const BossRaidScreen: React.FC<BossRaidScreenProps> = ({ roomId, playerNickname,
             <div className={`absolute inset-0 pointer-events-none opacity-20 ${isMyTurn ? 'bg-red-900 animate-pulse' : 'bg-black'}`}></div>
 
             <div className="w-full max-w-lg relative z-10 flex flex-col h-full max-h-[90vh]">
-                
+
                 {/* BOSS HEADER */}
                 <div className="text-center mb-6">
-                    <motion.div 
+                    <motion.div
                         {...({
                             animate: { scale: isMyTurn ? [1, 1.1, 1] : 1 },
                             transition: { repeat: Infinity, duration: 2 }
@@ -98,7 +98,7 @@ const BossRaidScreen: React.FC<BossRaidScreenProps> = ({ roomId, playerNickname,
                         <span>{raidState.currentHp} / {raidState.maxHp}</span>
                     </div>
                     <div className="h-6 bg-zinc-900 rounded-full border-2 border-zinc-700 overflow-hidden relative">
-                        <motion.div 
+                        <motion.div
                             className="h-full bg-gradient-to-r from-red-600 to-red-800"
                             {...({
                                 initial: { width: '100%' },
@@ -115,9 +115,9 @@ const BossRaidScreen: React.FC<BossRaidScreenProps> = ({ roomId, playerNickname,
                         <Trophy className="w-24 h-24 text-yellow-500 animate-bounce" />
                         <h2 className="text-4xl font-display font-black text-yellow-500">VÍTĚZSTVÍ!</h2>
                         <p className="text-zinc-400">Boss byl poražen. Tým přežil.</p>
-                        <button 
+                        <button
                             onClick={handleCloseRaid}
-                            className="px-8 py-4 bg-yellow-600 hover:bg-yellow-500 text-black font-bold uppercase rounded-xl shadow-lg mt-8"
+                            className="px-8 py-4 bg-yellow-600 active:bg-yellow-500 text-black font-bold uppercase rounded-xl shadow-lg mt-8 active:scale-95 transition-transform"
                         >
                             Zavřít Raid
                         </button>
@@ -153,7 +153,7 @@ const BossRaidScreen: React.FC<BossRaidScreenProps> = ({ roomId, playerNickname,
                         {/* CONTROLS */}
                         <div className="mt-auto">
                             <div className="flex gap-2">
-                                <input 
+                                <input
                                     type="number"
                                     placeholder="Hodnota útoku..."
                                     value={damageInput}
@@ -164,13 +164,13 @@ const BossRaidScreen: React.FC<BossRaidScreenProps> = ({ roomId, playerNickname,
                                 <button
                                     onClick={handleAttack}
                                     disabled={!isMyTurn || !damageInput || isAttacking}
-                                    className="flex-1 bg-red-600 hover:bg-red-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-bold uppercase rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-2 transition-all active:scale-95"
+                                    className="flex-1 bg-red-600 active:bg-red-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-bold uppercase rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-2 transition-all active:scale-95"
                                 >
                                     <Sword className="w-6 h-6" /> {isAttacking ? '...' : 'ÚTOK'}
                                 </button>
                             </div>
-                            
-                            <button onClick={onClose} className="w-full mt-4 py-2 text-zinc-600 text-xs uppercase hover:text-white">
+
+                            <button onClick={onClose} className="w-full mt-4 py-2 text-zinc-600 text-xs uppercase active:text-white">
                                 Minimalizovat (Běží na pozadí)
                             </button>
                         </div>

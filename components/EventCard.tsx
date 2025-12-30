@@ -481,7 +481,7 @@ const EventCard: React.FC<EventCardProps> = ({
                             {theme.icon}
                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isDilemma ? 'DILEMA' : event.type}</span>
                         </div>
-                        <button onClick={onClose} className="p-2 text-zinc-600 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                        <button onClick={onClose} className="p-2 text-zinc-600 active:text-white transition-colors active:scale-90"><X className="w-5 h-5" /></button>
                     </div>
 
                     <h2 className={`text-2xl font-display font-black uppercase tracking-tighter leading-none ${theme.text} mb-2`}>{event.title}</h2>
@@ -551,18 +551,19 @@ const EventCard: React.FC<EventCardProps> = ({
                                     <button
                                         key={i}
                                         onClick={() => handleDilemmaChoice(opt)}
-                                        className="group relative overflow-hidden bg-purple-900/5 hover:bg-purple-900/20 border border-purple-500/20 hover:border-purple-500 transition-all text-left"
+                                        className="group relative overflow-hidden bg-purple-900/5 active:bg-purple-900/20 border border-purple-500/20 active:border-purple-500 transition-all text-left p-4 active:scale-[0.98]"
                                     >
-                                        <div className="p-4 relative z-10 flex justify-between items-center">
-                                            <div>
-                                                <span className="text-[9px] font-mono text-zinc-500 group-hover:text-purple-400 uppercase block mb-1">MOŽNOST {String.fromCharCode(65 + i)}</span>
-                                                <span className="text-xs font-bold text-zinc-200 group-hover:text-white uppercase tracking-wider">{opt.label}</span>
+                                        <div className="flex flex-col relative z-20">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-mono text-zinc-500 group-active:text-purple-400 uppercase block mb-1">MOŽNOST {String.fromCharCode(65 + i)}</span>
                                             </div>
-                                            {opt.successChance !== undefined && opt.successChance < 100 && (
-                                                <div className="text-[9px] font-mono text-purple-500 border border-purple-500/30 px-2 py-1 bg-black">{opt.successChance}% ŠANCE</div>
-                                            )}
+                                            <span className="text-xs font-bold text-zinc-200 group-active:text-white uppercase tracking-wider">{opt.label}</span>
                                         </div>
-                                        <div className="absolute inset-y-0 left-0 w-0.5 bg-purple-500/0 group-hover:bg-purple-500 transition-colors"></div>
+                                        {opt.successChance !== undefined && opt.successChance < 100 && (
+                                            <div className="absolute top-4 right-4 text-[9px] font-mono text-purple-500 border border-purple-500/30 px-2 py-1 bg-black z-20">{opt.successChance}% ŠANCE</div>
+                                        )}
+                                        {/* Indicator Line */}
+                                        <div className="absolute inset-y-0 left-0 w-0.5 bg-purple-500/0 group-active:bg-purple-500 transition-colors"></div>
                                     </button>
                                 ))}
                             </div>
@@ -623,19 +624,19 @@ const EventCard: React.FC<EventCardProps> = ({
                     <div className="flex gap-2">
                         {/* USE BUTTON */}
                         {onUse && dilemmaStep !== 'RESULT' && !isDilemma && !event.resourceConfig?.isResourceContainer && !event.isSellOnly && !isCombat && !isTrap && event.type !== GameEventType.PLANET && (
-                            <button onClick={onUse} className={`flex-1 py-4 text-black font-black uppercase text-[11px] tracking-[0.2em] font-display hover:brightness-125 transition-all text-center clip-path-button ${theme.accent}`}>
+                            <button onClick={onUse} className={`flex-1 py-4 text-black font-black uppercase text-[11px] tracking-[0.2em] font-display active:brightness-125 transition-all text-center clip-path-button active:scale-95 ${theme.accent}`}>
                                 {event.type === GameEventType.MERCHANT ? 'OTEVŘÍT OBCHOD' :
                                     event.type === GameEventType.SPACE_STATION ? 'DOKOVAT & ZÁSOBIT' : 'POUŽÍT PŘEDMĚT'}
                             </button>
                         )}
                         {dilemmaStep === 'RESULT' && isDilemma && (
-                            <button onClick={onClose} className="w-full py-4 bg-white text-black font-black uppercase text-[11px] tracking-[0.2em] hover:bg-zinc-200 transition-all text-center clip-path-button flex items-center justify-center gap-2">
+                            <button onClick={onClose} className="w-full py-4 bg-white text-black font-black uppercase text-[11px] tracking-[0.2em] active:bg-zinc-200 transition-all text-center clip-path-button flex items-center justify-center gap-2 active:scale-95">
                                 POKRAČOVAT <ChevronRight className="w-4 h-4" />
                             </button>
                         )}
 
                         {allowSave && onSave && !isSaved ? (
-                            <button onClick={onSave} className={`flex-1 py-4 border font-black uppercase text-[11px] tracking-[0.2em] font-display hover:bg-white/10 transition-all text-center clip-path-button flex items-center justify-center gap-2 ${event.resourceConfig?.isResourceContainer ? 'border-orange-500 text-orange-500' : 'border-white/20 text-white'}`}>
+                            <button onClick={onSave} className={`flex-1 py-4 border font-black uppercase text-[11px] tracking-[0.2em] font-display active:bg-white/10 transition-all text-center clip-path-button flex items-center justify-center gap-2 active:scale-95 ${event.resourceConfig?.isResourceContainer ? 'border-orange-500 text-orange-500' : 'border-white/20 text-white'}`}>
                                 {event.resourceConfig?.isResourceContainer ? <><Hammer className="w-4 h-4" /> TĚŽIT</> : 'ULOŽIT DO BATOHU'}
                             </button>
                         ) : (
@@ -647,7 +648,7 @@ const EventCard: React.FC<EventCardProps> = ({
                         )}
                     </div>
                     {isSaved && onDiscard && !isDilemma && !isCombat && !isTrap && (
-                        <button onClick={handleDiscardClick} className={`w-full py-3 border font-black uppercase text-[10px] tracking-[0.2em] font-mono text-center flex items-center justify-center gap-2 hover:bg-red-900/20 transition-all ${showDeleteConfirm ? 'border-red-500 text-red-500' : 'border-white/5 text-zinc-600 hover:text-red-500'}`}>
+                        <button onClick={handleDiscardClick} className={`w-full py-3 border font-black uppercase text-[10px] tracking-[0.2em] font-mono text-center flex items-center justify-center gap-2 active:bg-red-900/20 transition-all active:scale-95 ${showDeleteConfirm ? 'border-red-500 text-red-500' : 'border-white/5 text-zinc-600 active:text-red-500'}`}>
                             {showDeleteConfirm ? 'POTVRDIT VYHOZENÍ' : 'VYHODIT PŘEDMĚT'} <Trash2 className="w-3 h-3" />
                         </button>
                     )}

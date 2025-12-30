@@ -31,7 +31,7 @@ export const TradeSession: React.FC<TradeSessionProps> = ({ participants, curren
                     <h2 className="text-2xl font-orbitron text-signal-cyan tracking-widest animate-pulse">
                         ZABEZPEČENÉ SPOJENÍ
                     </h2>
-                    <button onClick={onCancel} className="text-zinc-500 hover:text-red-500 font-mono transition-colors">
+                    <button onClick={onCancel} className="text-zinc-500 active:text-red-500 font-mono transition-colors active:scale-95">
                         [PŘERUŠIT SPOJENÍ]
                     </button>
                 </div>
@@ -51,8 +51,8 @@ export const TradeSession: React.FC<TradeSessionProps> = ({ participants, curren
                         <div
                             onClick={!me.isConfirmed ? onSelectItem : undefined}
                             className={`h-64 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer transition-all relative overflow-hidden group
-                                ${me.offeredItem ? 'border-signal-cyan bg-signal-cyan/5' : 'border-zinc-700 hover:border-zinc-500 bg-zinc-900'}
-                                ${me.isConfirmed ? 'opacity-50 cursor-not-allowed' : ''}
+                                ${me.offeredItem ? 'border-signal-cyan bg-signal-cyan/5' : 'border-zinc-700 active:border-zinc-500 bg-zinc-900'}
+                                ${me.isConfirmed ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'}
                             `}
                         >
                             {me.offeredItem ? (
@@ -67,7 +67,7 @@ export const TradeSession: React.FC<TradeSessionProps> = ({ participants, curren
                                     <h4 className="font-bold text-white">{me.offeredItem.title}</h4>
                                     <p className="text-xs text-zinc-400 mt-1">{me.offeredItem.rarity || 'Common'}</p>
                                     {!me.isConfirmed && (
-                                        <p className="text-xs text-signal-cyan mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <p className="text-xs text-signal-cyan mt-4 opacity-0 group-active:opacity-100 transition-opacity">
                                             [KLIKNI PRO ZMĚNU]
                                         </p>
                                     )}
@@ -124,10 +124,10 @@ export const TradeSession: React.FC<TradeSessionProps> = ({ participants, curren
                     <button
                         onClick={() => onConfirm(!me.isConfirmed)}
                         className={`
-                            px-8 py-3 rounded font-bold tracking-wider transition-all w-full max-w-sm
+                            px-8 py-3 rounded font-bold tracking-wider transition-all w-full max-w-sm active:scale-95
                             ${me.isConfirmed
-                                ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border border-zinc-600'
-                                : 'bg-signal-cyan/10 text-signal-cyan border border-signal-cyan/50 hover:bg-signal-cyan/20 hover:shadow-[0_0_20px_rgba(0,242,255,0.3)]'
+                                ? 'bg-zinc-800 text-zinc-400 active:bg-zinc-700 border border-zinc-600'
+                                : 'bg-signal-cyan/10 text-signal-cyan border border-signal-cyan/50 active:bg-signal-cyan/20 active:shadow-[0_0_20px_rgba(0,242,255,0.3)]'
                             }
                         `}
                     >

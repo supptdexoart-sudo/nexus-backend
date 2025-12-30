@@ -153,7 +153,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScanCode, isAIThinking, isPaused })
                 className="w-full bg-white/5 border border-white/10 p-4 text-white text-center text-xl font-mono uppercase rounded-xl outline-none focus:border-signal-cyan placeholder-white/20"
               />
               <div className="flex gap-4">
-                <button onClick={() => setShowManualInput(false)} className="flex-1 py-4 text-xs font-bold text-white/40 uppercase hover:text-white transition-colors">Zrušit</button>
+                <button onClick={() => setShowManualInput(false)} className="flex-1 py-4 text-xs font-bold text-white/40 uppercase active:text-white transition-colors">Zrušit</button>
                 <button onClick={() => { onScanCode(manualId); setShowManualInput(false); }} className="flex-1 button-primary py-4 text-xs shadow-lg shadow-signal-amber/20">Potvrdit</button>
               </div>
             </div>

@@ -65,9 +65,9 @@ const StartupBoot: React.FC<StartupBootProps> = ({ onComplete }) => {
           animate={{ opacity: 1, scale: 1 }}
           className="mb-12 flex flex-col items-center"
         >
-          <div className="w-20 h-20 bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-arc-yellow/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 animate-[pulse_3s_infinite]"></div>
-            <Power className="w-10 h-10 text-arc-yellow" />
+          <div className="w-20 h-20 bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-arc-yellow/20 animate-[pulse_3s_infinite]"></div>
+            <Power className="w-10 h-10 text-arc-yellow relative z-10" />
           </div>
           <h1 className="text-4xl font-black uppercase tracking-[0.3em] text-white text-center leading-none mb-1">
             NEXUS<span className="text-arc-yellow">LINK</span>

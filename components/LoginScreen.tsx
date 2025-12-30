@@ -80,7 +80,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
           <button
             onClick={handleGuestLogin}
-            className="text-xs text-zinc-500 font-bold uppercase tracking-widest hover:text-white transition-colors flex items-center justify-center gap-2 w-full py-3 hover:bg-white/5"
+            className="text-xs text-zinc-500 font-bold uppercase tracking-widest active:text-white transition-colors flex items-center justify-center gap-2 w-full py-3 active:bg-white/5 active:scale-95"
           >
             <User className="w-4 h-4" /> Spustit jako Host (Offline)
           </button>

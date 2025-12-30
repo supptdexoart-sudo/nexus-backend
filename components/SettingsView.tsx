@@ -162,7 +162,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
             <button
               onClick={() => onTriggerSectorEvent?.('MAGNETIC_STORM', 5)}
-              className="w-full p-4 border border-red-500/30 bg-red-950/20 rounded-xl flex items-center justify-between group active:scale-[0.98] transition-all hover:bg-red-900/30"
+              className="w-full p-4 border border-red-500/30 bg-red-950/20 rounded-xl flex items-center justify-between group active:scale-[0.98] transition-all active:bg-red-900/30"
             >
               <div className="flex items-center gap-4">
                 <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
