@@ -102,6 +102,7 @@ export const useGameLogic = () => {
     const prevTurnIndexRef = useRef<number>(-1);
     const lastSetEventTimeRef = useRef<number>(0);
     const prevSectorEventRef = useRef<string | null>(null);
+    const lastInventoryActionTimeRef = useRef<number>(0);
 
     // ... (useEffect refs updates unchanged)
     // ... (Initialization unchanged)
@@ -1015,11 +1016,23 @@ export const useGameLogic = () => {
         setIsRefreshing(true);
         try {
             const target = userEmail || 'guest';
-            const inv = await apiService.getInventory(target);
-            setInventory(inv);
-            localStorage.setItem(`nexus_inv_${target}`, JSON.stringify(inv));
-        } catch (e) { console.error(e); }
-        finally { setIsRefreshing(false); }
+
+            // 1. Fetch current saved items from User DB
+            const rawInv = await apiService.getInventory(target);
+
+            // 2. Deep Sync & Validate with Master Catalog Template
+            // This ensures stats are updated and non-existent cards are removed.
+            const { validItems } = await apiService.validateLocalItems(rawInv);
+
+            console.log(`📡 [DEEP-SYNC] Processed ${rawInv.length} items. Result: ${validItems.length} valid & up-to-date items.`);
+
+            setInventory(validItems);
+            localStorage.setItem(`nexus_inv_${target}`, JSON.stringify(validItems));
+        } catch (e) {
+            console.error("Deep Sync Failed:", e);
+        } finally {
+            setIsRefreshing(false);
+        }
     };
 
     const handleDeleteEvent = async (id: string) => {
@@ -1038,23 +1051,23 @@ export const useGameLogic = () => {
             try {
                 await apiService.deleteCard(target, id);
                 console.log(`✅ [FRONTEND] Delete successful on backend for ${id}`);
-            } catch (e: any) {
-                console.error(`❌ [FRONTEND] Delete failed for ${id}:`, e.message);
-                // Notification for sync failure
-                setNotification({
-                    id: 'delete-err-' + Date.now(),
-                    type: 'error',
-                    message: `Nepodařilo se smazat kartu z cloudu: ${e.message}`
-                });
                 // Revert or refresh to stay in sync
                 handleRefreshDatabase();
+            } catch (e) {
+                console.error("Delete failed:", e);
             }
         }
+        lastInventoryActionTimeRef.current = Date.now();
     };
 
     const handleSaveEvent = async (event: GameEvent, isNew: boolean) => {
         const target = userEmail || 'guest';
         setInventory(prev => {
+            // Uniqueness check for isNew items
+            if (isNew && prev.some(i => i.id === event.id)) {
+                console.warn(`🛡️ [FRONTEND] Save skipped: Item ${event.id} already exists.`);
+                return prev;
+            }
             const next = isNew ? [...prev, event] : prev.map(i => i.id === event.id ? event : i);
             localStorage.setItem(`nexus_inv_${target}`, JSON.stringify(next));
             return next;
@@ -1062,6 +1075,7 @@ export const useGameLogic = () => {
         if (!isGuest && navigator.onLine) {
             try { await apiService.saveCard(target, event); } catch (e) { }
         }
+        lastInventoryActionTimeRef.current = Date.now();
     };
 
 
@@ -1138,6 +1152,12 @@ export const useGameLogic = () => {
     // AUTO-SYNC INVENTORY FOR REGULAR PLAYERS
     useEffect(() => {
         if (activeTab === Tab.INVENTORY && isServerReady && userEmail && !isGuest) {
+            // SYNC LOCK: Only sync if more than 3s since last user action (save/delete)
+            const timeSinceAction = Date.now() - lastInventoryActionTimeRef.current;
+            if (timeSinceAction < 3000) {
+                console.log(`📡 [AUTO-SYNC] Lock Active: Skipping sync (Action ${timeSinceAction}ms ago)`);
+                return;
+            }
             console.log('[AUTO-SYNC] Triggering inventory sync');
             handleRefreshDatabase();
         }

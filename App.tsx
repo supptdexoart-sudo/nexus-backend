@@ -313,7 +313,12 @@ const App: React.FC = () => {
               <Suspense fallback={<TabLoader />}>
                 {logic.activeTab === Tab.SCANNER && (
                   <div className="absolute inset-0 bg-black">
-                    <Scanner onScanCode={logic.handleScanCode} isAIThinking={logic.isAIThinking} isPaused={logic.isScannerPaused} />
+                    <Scanner
+                      onScanCode={logic.handleScanCode}
+                      isAIThinking={logic.isAIThinking}
+                      isPaused={logic.isScannerPaused}
+                      isCatalogLoading={logic.masterCatalog.length === 0}
+                    />
                   </div>
                 )}
 
@@ -493,7 +498,10 @@ const App: React.FC = () => {
               <EventCard
                 event={logic.currentEvent}
                 onClose={() => logic.closeEvent()}
-                onSave={() => { logic.handleSaveEvent(logic.currentEvent!, false); }}
+                onSave={() => {
+                  const isAlreadySaved = logic.inventory.some(i => i.id === logic.currentEvent?.id);
+                  logic.handleSaveEvent(logic.currentEvent!, !isAlreadySaved);
+                }}
                 onUse={() => { logic.handleUseEvent(logic.currentEvent!); }}
                 onDiscard={() => { logic.handleDeleteEvent(logic.currentEvent!.id); }}
                 onResolveDilemma={logic.handleResolveDilemma}

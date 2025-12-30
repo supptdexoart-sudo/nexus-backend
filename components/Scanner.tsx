@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Keyboard, Camera, Loader2, AlertTriangle } from 'lucide-react';
+import { Keyboard, Camera, Loader2, AlertTriangle, Satellite } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { vibrate } from '../services/soundService';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -10,9 +10,10 @@ interface ScannerProps {
   onScanCode: (code: string) => void;
   isAIThinking?: boolean;
   isPaused?: boolean;
+  isCatalogLoading?: boolean;
 }
 
-const Scanner: React.FC<ScannerProps> = ({ onScanCode, isAIThinking, isPaused }) => {
+const Scanner: React.FC<ScannerProps> = ({ onScanCode, isAIThinking, isPaused, isCatalogLoading }) => {
   const [cameraStatus, setCameraStatus] = useState<'idle' | 'active' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
@@ -129,6 +130,18 @@ const Scanner: React.FC<ScannerProps> = ({ onScanCode, isAIThinking, isPaused })
               <motion.div {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)} className="absolute inset-0 z-30 bg-signal-cyan/20 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
                 <Loader2 className="w-12 h-12 text-white animate-spin" />
                 <span className="text-xs font-black text-white uppercase tracking-[0.3em]">Analyzuji_Data...</span>
+              </motion.div>
+            )}
+            {isCatalogLoading && !isAIThinking && (
+              <motion.div {...({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)} className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+                <div className="relative">
+                  <Loader2 className="w-12 h-12 text-arc-yellow animate-spin" />
+                  <Satellite className="w-5 h-5 text-arc-yellow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] font-black text-arc-yellow uppercase tracking-[0.2em] animate-pulse">Synchronizace_Katalogu</span>
+                  <span className="text-[8px] font-mono text-zinc-500 uppercase mt-1">Stahuji_Mainframe_Data...</span>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

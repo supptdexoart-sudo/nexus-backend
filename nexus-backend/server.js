@@ -185,7 +185,7 @@ const allowedOrigins = [
 app.use(cors({
     origin: function (origin, callback) {
         // Povolit requesty bez origin (např. Postman, curl) pouze v development
-        if (!origin && (import.meta as any).env.DEV) {
+        if (!origin) {
             return callback(null, true);
         }
 
@@ -347,49 +347,62 @@ const getOrCreateUser = async (rawEmail) => {
 
 // --- ROUTES ---
 
-// 1. VALIDATION ENDPOINT (Zjednodušená logika pro stackování)
+// 1. VALIDATION ENDPOINT (Deep Sync with Master Catalog)
 app.post('/api/inventory/validate', async (req, res) => {
     try {
-        const { items } = req.body; // Array of { id, title }
+        const { items } = req.body; // Array of GameEvent objects
         if (!Array.isArray(items)) return res.status(400).json({ message: 'Invalid format' });
 
         const admin = await getOrCreateUser(ADMIN_EMAIL);
-        // Získáme set všech ID, které admin vytvořil (Master Catalog)
-        const masterIds = new Set(admin.inventory.map(i => i.id));
+        const masterCatalog = admin.inventory;
 
-        // Pro speciální předměty (crafting) kontrolujeme i názvy
-        const masterTitles = new Set(admin.inventory.map(i => i.title ? i.title.toLowerCase().trim() : ""));
+        const masterMap = new Map();
+        masterCatalog.forEach(i => {
+            masterMap.set(i.id.toLowerCase().trim(), i);
+            if (i.title) masterMap.set(`TITLE:${i.title.toLowerCase().trim()}`, i);
+        });
 
-        console.log(`[VALIDATION] Checking ${items.length} items. Logic: Base ID Existence.`);
+        console.log(`[VALIDATION] Deep Syncing ${items.length} items with Master Catalog.`);
 
-        const validIds = items.filter(item => {
-            // 1. Získáme "Základní ID" (např. z "ITEM-01__172399" uděláme "ITEM-01")
-            const baseId = item.id.split('__')[0];
+        const validItems = items.map(pItem => {
+            if (!pItem || !pItem.id) return null;
 
-            // 2. Je toto základní ID v databázi admina?
-            // Pokud ano, je to platná karta, nehledě na suffix nebo počet kopií.
-            if (masterIds.has(baseId)) return true;
+            const fullId = pItem.id.toLowerCase().trim();
+            const baseId = fullId.split('__')[0];
+            const titleKey = pItem.title ? `TITLE:${pItem.title.toLowerCase().trim()}` : null;
 
-            // 3. Kontrola pro speciální/generované itemy, které nemají statické ID
-            const isSpecial = baseId.startsWith('CRAFTED-') ||
-                baseId.startsWith('RES-') ||
-                baseId.startsWith('BOUGHT-') ||
-                baseId.startsWith('LIVE-') ||
-                baseId.startsWith('LANDING-') ||
-                baseId.startsWith('PHASE-') || // <--- ADDED PHASE
-                baseId.startsWith('GEN-');
+            // 1. Try to find by Exact ID or Base ID
+            let template = masterMap.get(baseId);
 
-            if (isSpecial) {
-                // Pokud je to speciální item, stačí když známe jeho název (např. "Lékárnička")
-                return item.title && masterTitles.has(item.title.toLowerCase().trim());
+            // 2. Try to find by Title for Special/Generated items
+            if (!template && titleKey) {
+                template = masterMap.get(titleKey);
             }
 
-            // Pokud ID neznáme vůbec, je to smetí
-            console.warn(`[VALIDATION] Unknown Item Rejected: ${item.id}`);
-            return false;
-        }).map(i => i.id); // Vracíme zpět plná ID (i se suffixy), aby je klient nemazal
+            if (template) {
+                // Return updated template but keep player's unique instance ID and status
+                return {
+                    ...template,
+                    id: pItem.id, // Preserve the instance ID (with suffix)
+                    isSaved: true,
+                    // If the original item was a resource container, preserve its specific amount 
+                    // unless the template has a forced amount.
+                    resourceConfig: pItem.resourceConfig?.isResourceContainer
+                        ? { ...template.resourceConfig, resourceAmount: pItem.resourceConfig.resourceAmount }
+                        : template.resourceConfig
+                };
+            }
 
-        res.json({ validIds });
+            // [EXCEPTION] Always allow items with specific prefixes even if template is missing 
+            // (e.g. unique encounter rewards that aren't in catalog)
+            // But per user request: "kontrola zda karta stále existuje v master databázi ... pokud ne se odstraní"
+            // So we strictly follow the catalog.
+
+            console.warn(`[VALIDATION] Item REJECTED (Missing from Master): ${pItem.id} (${pItem.title})`);
+            return null;
+        }).filter(Boolean);
+
+        res.json({ validItems });
     } catch (e) {
         console.error("Validation Error:", e);
         res.status(500).json({ message: e.message });

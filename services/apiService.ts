@@ -52,8 +52,8 @@ export const checkHealth = async (): Promise<boolean> => {
   } catch { return false; }
 };
 
-// UPDATED: Validate local items against Master DB using ID and TITLE
-export const validateLocalItems = async (items: { id: string, title: string }[]): Promise<{ validIds: string[] }> => {
+// UPDATED: Validate and Deep-Sync local items against Master Catalog
+export const validateLocalItems = async (items: GameEvent[]): Promise<{ validItems: GameEvent[] }> => {
   return fetchData(`${BASE_API_URL}/inventory/validate`, {
     method: 'POST',
     body: JSON.stringify({ items })
