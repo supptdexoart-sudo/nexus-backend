@@ -60,7 +60,7 @@ export const useGameLogic = () => {
     // Events & Inventory
     const [currentEvent, setCurrentEvent] = useState<GameEvent | null>(null);
     const [inventory, setInventory] = useState<GameEvent[]>([]);
-    const [masterCatalog] = useState<GameEvent[]>([]);
+    const [masterCatalog, setMasterCatalog] = useState<GameEvent[]>([]);
 
     // Multiplayer State
     const [roomState, setRoomState] = useState<RoomState>({
@@ -555,6 +555,33 @@ export const useGameLogic = () => {
         return () => clearInterval(pollInterval);
     }, [roomState.isInRoom, roomState.id, roomState.nickname, isGuest, isServerReady, currentEvent]);
 
+    // LOAD MASTER CATALOG & INITIAL SYNC
+    useEffect(() => {
+        if (!isServerReady) return;
+
+        const initMainframe = async () => {
+            try {
+                // 1. Load Master Catalog
+                const catalog = await apiService.getMasterCatalog();
+                console.log(`📡 [NEXUS] Master Catalog Loaded: ${catalog.length} items.`);
+                setMasterCatalog(catalog);
+                localStorage.setItem('nexus_master_catalog', JSON.stringify(catalog));
+
+                // 2. Initial Inventory Sync
+                if (userEmail && !isGuest) {
+                    await handleRefreshDatabase();
+                }
+            } catch (e) {
+                console.error("Mainframe sync failed", e);
+                // Fallback to local catalog if available
+                const localCatalog = localStorage.getItem('nexus_master_catalog');
+                if (localCatalog) setMasterCatalog(JSON.parse(localCatalog));
+            }
+        };
+
+        initMainframe();
+    }, [isServerReady, userEmail, isGuest]);
+
     const handleKickPlayer = async (targetName: string) => {
         if (roomState.host !== roomState.nickname) return;
         try {
@@ -820,7 +847,13 @@ export const useGameLogic = () => {
             playSound('heal');
             setNotification({ id: 'use-success-' + Date.now(), message: 'Předmět použit.', type: 'success' });
             if (event.isConsumable) {
-                await handleDeleteEvent(event.id);
+                try {
+                    await handleDeleteEvent(event.id);
+                } catch (e) {
+                    console.error("Critical: Consumable removal failed", e);
+                    // We already applied the effect, but at least we refresh to stay in sync
+                    handleRefreshDatabase();
+                }
             }
             closeEvent(true); // End turn for used items
         } else {
@@ -991,13 +1024,6 @@ export const useGameLogic = () => {
 
     const handleDeleteEvent = async (id: string) => {
         const target = userEmail || 'guest';
-        const MASTER_ADMIN_EMAIL = 'zbynekbal97@gmail.com';
-
-        // Ochrana Master Katalogu: Pokud je to admin, nic nemažeme (ani v DB, ani lokálně)
-        if (userEmail?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
-            console.log("🛡️ Master Catalog Protected: Deletion skipped for admin.");
-            return;
-        }
 
         console.log(`🗑️ [FRONTEND] Attempting to delete item: ${id}`);
 

@@ -101,9 +101,8 @@ export const loginWithGoogle = async (credential: string): Promise<{ email: stri
 export const getInventory = async (userEmail: string): Promise<GameEvent[]> => fetchData<GameEvent[]>(`${BASE_API_URL}/inventory/${userEmail}`);
 export const saveCard = async (userEmail: string, event: GameEvent): Promise<GameEvent> => fetchData<GameEvent>(`${BASE_API_URL}/inventory/${userEmail}`, { method: 'POST', body: JSON.stringify(event) });
 export const deleteCard = async (userEmail: string, cardId: string): Promise<void> => fetchData<void>(`${BASE_API_URL}/inventory/${userEmail}/${encodeURIComponent(cardId)}`, { method: 'DELETE' });
-export const getMasterCatalog = async (userEmail?: string): Promise<GameEvent[]> => {
-  if (!userEmail) throw new Error("Uživatel není přihlášen.");
-  return fetchData<GameEvent[]>(`${BASE_API_URL}/inventory/${userEmail}`);
+export const getMasterCatalog = async (): Promise<GameEvent[]> => {
+  return fetchData<GameEvent[]>(`${BASE_API_URL}/catalog`);
 };
 export const getCardById = async (userEmail: string, cardId: string): Promise<GameEvent | null> => { try { return await fetchData<GameEvent>(`${BASE_API_URL}/inventory/${userEmail}/${encodeURIComponent(cardId)}`, undefined, true); } catch { return null; } };
 export const getCardFromCatalog = async (cardId: string): Promise<GameEvent | null> => { try { return await fetchData<GameEvent>(`${BASE_API_URL}/catalog/${encodeURIComponent(cardId)}`, undefined, true); } catch { return null; } };
