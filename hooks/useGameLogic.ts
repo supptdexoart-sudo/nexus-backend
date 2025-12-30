@@ -463,7 +463,7 @@ export const useGameLogic = () => {
         }
     };
 
-    // --- POLLING & SYNC ---
+    // --- UI SYNC ---
     useEffect(() => {
         if (activeTab === Tab.ROOM && roomState.isInRoom && roomState.id && isServerReady) {
             const sync = async () => {
@@ -478,110 +478,8 @@ export const useGameLogic = () => {
                 } catch (e) { }
             };
             sync();
-
-            // Extra sync check specifically requested by user ("vždy když se zobrazí okno tým")
-            const t = setTimeout(sync, 300);
-            return () => clearTimeout(t);
         }
     }, [activeTab, roomState.isInRoom, roomState.id, isServerReady]);
-
-    useEffect(() => {
-        if (!roomState.isInRoom || !roomState.id || !isServerReady) return;
-        const pollInterval = setInterval(async () => {
-            try {
-                const status = await apiService.getRoomStatus(roomState.id);
-                const messages = await apiService.getRoomMessages(roomState.id);
-                prevMembersRef.current = status.members;
-
-                // Check if I was kicked
-                const stillMember = status.members.some((m: any) => m.name === roomState.nickname);
-                if (!stillMember && roomState.isInRoom) {
-                    setNotification({ id: 'kicked', type: 'error', message: '🚫 Byl jsi vyhozen ze sektoru.' });
-                    handleLeaveRoom();
-                    return;
-                }
-
-                if (status.isGameStarted && !hasNotifiedStartRef.current) {
-                    setNotification({ id: 'game-start', type: 'success', message: '🚀 MISE ZAHÁJENA! Sektor byl uzamčen.' });
-                    playSound('success');
-                    hasNotifiedStartRef.current = true;
-                }
-
-                // Check for turn change
-                const newTurnPlayer = status.turnOrder?.[status.turnIndex];
-                const currentTurnIndex = status.turnIndex;
-
-                // Pokud se změnil turnIndex, resetujeme notifikaci
-                if (currentTurnIndex !== prevTurnIndexRef.current) {
-                    hasNotifiedTurnRef.current = false;
-                    prevTurnIndexRef.current = currentTurnIndex;
-
-                    // Pokud je to můj tah, zobrazíme notifikaci
-                    if (status.isGameStarted && newTurnPlayer === roomState.nickname) {
-                        setNotification({ id: 'your-turn-' + Date.now(), type: 'warning', message: '⚠️ JSI NA TAHU!' });
-                        playSound('open');
-                        vibrate([100, 50, 100]);
-                        hasNotifiedTurnRef.current = true;
-                    }
-                }
-
-                setRoomState(prev => ({
-                    ...prev, members: status.members, turnIndex: status.turnIndex, messages, isGameStarted: status.isGameStarted,
-                    roundNumber: status.roundNumber, turnOrder: status.turnOrder, readyForNextRound: status.readyForNextRound, host: status.host
-                }));
-
-                // NEW: Global Encounter Sync
-                if (status.activeEncounter) {
-                    // If we are not currently viewing this specific encounter, Open it
-                    if (!currentEvent || currentEvent.id !== status.activeEncounter.id) {
-                        const syncedEvent = getAdjustedItem(status.activeEncounter, isNight, playerClass);
-                        setCurrentEvent(syncedEvent);
-                        lastSetEventTimeRef.current = Date.now();
-                        playSound('error');
-                        vibrate([200, 100, 200]);
-                    }
-                }
-                // REMOVED: Auto-close logic on null encounter. 
-                // As requested, players should close global cards manually to avoid race conditions and ensure they can react.
-
-                await apiService.updatePlayerStatus(roomState.id, roomState.nickname, playerHpRef.current);
-            } catch (e: any) {
-                if (e.message?.includes('404') || e.message?.includes('Sektor nenalezen')) {
-                    console.warn("Room lost: redirecting to setup");
-                    setRoomState(prev => ({ ...prev, isInRoom: false, id: '' }));
-                    localStorage.setItem('nexus_is_in_room', 'false');
-                }
-            }
-        }, 1500); // Increased polling speed for better team sync
-        return () => clearInterval(pollInterval);
-    }, [roomState.isInRoom, roomState.id, roomState.nickname, isGuest, isServerReady, currentEvent]);
-
-    // LOAD MASTER CATALOG & INITIAL SYNC
-    useEffect(() => {
-        if (!isServerReady) return;
-
-        const initMainframe = async () => {
-            try {
-                // 1. Load Master Catalog
-                const catalog = await apiService.getMasterCatalog();
-                console.log(`📡 [NEXUS] Master Catalog Loaded: ${catalog.length} items.`);
-                setMasterCatalog(catalog);
-                localStorage.setItem('nexus_master_catalog', JSON.stringify(catalog));
-
-                // 2. Initial Inventory Sync
-                if (userEmail && !isGuest) {
-                    await handleRefreshDatabase();
-                }
-            } catch (e) {
-                console.error("Mainframe sync failed", e);
-                // Fallback to local catalog if available
-                const localCatalog = localStorage.getItem('nexus_master_catalog');
-                if (localCatalog) setMasterCatalog(JSON.parse(localCatalog));
-            }
-        };
-
-        initMainframe();
-    }, [isServerReady, userEmail, isGuest]);
 
     const handleKickPlayer = async (targetName: string) => {
         if (roomState.host !== roomState.nickname) return;
@@ -1080,24 +978,46 @@ export const useGameLogic = () => {
 
 
 
-    // POLLING & SYNC
+    // CONSOLIDATED POLLING & SYNC
     useEffect(() => {
         if (!roomState.isInRoom || !roomState.id || !isServerReady) return;
+
         const pollInterval = setInterval(async () => {
             try {
+                // 1. Room Status (includes turn, members, encounter, events)
                 const status = await apiService.getRoomStatus(roomState.id);
-                const messages = await apiService.getRoomMessages(roomState.id);
+
+                // 2. Room Messages (Only if on Team tab to save requests)
+                let messages = roomState.messages;
+                if (activeTab === Tab.ROOM) {
+                    messages = await apiService.getRoomMessages(roomState.id);
+                }
+
                 // Sync Trade
                 if (status.activeTrades) {
                     const myTrade = status.activeTrades.find((t: any) =>
                         t.participants.some((p: any) => p.email === userEmail)
                     );
-                    // Only update if changed to avoid loop? useState handles identicals.
                     setActiveTrade(myTrade || null);
                 } else setActiveTrade(null);
 
                 // Update refs for tracking
                 if (status.members) prevMembersRef.current = status.members;
+
+                // Check if I was kicked
+                const stillMember = status.members?.some((m: any) => m.name === roomState.nickname);
+                if (!stillMember && roomState.isInRoom) {
+                    setNotification({ id: 'kicked', type: 'error', message: '🚫 Byl jsi vyhozen ze sektoru.' });
+                    handleLeaveRoom();
+                    return;
+                }
+
+                if (status.isGameStarted && !hasNotifiedStartRef.current) {
+                    setNotification({ id: 'game-start', type: 'success', message: 'MISE ZAHÁJENA!' });
+                    playSound('success');
+                    hasNotifiedStartRef.current = true;
+                }
+
                 if (status.turnIndex !== undefined && status.turnIndex !== prevTurnIndexRef.current) {
                     hasNotifiedTurnRef.current = false;
                     prevTurnIndexRef.current = status.turnIndex;
@@ -1108,16 +1028,23 @@ export const useGameLogic = () => {
                         hasNotifiedTurnRef.current = true;
                     }
                 }
-                if (status.isGameStarted && !hasNotifiedStartRef.current) {
-                    setNotification({ id: 'game-start', type: 'success', message: 'MISE ZAHÁJENA!' });
-                    hasNotifiedStartRef.current = true;
+
+                // Global Encounter Sync
+                if (status.activeEncounter) {
+                    if (!currentEvent || currentEvent.id !== status.activeEncounter.id) {
+                        const syncedEvent = getAdjustedItem(status.activeEncounter, isNight, playerClass);
+                        setCurrentEvent(syncedEvent);
+                        lastSetEventTimeRef.current = Date.now();
+                        playSound('error');
+                        vibrate([200, 100, 200]);
+                    }
                 }
 
                 setRoomState(prev => ({
                     ...prev,
                     members: status.members,
                     turnIndex: status.turnIndex,
-                    messages: messages, // Use messages from getRoomMessages
+                    messages: messages,
                     isGameStarted: status.isGameStarted,
                     roundNumber: status.roundNumber,
                     turnOrder: status.turnOrder,
@@ -1125,43 +1052,56 @@ export const useGameLogic = () => {
                     host: status.host,
                     activeEncounter: status.activeEncounter,
                     activeTrades: status.activeTrades,
-                    activeSectorEvent: status.activeSectorEvent // NEW: Sync active sector event
+                    activeSectorEvent: status.activeSectorEvent
                 }));
+
+                // Periodically update HP to server (only if changed to save requests)
+                if (playerHp !== playerHpRef.current) {
+                    await apiService.updatePlayerStatus(roomState.id, roomState.nickname, playerHp);
+                    playerHpRef.current = playerHp;
+                }
             } catch (e) { }
-        }, 1000);
+        }, 3000); // Slower polling (3s) to respect rate limits
         return () => clearInterval(pollInterval);
-    }, [roomState.isInRoom, roomState.id, isServerReady, userEmail, roomState.nickname]);
+    }, [roomState.isInRoom, roomState.id, isServerReady, userEmail, roomState.nickname, activeTab, playerHp, isNight, playerClass, currentEvent]);
 
-    useEffect(() => {
-        if (activeTab === Tab.ROOM && roomState.isInRoom && roomState.id && isServerReady) {
-            const sync = async () => {
-                try {
-                    const status = await apiService.getRoomStatus(roomState.id);
-                    const messages = await apiService.getRoomMessages(roomState.id);
-                    setRoomState(prev => ({
-                        ...prev, members: status.members, turnOrder: status.turnOrder, turnIndex: status.turnIndex,
-                        messages, isGameStarted: status.isGameStarted, roundNumber: status.roundNumber,
-                        readyForNextRound: status.readyForNextRound, host: status.host, activeTrades: status.activeTrades
-                    }));
-                } catch (e) { }
-            };
-            sync();
-        }
-    }, [activeTab, roomState.isInRoom, roomState.id, isServerReady]);
 
-    // AUTO-SYNC INVENTORY FOR REGULAR PLAYERS
+    // AUTO-SYNC INVENTORY FOR REGULAR PLAYERS (Debounced)
     useEffect(() => {
         if (activeTab === Tab.INVENTORY && isServerReady && userEmail && !isGuest) {
-            // SYNC LOCK: Only sync if more than 3s since last user action (save/delete)
+            // SYNC LOCK: Only sync if more than 5s since last user action (save/delete)
             const timeSinceAction = Date.now() - lastInventoryActionTimeRef.current;
-            if (timeSinceAction < 3000) {
-                console.log(`📡 [AUTO-SYNC] Lock Active: Skipping sync (Action ${timeSinceAction}ms ago)`);
+            if (timeSinceAction < 5000) {
                 return;
             }
-            console.log('[AUTO-SYNC] Triggering inventory sync');
-            handleRefreshDatabase();
+            const t = setTimeout(() => {
+                console.log('[AUTO-SYNC] Triggering inventory sync');
+                handleRefreshDatabase();
+            }, 500);
+            return () => clearTimeout(t);
         }
     }, [activeTab, isServerReady, userEmail, isGuest]);
+
+    // LOAD MASTER CATALOG & INITIAL SYNC
+    useEffect(() => {
+        if (!isServerReady) return;
+
+        const initMainframe = async () => {
+            try {
+                const catalog = await apiService.getMasterCatalog();
+                setMasterCatalog(catalog);
+                localStorage.setItem('nexus_master_catalog', JSON.stringify(catalog));
+
+                if (userEmail && !isGuest) {
+                    handleRefreshDatabase();
+                }
+            } catch (e) {
+                const localCatalog = localStorage.getItem('nexus_master_catalog');
+                if (localCatalog) setMasterCatalog(JSON.parse(localCatalog));
+            }
+        };
+        initMainframe();
+    }, [isServerReady, userEmail, isGuest]);
 
     return {
         userEmail, setUserEmail,
