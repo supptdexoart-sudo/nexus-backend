@@ -20,16 +20,26 @@ import {
 import { playSound, vibrate } from './services/soundService';
 import { GameEventType, GameEvent, Stat, SectorEvent } from './types';
 
-// Lazy Loads
-const inventoryImport = () => import('./components/InventoryView');
-const roomImport = () => import('./components/Room');
-const settingsImport = () => import('./components/SettingsView');
-const spaceshipImport = () => import('./components/SpaceshipView');
+// Lazy Load Utility with Retry Logic for better mobile stability
+const retryLazy = (componentImport: () => Promise<any>) =>
+  lazy(async () => {
+    const MAX_RETRIES = 3;
+    for (let i = 0; i < MAX_RETRIES; i++) {
+      try {
+        return await componentImport();
+      } catch (err) {
+        if (i === MAX_RETRIES - 1) throw err;
+        console.warn(`[RETRY] Module load failed, retrying (${i + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential-ish backoff
+      }
+    }
+    throw new Error("Maximum retries for module load reached");
+  });
 
-const InventoryView = lazy(inventoryImport);
-const Room = lazy(roomImport);
-const SettingsView = lazy(settingsImport);
-const SpaceshipView = lazy(spaceshipImport);
+const InventoryView = retryLazy(() => import('./components/InventoryView'));
+const Room = retryLazy(() => import('./components/Room'));
+const SettingsView = retryLazy(() => import('./components/SettingsView'));
+const SpaceshipView = retryLazy(() => import('./components/SpaceshipView'));
 
 // --- ERROR BOUNDARY ---
 interface ModuleErrorBoundaryProps { children?: ReactNode; }
@@ -97,10 +107,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (bootComplete && logic.userEmail && isOnline) {
-      inventoryImport().catch(() => { });
-      roomImport().catch(() => { });
-      spaceshipImport().catch(() => { });
-      settingsImport().catch(() => { });
+      // Pre-fetching modules in the background
+      import('./components/InventoryView').catch(() => { });
+      import('./components/Room').catch(() => { });
+      import('./components/SpaceshipView').catch(() => { });
+      import('./components/SettingsView').catch(() => { });
     }
   }, [bootComplete, logic.userEmail, isOnline]);
 
