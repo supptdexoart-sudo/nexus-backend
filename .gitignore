@@ -122,3 +122,6 @@ Desktop.ini
 
 # Vite build output
 dist-ssr
+
+# Backend is in separate repository
+nexus-backend/
