@@ -383,8 +383,8 @@ const App: React.FC = () => {
                       playerFuel={logic.playerFuel}
                       inventory={logic.inventory}
                       onPlanetLand={handlePlanetLand}
-                      onFuelConsume={(amount) => logic.handleFuelChange(amount)}
-                      onProgressPlanet={(id) => { logic.handlePlanetProgress(id); }}
+                      onFuelConsume={(amount: number) => logic.handleFuelChange(amount)}
+                      onProgressPlanet={(id: string) => { logic.handlePlanetProgress(id); }}
                       masterCatalog={logic.masterCatalog}
                     />
                   </div>
