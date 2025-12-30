@@ -379,119 +379,74 @@ const App: React.FC = () => {
             </ModuleErrorBoundary>
           </div>
 
-          {/* BOTTOM NAVIGATION - REDESIGNED WITH FLOATING SCANNER */}
-          <div className="h-16 bg-black/10 backdrop-blur-sm border-t border-white/10 relative z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
-            {/* Sci-Fi Edge Effects */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black/90 via-black/40 to-transparent z-10"></div>
-              <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black/90 via-black/40 to-transparent z-10"></div>
-              <div className="absolute left-0 top-1 bottom-1 w-[1px] bg-arc-cyan/40 shadow-[0_0_15px_#00f2ff] animate-pulse z-20"></div>
-              <div className="absolute right-0 top-1 bottom-1 w-[1px] bg-arc-cyan/40 shadow-[0_0_15px_#00f2ff] animate-pulse z-20"></div>
-            </div>
+          {/* BOTTOM NAVIGATION */}
+          <div className="h-20 bg-black/60 backdrop-blur-xl border-t border-white/5 relative z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] px-4">
+            {/* Ambient Background Glow */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none"></div>
 
             {/* Navigation Buttons Container */}
-            <div className="h-full flex items-center justify-around px-6">
-              {/* Left Group - Closer to center */}
-              <div className="flex gap-1">
+            <div className="h-full flex items-center justify-between max-w-md mx-auto relative">
+              {/* Left Group */}
+              <div className="flex gap-2 sm:gap-4 items-center h-full">
                 <NavButton active={logic.activeTab === Tab.INVENTORY} onClick={() => logic.setActiveTab(Tab.INVENTORY)} icon={<Box />} label="BATOH" />
                 <NavButton active={logic.activeTab === Tab.SPACESHIP} onClick={() => logic.setActiveTab(Tab.SPACESHIP)} icon={<Rocket />} label="LOĎ" />
               </div>
 
-              {/* Right Group - Closer to center */}
-              <div className="flex gap-1">
+              {/* Center - Scanner FAB */}
+              <div className="relative w-16 h-full flex items-center justify-center">
+                <div className="absolute -top-10 flex flex-col items-center">
+                  <button
+                    onClick={() => logic.setActiveTab(Tab.SCANNER)}
+                    className={`group relative flex items-center justify-center w-20 h-20 transition-all duration-500 active:scale-95 ${logic.activeTab === Tab.SCANNER ? 'scale-110' : ''
+                      }`}
+                  >
+                    {/* Outer decorative ring */}
+                    <div className={`absolute inset-0 rounded-full border border-white/10 transition-all duration-700 ${logic.activeTab === Tab.SCANNER ? 'rotate-180 border-arc-cyan/40 scale-125' : 'group-hover:border-arc-cyan/20'
+                      }`}>
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-arc-cyan rounded-full shadow-[0_0_8px_#00f2ff]"></div>
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-arc-cyan rounded-full shadow-[0_0_8px_#00f2ff]"></div>
+                    </div>
+
+                    {/* Main FAB Shape */}
+                    <div className={`relative w-16 h-16 flex items-center justify-center transition-all duration-500 overflow-hidden ${logic.activeTab === Tab.SCANNER
+                      ? 'bg-arc-cyan shadow-[0_0_40px_rgba(0,242,255,0.4)]'
+                      : 'bg-zinc-900 border border-white/10 shadow-2xl group-hover:border-arc-cyan/40 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)]'
+                      }`}
+                      style={{
+                        borderRadius: logic.activeTab === Tab.SCANNER ? '38%' : '50%',
+                        transform: logic.activeTab === Tab.SCANNER ? 'rotate(45deg)' : 'rotate(0deg)'
+                      }}
+                    >
+                      <div className={`transition-all duration-500 ${logic.activeTab === Tab.SCANNER ? '-rotate-45 scale-110' : ''}`}>
+                        <Scan
+                          size={28}
+                          className={`transition-colors duration-500 ${logic.activeTab === Tab.SCANNER ? 'text-black' : 'text-arc-cyan'}`}
+                          strokeWidth={2.5}
+                        />
+                      </div>
+
+                      {/* Scan Line Effect */}
+                      {logic.activeTab === Tab.SCANNER && (
+                        <div className="absolute inset-0 pointer-events-none">
+                          <div className="w-full h-[30%] bg-gradient-to-b from-white/20 to-transparent absolute top-0 animate-scan-line"></div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Animated pings when active */}
+                    {logic.activeTab === Tab.SCANNER && (
+                      <div className="absolute inset-0 rounded-full border border-arc-cyan animate-ping opacity-20"></div>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Group */}
+              <div className="flex gap-2 sm:gap-4 items-center h-full">
                 <NavButton active={logic.activeTab === Tab.ROOM} onClick={() => logic.setActiveTab(Tab.ROOM)} icon={<Users />} label="TÝM" />
                 <NavButton active={logic.activeTab === Tab.SETTINGS} onClick={() => logic.setActiveTab(Tab.SETTINGS)} icon={<SettingsIcon />} label="SYS" />
               </div>
             </div>
-
-            <button
-              onClick={() => logic.setActiveTab(Tab.SCANNER)}
-              className={`absolute left-1/2 -translate-x-1/2 -top-6 w-[68px] h-[68px] rounded-full transition-all duration-300 group ${logic.activeTab === Tab.SCANNER
-                ? 'bg-gradient-to-br from-arc-cyan via-arc-yellow to-arc-cyan shadow-[0_8px_32px_rgba(0,242,255,0.5),0_0_60px_rgba(249,212,35,0.3)]'
-                : 'bg-gradient-to-br from-zinc-900 to-black shadow-[0_8px_24px_rgba(0,0,0,0.6)]'
-                }`}
-            >
-              <div className={`absolute inset-0 rounded-full transition-all duration-300 ${logic.activeTab === Tab.SCANNER
-                ? 'border-2 border-arc-yellow animate-pulse'
-                : 'border border-white/20 group-active:border-arc-cyan/50'}
-            relative shadow-[0_0_15px_rgba(0,0,0,0.5)]`}
-              >
-                <AnimatePresence>
-                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-arc-cyan/20 to-transparent opacity-0 group-active:opacity-100 transition-opacity"></div>
-                </AnimatePresence>
-                <div className="relative z-10 flex items-center justify-center h-full">
-                  <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${logic.activeTab === Tab.SCANNER ? 'text-black scale-110' : 'text-arc-cyan group-active:rotate-180'
-                    }`}>
-                    <Scan size={28} strokeWidth={logic.activeTab === Tab.SCANNER ? 3 : 2} />
-                  </div>
-                </div>
-              </div>
-
-              {logic.activeTab === Tab.SCANNER && (
-                <div className="absolute inset-0 rounded-full border-2 border-arc-yellow animate-ping opacity-75"></div>
-              )}
-            </button>
-
-
-
-            {/* VARIANT B: HEXAGON */}
-            {/* <button
-              onClick={() => logic.setActiveTab(Tab.SCANNER)}
-              className="absolute left-1/2 -translate-x-1/2 -top-7 w-[72px] h-[72px] transition-all duration-300 group"
-              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-            >
-              <div className={`w-full h-full transition-all ${logic.activeTab === Tab.SCANNER
-                  ? 'bg-arc-yellow shadow-[0_0_40px_rgba(249,212,35,0.6)]'
-                  : 'bg-black border-2 border-arc-cyan/30 group-active:border-arc-cyan'}
-                flex items-center justify-center shadow-lg transition-transform active:scale-90`}
-              >
-                <div className="w-full h-full flex items-center justify-center">
-                  <Scan size={28} className={logic.activeTab === Tab.SCANNER ? 'text-black' : 'text-arc-cyan'} strokeWidth={2.5} />
-                </div>
-              </div>
-
-              {logic.activeTab === Tab.SCANNER && (
-                <div className="absolute inset-0 border-2 border-arc-yellow/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}></div>
-              )}
-            </button> */}
-
-            {/* VARIANT C: ELEVATED SQUARE - Active */}
-            {/* <button
-              onClick={() => logic.setActiveTab(Tab.SCANNER)}
-              className={`absolute left-1/2 -translate-x-1/2 -top-5 w-16 h-16 rounded-2xl transition-all duration-300 group ${logic.activeTab === Tab.SCANNER
-                  ? 'bg-gradient-to-br from-arc-cyan to-black shadow-[0_4px_12px_rgba(0,242,255,0.3),0_8px_24px_rgba(0,0,0,0.4),0_12px_40px_rgba(0,242,255,0.2)] scale-105'
-                  : 'bg-gradient-to-br from-zinc-900 to-black shadow-[0_4px_12px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.2)] active:scale-105'}
-                relative transition-all active:scale-95`}
-            >
-              <div className={`absolute inset-0 rounded-2xl border transition-all ${logic.activeTab === Tab.SCANNER ? 'border-arc-cyan' : 'border-white/10 group-active:border-arc-cyan/50'}`}></div>
-              <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-                <Scan size={26} className={logic.activeTab === Tab.SCANNER ? 'text-arc-cyan' : 'text-zinc-400 group-active:text-arc-cyan'} strokeWidth={2} />
-              </div>
-            </button> */}
-
-            {/* VARIANT D: DIAMOND - Uncomment to use */}
-            {/* <button
-              onClick={() => logic.setActiveTab(Tab.SCANNER)}
-              className={`absolute left-1/2 -translate-x-1/2 -top-6 w-[70px] h-[70px] rotate-45 transition-all duration-300 group ${
-                logic.activeTab === Tab.SCANNER
-                  ? 'bg-black border-2 border-arc-yellow shadow-[0_0_40px_rgba(249,212,35,0.5)]'
-                  : 'bg-zinc-900 border border-white/20 group-active:border-arc-cyan/50'}
-                flex flex-col items-center justify-center gap-1.5 transition-all transition-transform active:scale-90`}
-            >
-              <div className="absolute inset-0 flex items-center justify-center -rotate-45">
-                <Scan size={28} className={logic.activeTab === Tab.SCANNER ? 'text-arc-yellow animate-pulse' : 'text-arc-cyan'} strokeWidth={2.5} />
-              </div>
-              
-              {logic.activeTab === Tab.SCANNER && (
-                <>
-                  <div className="absolute -inset-1 border border-arc-yellow/30 animate-ping"></div>
-                  <div className="absolute top-0 left-0 w-1 h-1 bg-arc-yellow rounded-full"></div>
-                  <div className="absolute top-0 right-0 w-1 h-1 bg-arc-yellow rounded-full"></div>
-                  <div className="absolute bottom-0 left-0 w-1 h-1 bg-arc-yellow rounded-full"></div>
-                  <div className="absolute bottom-0 right-0 w-1 h-1 bg-arc-yellow rounded-full"></div>
-                </>
-              )}
-            </button> */}
           </div>
 
           <AnimatePresence>
@@ -560,6 +515,14 @@ const App: React.FC = () => {
       )}
 
       <style>{`
+        .animate-scan-line {
+          animation: scan 2s linear infinite;
+        }
+        @keyframes scan {
+          0% { transform: translateY(-100%); opacity: 0; }
+          50% { opacity: 1; }
+          100% { transform: translateY(300%); opacity: 0; }
+        }
         .animate-spin-slow {
           animation: spin 6s linear infinite;
         }
@@ -568,7 +531,7 @@ const App: React.FC = () => {
           to { transform: rotate(360deg); }
         }
       `}</style>
-    </div >
+    </div>
   );
 };
 
@@ -604,16 +567,37 @@ const StatSlot: React.FC<{ icon: React.ReactNode, value: number, max?: number, c
 };
 
 const NavButton: React.FC<{ active: boolean, onClick: () => void, icon: React.ReactNode, label: string }> = ({ active, onClick, icon, label }) => (
-  <button onClick={onClick} className="flex flex-col items-center gap-1 group w-14 active:scale-95 transition-transform">
-    <div className={`p-2 transition-all duration-200 ${active
-      ? 'text-arc-yellow bg-arc-yellow/10 border border-arc-yellow shadow-[0_0_15px_rgba(249,212,35,0.15)]'
-      : 'text-zinc-500 border border-transparent'
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center justify-center gap-1 group w-16 h-full relative transition-all duration-300 active:scale-90 ${active ? 'opacity-100' : 'opacity-60'
+      }`}
+  >
+    {/* Active Glow behind icon */}
+    {active && (
+      <div className="absolute inset-0 bg-arc-cyan/5 blur-xl rounded-full"></div>
+    )}
+
+    {/* Top Indicator Line */}
+    <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] transition-all duration-300 ${active ? 'bg-arc-cyan shadow-[0_0_8px_#00f2ff]' : 'bg-transparent'
+      }`}></div>
+
+    <div className={`relative transition-all duration-300 ${active ? 'text-arc-cyan scale-110' : 'text-zinc-500 group-hover:text-zinc-300'
       }`}>
-      {React.cloneElement(icon as React.ReactElement, { size: 18, strokeWidth: active ? 2.5 : 2 })}
+      {React.cloneElement(icon as React.ReactElement, { size: 20, strokeWidth: active ? 2.5 : 2 })}
     </div>
-    <span className={`text-[9px] font-black uppercase tracking-wider transition-colors ${active ? 'text-arc-yellow' : 'text-zinc-600'}`}>
+
+    <span className={`text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${active ? 'text-arc-cyan' : 'text-zinc-600'
+      }`}>
       {label}
     </span>
+
+    {/* Interaction dots */}
+    {active && (
+      <div className="absolute bottom-1.5 flex gap-1">
+        <div className="w-0.5 h-0.5 bg-arc-cyan rounded-full animate-pulse"></div>
+        <div className="w-0.5 h-0.5 bg-arc-cyan rounded-full animate-pulse delay-75"></div>
+      </div>
+    )}
   </button>
 );
 

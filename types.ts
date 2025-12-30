@@ -283,6 +283,9 @@ export interface Character {
         hp: number;
         armor: number;
         damage: number;
+        fuel: number;
+        gold: number;
+        oxygen: number;
     };
     perks: CharacterPerk[];
     timeVariant?: {

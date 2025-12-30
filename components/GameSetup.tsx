@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, Hash, ArrowRight, Gamepad2, Loader2, Users, Sword, Wand2, Footprints, Cross, Lock, Eye, EyeOff, AlertTriangle, Globe, Camera } from 'lucide-react';
+import { User, Hash, ArrowRight, Gamepad2, Loader2, Users, Lock, Eye, EyeOff, AlertTriangle, Globe, Camera, Heart, Swords, Shield, Fuel, Coins, Wind } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PlayerClass, Character } from '../types';
 import * as apiService from '../services/apiService';
@@ -40,12 +40,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
         }
     };
 
-    const handleClassSelect = (pClass: PlayerClass) => {
-        setSelectedClass(pClass);
 
-        // Allow guests to proceed to action selection (Lobby) like normal users
-        setTimeout(() => setStep('action'), 300);
-    };
 
     const handleAction = async (action: 'create' | 'join_mode' | 'solo' | 'solo-online') => {
         if (!selectedClass) return;
@@ -82,12 +77,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
         }
     };
 
-    const classes = [
-        { id: PlayerClass.WARRIOR, icon: <Sword className="w-6 h-6" />, desc: "Mistr boje zblízka. Vysoká odolnost.", color: "text-red-500", border: "border-red-500" },
-        { id: PlayerClass.MAGE, icon: <Wand2 className="w-6 h-6" />, desc: "Vidí magické aury a skryté zprávy.", color: "text-blue-400", border: "border-blue-400" },
-        { id: PlayerClass.ROGUE, icon: <Footprints className="w-6 h-6" />, desc: "Najde loot tam, kde ostatní vidí stín.", color: "text-green-500", border: "border-green-500" },
-        { id: PlayerClass.CLERIC, icon: <Cross className="w-6 h-6" />, desc: "Léčitel a ochránce před temnotou.", color: "text-yellow-500", border: "border-yellow-500" },
-    ];
+
 
     if (isLoading && isGuest) {
         return (
@@ -101,12 +91,12 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
     return (
         <div className="h-screen w-screen bg-zinc-950 flex flex-col items-center justify-start p-6 pt-12 relative overflow-hidden overflow-y-auto no-scrollbar">
             {/* Background Dots */}
-            <div className="absolute inset-0 pointer-events-none opacity-5 z-0"
+            <div className="fixed inset-0 pointer-events-none opacity-5 z-0"
                 style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
             </div>
 
             {/* Decorative Background */}
-            <div className="absolute inset-0 pointer-events-none">
+            <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-signal-cyan/5 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-signal-amber/5 to-transparent"></div>
             </div>
@@ -146,96 +136,103 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                     </div>
                 )}
 
-                {/* --- STEP 2: CLASS SELECTION --- */}
+                {/* --- STEP 2: CHARACTER SELECTION (QR / MANUAL) --- */}
                 {step === 'class' && (
                     <div className="flex flex-col h-full">
-                        <div className="text-center mb-6">
-                            <h2 className="text-2xl font-black text-white mb-1 uppercase tracking-tighter">Zvolte Třídu</h2>
-                            <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Vaše role ovlivní herní mechaniky.</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3 overflow-y-auto pr-1 no-scrollbar">
-                            {classes.map((c) => (
-                                <button
-                                    key={c.id}
-                                    onClick={() => handleClassSelect(c.id)}
-                                    className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden group active:scale-[0.98] ${selectedClass === c.id ? `bg-zinc-900 ${c.border}` : 'bg-black border-zinc-800 active:border-zinc-700'}`}
-                                >
-                                    <div className="flex items-center gap-4 relative z-10">
-                                        <div className={`p-3 rounded-lg bg-zinc-900 ${c.color} border border-white/5`}>
-                                            {c.icon}
-                                        </div>
-                                        <div>
-                                            <h3 className={`font-black uppercase tracking-widest ${c.color}`}>{c.id}</h3>
-                                            <p className="text-[11px] text-zinc-300 font-bold leading-tight mt-1">{c.desc}</p>
-                                        </div>
-                                    </div>
-                                    {selectedClass === c.id && (
-                                        <motion.div {...({ layoutId: "class-highlight" } as any)} className={`absolute inset-0 opacity-10 ${c.color.replace('text-', 'bg-')}`} />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Custom Character Input */}
-                        <div className="mt-6 pt-6 border-t border-zinc-800">
-                            <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-3 text-center">Nebo zadejte ID vlastní postavy</p>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={characterId}
-                                    onChange={(e) => setCharacterId(e.target.value.toUpperCase())}
-                                    placeholder="CHAR-001"
-                                    className="flex-1 bg-black border border-zinc-700 px-4 py-3 rounded-lg text-white font-mono uppercase text-sm focus:border-signal-cyan outline-none"
-                                    maxLength={10}
-                                />
-                                <button
-                                    onClick={async () => {
-                                        if (!characterId.trim()) return;
-                                        setIsLoadingCharacter(true);
-                                        setError(null);
-                                        try {
-                                            const char = await apiService.getCharacterById(characterId.trim());
-                                            if (char) {
-                                                setLoadedCharacter(char);
-                                                setSelectedClass(char.name as any);
-                                                // Visual feedback
-                                                setError('');
-                                                setShowSuccess(true);
-                                                setTimeout(() => {
-                                                    setShowSuccess(false);
-                                                    setStep('action');
-                                                }, 2500);
-                                            } else {
-                                                setError('Postava nenalezena!');
-                                            }
-                                        } catch (e) {
-                                            setError('Chyba při načítání postavy.');
-                                        } finally {
-                                            setIsLoadingCharacter(false);
-                                        }
-                                    }}
-                                    disabled={!characterId.trim() || isLoadingCharacter}
-                                    className="px-6 py-3 bg-signal-cyan text-black rounded-lg font-bold uppercase text-xs active:bg-white transition-colors disabled:opacity-50"
-                                >
-                                    {isLoadingCharacter ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Načíst'}
-                                </button>
+                        <div className="text-center mb-10">
+                            <div className="w-20 h-20 bg-signal-cyan/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-signal-cyan/20 shadow-[0_0_20px_rgba(0,242,255,0.1)]">
+                                <Gamepad2 className="w-10 h-10 text-signal-cyan" />
                             </div>
-                            {error && (
-                                <p className="text-xs text-red-500 mt-2 text-center font-bold">{error}</p>
-                            )}
+                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter">Vybral sis postavu?</h2>
+                            <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest leading-relaxed">
+                                Naskenuj její <span className="text-signal-cyan">QR kód</span> ze spodu figurky!
+                            </p>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* QR Scanner Button (Primary Action) */}
                             <button
                                 onClick={() => setShowScanner(true)}
-                                className="mt-3 w-full py-3 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-lg font-bold uppercase text-xs active:bg-purple-500/20 transition-colors flex items-center justify-center gap-2"
+                                className="w-full py-8 bg-signal-cyan text-black rounded-2xl font-black uppercase text-sm active:scale-95 transition-all flex flex-col items-center justify-center gap-3 shadow-[0_0_30px_rgba(0,242,255,0.3)] hover:shadow-[0_0_40px_rgba(0,242,255,0.5)] cursor-pointer"
                             >
-                                <Camera className="w-4 h-4" />
-                                Skenovat QR kód
+                                <Camera className="w-8 h-8" />
+                                <span className="tracking-[0.2em]">Spustit Skener</span>
                             </button>
+
+                            <div className="relative py-4 flex items-center gap-4">
+                                <div className="h-px bg-zinc-700 flex-1"></div>
+                                <span className="text-[10px] text-zinc-300 uppercase font-black tracking-widest bg-zinc-950 px-2 relative z-10">Nebo zadej kód ručně</span>
+                                <div className="h-px bg-zinc-700 flex-1"></div>
+                            </div>
+
+                            {/* Manual Entry */}
+                            <div className="space-y-4">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={characterId}
+                                        onChange={(e) => setCharacterId(e.target.value.toUpperCase())}
+                                        placeholder="NAPŘ. CHAR-001"
+                                        className="flex-1 bg-zinc-900 border-2 border-zinc-700 px-4 py-4 rounded-xl text-white font-mono uppercase text-sm focus:border-signal-cyan outline-none transition-colors placeholder:opacity-30"
+                                        maxLength={10}
+                                    />
+                                    <button
+                                        onClick={async () => {
+                                            if (!characterId.trim()) return;
+                                            setIsLoadingCharacter(true);
+                                            setError(null);
+                                            try {
+                                                const char = await apiService.getCharacterById(characterId.trim());
+                                                if (char) {
+                                                    setLoadedCharacter(char);
+                                                    setSelectedClass(char.name as any);
+                                                    setError('');
+                                                    setShowSuccess(true);
+                                                    setTimeout(() => {
+                                                        setShowSuccess(false);
+                                                        setStep('action');
+                                                    }, 2500);
+                                                } else {
+                                                    setError('Postava nenalezena! Zkontrolujte ID.');
+                                                }
+                                            } catch (e) {
+                                                console.error("Load character error:", e);
+                                                setError('Chyba při komunikaci se serverem.');
+                                            } finally {
+                                                setIsLoadingCharacter(false);
+                                            }
+                                        }}
+                                        disabled={!characterId.trim() || isLoadingCharacter}
+                                        className="px-6 py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold uppercase text-xs transition-colors disabled:opacity-30 flex items-center justify-center min-w-[100px]"
+                                    >
+                                        {isLoadingCharacter ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Načíst'}
+                                    </button>
+                                </div>
+                                {error && (
+                                    <motion.p
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="text-xs text-red-500 text-center font-bold uppercase tracking-wider"
+                                    >
+                                        {error}
+                                    </motion.p>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Scanner Modal */}
+                        {/* Scanner Modal Overlay */}
                         {showScanner && (
-                            <div className="fixed inset-0 z-50 bg-black">
+                            <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+                                <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-[110] bg-gradient-to-b from-black to-transparent">
+                                    <span className="text-white text-[10px] font-black uppercase tracking-[0.3em]">Scanner Active</span>
+                                    <button
+                                        onClick={() => setShowScanner(false)}
+                                        className="px-6 py-2 bg-red-500/20 border border-red-500/50 text-red-500 rounded-full font-black uppercase text-[10px] active:scale-95 transition-all"
+                                    >
+                                        Zrušit
+                                    </button>
+                                </div>
+
                                 <Scanner
                                     onScanCode={async (code) => {
                                         if (code.toUpperCase().startsWith('CHAR-')) {
@@ -262,18 +259,13 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                                                 setIsLoadingCharacter(false);
                                             }
                                         } else {
-                                            setError('Neplatný QR kód postavy!');
+                                            // Optional: visual feedback for invalid code without closing scanner
+                                            console.warn("Invalid QR code:", code);
                                         }
                                     }}
                                     isAIThinking={isLoadingCharacter}
                                     isPaused={false}
                                 />
-                                <button
-                                    onClick={() => setShowScanner(false)}
-                                    className="absolute top-6 right-6 z-50 px-4 py-2 bg-red-500 text-white rounded-lg font-bold uppercase text-xs active:bg-red-600 transition-colors active:scale-95"
-                                >
-                                    Zavřít
-                                </button>
                             </div>
                         )}
                     </div>
@@ -283,7 +275,12 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                 {step === 'action' && (
                     <div className="flex flex-col gap-4">
                         <div className="text-center mb-6">
-                            <button onClick={() => { setStep('class'); setLoadedCharacter(null); setCharacterId(''); }} className="text-[10px] text-zinc-500 uppercase tracking-widest active:text-white mb-2 font-bold underline underline-offset-4">Změnit {loadedCharacter ? 'Postavu' : 'Třídu'}</button>
+                            <button
+                                onClick={() => { setStep('class'); setLoadedCharacter(null); setCharacterId(''); }}
+                                className="px-3 py-1 bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-400 uppercase tracking-widest active:text-white mb-4 font-bold rounded-lg hover:border-signal-cyan transition-colors"
+                            >
+                                ← Změnit {loadedCharacter ? 'Postavu' : 'Třídu'}
+                            </button>
                             <h2 className="text-3xl font-black text-white uppercase tracking-wider">PŘÍPRAVA</h2>
                             <div className="flex justify-center items-center gap-2 mt-2">
                                 <span className="text-white font-bold tracking-tight">{nickname}</span>
@@ -295,17 +292,36 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
                                     <p className="text-xs text-signal-cyan uppercase font-bold mb-2">Vlastní postava</p>
                                     <p className="text-sm text-zinc-400 mb-3">{loadedCharacter.description}</p>
                                     <div className="grid grid-cols-3 gap-2">
-                                        <div className="bg-black/50 rounded p-2 text-center">
-                                            <div className="text-[10px] text-zinc-500 uppercase">HP</div>
-                                            <div className="text-sm font-bold text-white">{loadedCharacter.baseStats.hp}</div>
+                                        <div className="bg-black/60 rounded-xl p-3 border border-white/5 flex flex-col items-center gap-1 shadow-inner">
+                                            <Heart className="w-4 h-4 text-red-500 mb-1" />
+                                            <div className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none">HP</div>
+                                            <div className="text-lg font-mono font-black text-white leading-none">{loadedCharacter.baseStats.hp}</div>
                                         </div>
-                                        <div className="bg-black/50 rounded p-2 text-center">
-                                            <div className="text-[10px] text-zinc-500 uppercase">DMG</div>
-                                            <div className="text-sm font-bold text-white">{loadedCharacter.baseStats.damage}</div>
+                                        <div className="bg-black/60 rounded-xl p-3 border border-white/5 flex flex-col items-center gap-1 shadow-inner">
+                                            <Swords className="w-4 h-4 text-orange-500 mb-1" />
+                                            <div className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none">DMG</div>
+                                            <div className="text-lg font-mono font-black text-white leading-none">{loadedCharacter.baseStats.damage}</div>
                                         </div>
-                                        <div className="bg-black/50 rounded p-2 text-center">
-                                            <div className="text-[10px] text-zinc-500 uppercase">Armor</div>
-                                            <div className="text-sm font-bold text-white">{loadedCharacter.baseStats.armor}</div>
+                                        <div className="bg-black/60 rounded-xl p-3 border border-white/5 flex flex-col items-center gap-1 shadow-inner">
+                                            <Shield className="w-4 h-4 text-blue-400 mb-1" />
+                                            <div className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none">ARM</div>
+                                            <div className="text-lg font-mono font-black text-white leading-none">{loadedCharacter.baseStats.armor}</div>
+                                        </div>
+
+                                        <div className="bg-black/60 rounded-xl p-3 border border-white/5 flex flex-col items-center gap-1 shadow-inner">
+                                            <Fuel className="w-4 h-4 text-amber-500 mb-1" />
+                                            <div className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none">FUEL</div>
+                                            <div className="text-lg font-mono font-black text-white leading-none">{loadedCharacter.baseStats.fuel || 0}</div>
+                                        </div>
+                                        <div className="bg-black/60 rounded-xl p-3 border border-white/5 flex flex-col items-center gap-1 shadow-inner">
+                                            <Coins className="w-4 h-4 text-yellow-500 mb-1" />
+                                            <div className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none">GOLD</div>
+                                            <div className="text-lg font-mono font-black text-white leading-none">{loadedCharacter.baseStats.gold || 0}</div>
+                                        </div>
+                                        <div className="bg-black/60 rounded-xl p-3 border border-white/5 flex flex-col items-center gap-1 shadow-inner">
+                                            <Wind className="w-4 h-4 text-cyan-400 mb-1" />
+                                            <div className="text-[9px] text-zinc-500 font-black uppercase tracking-widest leading-none">O2</div>
+                                            <div className="text-lg font-mono font-black text-white leading-none">{loadedCharacter.baseStats.oxygen || 0}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -389,9 +405,10 @@ const GameSetup: React.FC<GameSetupProps> = ({ initialNickname, onConfirmSetup, 
 
                         <button
                             onClick={() => handleAction('solo')}
-                            className="w-full py-3 text-zinc-500 active:text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors active:scale-95"
+                            className="w-full py-4 bg-zinc-950 border border-zinc-800 text-zinc-400 active:text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 rounded-xl hover:bg-zinc-900"
                         >
-                            <Gamepad2 className="w-4 h-4" /> Samostatná_Mise (Offline)
+                            <Gamepad2 className="w-5 h-5 text-zinc-600" />
+                            <span>Samostatná_Mise (Offline)</span>
                         </button>
                     </div>
                 )}

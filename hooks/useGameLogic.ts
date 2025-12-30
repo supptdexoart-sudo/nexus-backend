@@ -256,9 +256,9 @@ export const useGameLogic = () => {
 
     // Apply character perks based on conditions
     const applyCharacterPerks = (character: any, currentIsNight: boolean) => {
-        if (!character || !character.perks) return { hp: 0, armor: 0, damage: 0 };
+        if (!character || !character.perks) return { hp: 0, armor: 0, damage: 0, fuel: 0, gold: 0, oxygen: 0 };
 
-        let bonuses = { hp: 0, armor: 0, damage: 0 };
+        let bonuses = { hp: 0, armor: 0, damage: 0, fuel: 0, gold: 0, oxygen: 0 };
 
         character.perks.forEach((perk: any) => {
             const condition = perk.effect.condition || 'always';
@@ -305,14 +305,24 @@ export const useGameLogic = () => {
             // Apply base stats
             let finalHp = character.baseStats.hp;
             let finalArmor = character.baseStats.armor;
+            let finalFuel = character.baseStats.fuel ?? 100;
+            let finalGold = character.baseStats.gold ?? 0;
+            let finalOxygen = character.baseStats.oxygen ?? 100;
 
             // Apply perks
             const perkBonuses = applyCharacterPerks(character, isNight);
             finalHp += perkBonuses.hp;
             finalArmor += perkBonuses.armor;
+            finalFuel += perkBonuses.fuel;
+            finalGold += perkBonuses.gold;
+            finalOxygen += perkBonuses.oxygen;
 
             setPlayerHp(finalHp);
             setPlayerArmor(finalArmor);
+            setPlayerFuel(finalFuel);
+            setPlayerGold(finalGold);
+            setPlayerOxygen(finalOxygen);
+
             // Store character for later use (perks, etc.)
             localStorage.setItem(`nexus_character_${userEmail}`, JSON.stringify(character));
 
@@ -620,14 +630,23 @@ export const useGameLogic = () => {
                     // Apply base stats
                     let finalHp = character.baseStats.hp;
                     let finalArmor = character.baseStats.armor;
+                    let finalFuel = character.baseStats.fuel ?? 100;
+                    let finalGold = character.baseStats.gold ?? 0;
+                    let finalOxygen = character.baseStats.oxygen ?? 100;
 
                     // Apply perks
                     const perkBonuses = applyCharacterPerks(character, isNight);
                     finalHp += perkBonuses.hp;
                     finalArmor += perkBonuses.armor;
+                    finalFuel += perkBonuses.fuel;
+                    finalGold += perkBonuses.gold;
+                    finalOxygen += perkBonuses.oxygen;
 
                     setPlayerHp(finalHp);
                     setPlayerArmor(finalArmor);
+                    setPlayerFuel(finalFuel);
+                    setPlayerGold(finalGold);
+                    setPlayerOxygen(finalOxygen);
                     setPlayerClass(character.name as any);
                     localStorage.setItem(`nexus_character_${userEmail}`, JSON.stringify(character));
 
