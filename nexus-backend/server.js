@@ -526,6 +526,16 @@ app.get('/api/catalog/:cardId',
     }
 );
 
+// ✅ NEW: FULL MASTER CATALOG ENDPOINT
+app.get('/api/catalog', async (req, res) => {
+    try {
+        const admin = await getOrCreateUser(ADMIN_EMAIL);
+        res.json(admin.inventory);
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
+});
+
 // SAVE / UPDATE ITEM ROUTE (Upraveno pro stacking)
 // ✅ SECURE - Input validation added
 app.post('/api/inventory/:email',
@@ -916,12 +926,19 @@ app.delete('/api/admin/purge/:cardId', adminAuth, async (req, res) => {
         const { cardId } = req.params;
         if (!cardId) return res.status(400).json({ message: 'Missing cardId' });
 
+        // ✅ SECURE - Regex based pull to remove variants (ITEM-01 and ITEM-01__suffix)
         const result = await User.updateMany(
             {},
-            { $pull: { inventory: { id: cardId } } }
+            {
+                $pull: {
+                    inventory: {
+                        id: { $regex: `^${cardId}(__|$)`, $options: 'i' }
+                    }
+                }
+            }
         );
 
-        console.log(`⚠️ GLOBAL PURGE: Item ${cardId} removed from ${result.modifiedCount} users by ${userEmail}.`);
+        console.log(`⚠️ GLOBAL PURGE: Item ${cardId} (and variants) removed from ${result.modifiedCount} users by ${userEmail}.`);
         res.json({ success: true, modifiedCount: result.modifiedCount });
     } catch (e) {
         console.error("Purge Error:", e);
