@@ -970,14 +970,30 @@ export const useGameLogic = () => {
             return;
         }
 
-        // Optimistic
+        console.log(`🗑️ [FRONTEND] Attempting to delete item: ${id}`);
+
+        // Optimistic update
         setInventory(prev => {
             const next = prev.filter(i => i.id !== id);
             localStorage.setItem(`nexus_inv_${target}`, JSON.stringify(next));
             return next;
         });
+
         if (!isGuest && navigator.onLine) {
-            try { await apiService.deleteCard(target, id); } catch (e) { }
+            try {
+                await apiService.deleteCard(target, id);
+                console.log(`✅ [FRONTEND] Delete successful on backend for ${id}`);
+            } catch (e: any) {
+                console.error(`❌ [FRONTEND] Delete failed for ${id}:`, e.message);
+                // Notification for sync failure
+                setNotification({
+                    id: 'delete-err-' + Date.now(),
+                    type: 'error',
+                    message: `Nepodařilo se smazat kartu z cloudu: ${e.message}`
+                });
+                // Revert or refresh to stay in sync
+                handleRefreshDatabase();
+            }
         }
     };
 
