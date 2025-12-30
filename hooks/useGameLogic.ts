@@ -702,16 +702,26 @@ export const useGameLogic = () => {
 
         if (navigator.onLine && userEmail) {
             try {
+                // 1. Check Personal Cloud Inventory
                 const cloudItem = await apiService.getCardById(userEmail, code);
                 if (cloudItem) {
                     handleFoundItem(cloudItem, 'scanner');
                     return;
                 }
-            } catch (e) { /* Silent ID check fail */ }
+
+                // 2. Check Global Master Catalog (AdminDB)
+                // This fixes the issue where players couldn't scan new items
+                const catalogItem = await apiService.getCardFromCatalog(code);
+                if (catalogItem) {
+                    handleFoundItem(catalogItem, 'scanner');
+                    return;
+                }
+
+            } catch (e) { /* Silent check fail */ }
         }
 
         setIsAIThinking(false);
-        setNotification({ id: 'not-found-' + Date.now(), type: 'error', message: 'ID karty nenalezeno.' });
+        setNotification({ id: 'not-found-' + Date.now(), type: 'error', message: 'ID karty nenalezeno v databázi.' });
         playSound('error');
     };
 

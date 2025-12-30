@@ -106,6 +106,7 @@ export const getMasterCatalog = async (userEmail?: string): Promise<GameEvent[]>
   return fetchData<GameEvent[]>(`${BASE_API_URL}/inventory/${userEmail}`);
 };
 export const getCardById = async (userEmail: string, cardId: string): Promise<GameEvent | null> => { try { return await fetchData<GameEvent>(`${BASE_API_URL}/inventory/${userEmail}/${encodeURIComponent(cardId)}`, undefined, true); } catch { return null; } };
+export const getCardFromCatalog = async (cardId: string): Promise<GameEvent | null> => { try { return await fetchData<GameEvent>(`${BASE_API_URL}/catalog/${encodeURIComponent(cardId)}`, undefined, true); } catch { return null; } };
 export const getRoomStatus = async (roomId: string): Promise<any> => fetchData(`${BASE_API_URL}/rooms/${roomId}/status`);
 export const updatePlayerStatus = async (roomId: string, userName: string, hp: number): Promise<void> => { fetchData(`${BASE_API_URL}/rooms/${roomId}/status`, { method: 'POST', body: JSON.stringify({ userName, hp }) }, true).catch(() => { }); };
 export const nextTurn = async (roomId: string): Promise<any> => fetchData(`${BASE_API_URL}/rooms/${roomId}/next-turn`, { method: 'POST' });
