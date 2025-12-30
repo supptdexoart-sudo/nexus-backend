@@ -11,7 +11,6 @@ interface ServerLoaderProps {
 
 const ServerLoader: React.FC<ServerLoaderProps> = ({ onConnected, onSwitchToOffline }) => {
   const [status, setStatus] = useState<'checking' | 'error'>('checking');
-  const [retryCount, setRetryCount] = useState(0);
 
   const checkConnection = async () => {
     setStatus('checking');
@@ -26,7 +25,7 @@ const ServerLoader: React.FC<ServerLoaderProps> = ({ onConnected, onSwitchToOffl
   useEffect(() => {
     checkConnection();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [retryCount]);
+  }, []);
 
   return (
     <div className="h-screen w-screen bg-black flex flex-col items-center justify-center p-8 relative overflow-hidden">
@@ -75,16 +74,22 @@ const ServerLoader: React.FC<ServerLoaderProps> = ({ onConnected, onSwitchToOffl
 
             <div className="flex flex-col gap-3 w-full mt-4">
               <button
-                onClick={() => window.location.reload()}
+                onClick={checkConnection}
                 className="py-4 bg-white text-black font-black uppercase text-xs tracking-widest active:bg-zinc-200 transition-colors flex items-center justify-center gap-2 active:scale-95"
               >
-                <RefreshCw className="w-4 h-4" /> ZKUSIT ZNOVU
+                <RefreshCcw className="w-4 h-4" /> ZKUSIT ZNOVU
+              </button>
+              <button
+                onClick={onSwitchToOffline}
+                className="py-4 bg-zinc-900 text-arc-cyan font-black uppercase text-xs tracking-widest border border-arc-cyan/30 active:bg-arc-cyan/10 transition-colors active:scale-95"
+              >
+                SPUSTIT LOKÁLNÍ PROTOKOL
               </button>
               <button
                 onClick={() => { localStorage.clear(); window.location.reload(); }}
-                className="py-4 bg-zinc-900 text-zinc-500 font-bold uppercase text-[10px] tracking-widest border border-zinc-800 active:text-white active:border-zinc-600 transition-colors active:scale-95"
+                className="py-2 text-zinc-600 font-bold uppercase text-[8px] tracking-[0.2em] hover:text-white transition-colors"
               >
-                ODHLÁSIT A VYČISTIT MEZIPAMĚŤ
+                VYČISTIT ARCHIVY (LOGOUT)
               </button>
             </div>
           </motion.div>
