@@ -35,7 +35,25 @@ window.onerror = function (msg, url, line, col, error) {
   errorDiv.style.fontFamily = 'monospace';
   errorDiv.style.whiteSpace = 'pre-wrap';
   errorDiv.style.overflow = 'auto';
-  errorDiv.innerHTML = `<h1>CRITICAL ERROR</h1><h3>${msg}</h3><p>${url}:${line}:${col}</p><pre>${error?.stack || 'No stack'}</pre>`;
+
+  // ✅ SECURE - Using textContent instead of innerHTML to prevent XSS
+  const errorTitle = document.createElement('h1');
+  errorTitle.textContent = 'CRITICAL ERROR';
+
+  const errorMessage = document.createElement('h3');
+  errorMessage.textContent = msg;
+
+  const errorLocation = document.createElement('p');
+  errorLocation.textContent = `${url}:${line}:${col}`;
+
+  const errorStack = document.createElement('pre');
+  errorStack.textContent = error?.stack || 'No stack';
+
+  errorDiv.appendChild(errorTitle);
+  errorDiv.appendChild(errorMessage);
+  errorDiv.appendChild(errorLocation);
+  errorDiv.appendChild(errorStack);
+
   document.body.appendChild(errorDiv);
   return false;
 };
@@ -55,7 +73,17 @@ window.onunhandledrejection = function (event) {
   errorDiv.style.whiteSpace = 'pre-wrap';
   errorDiv.style.borderTop = '2px solid red';
   errorDiv.style.overflow = 'auto';
-  errorDiv.innerHTML = `<h1>UNHANDLED PROMISE REJECTION</h1><pre>${event.reason?.stack || event.reason}</pre>`;
+
+  // ✅ SECURE - Using textContent instead of innerHTML to prevent XSS
+  const errorTitle = document.createElement('h1');
+  errorTitle.textContent = 'UNHANDLED PROMISE REJECTION';
+
+  const errorStack = document.createElement('pre');
+  errorStack.textContent = event.reason?.stack || event.reason;
+
+  errorDiv.appendChild(errorTitle);
+  errorDiv.appendChild(errorStack);
+
   document.body.appendChild(errorDiv);
 };
 
