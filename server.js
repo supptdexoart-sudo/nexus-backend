@@ -14,6 +14,7 @@ try {
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -238,6 +239,7 @@ app.use('/api', (req, res, next) => {
 app.use('/api/auth', authLimiter);
 
 app.use(bodyParser.json({ limit: '10mb' }));
+app.use(cookieParser());
 app.use(mongoSanitize());
 
 app.use((req, res, next) => {
@@ -521,7 +523,15 @@ app.post('/api/auth/google', async (req, res) => {
         };
 
         if (normalizedEmail === ADMIN_EMAIL.toLowerCase()) {
-            response.adminToken = ADMIN_PASSWORD;
+            // ✅ SECURE - Set HttpOnly cookie instead of returning token in JSON
+            res.cookie('adminToken', ADMIN_PASSWORD, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                path: '/'
+            });
+            // We still return email for client UI state, but NOT the token
         }
 
         res.json(response);
@@ -545,7 +555,13 @@ app.post('/api/auth/logout',
         try {
             const { email } = req.body;
             destroySession(email.toLowerCase());
-            console.log(`🚪 [LOGOUT] Session destroyed for: ${email}`);
+            res.clearCookie('adminToken', {
+                path: '/',
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Strict'
+            });
+            console.log(`🚪 [LOGOUT] Session destroyed and cookie cleared for: ${email}`);
             res.json({ success: true, message: 'Odhlášení úspěšné' });
         } catch (e) {
             console.error("Logout error:", e);
