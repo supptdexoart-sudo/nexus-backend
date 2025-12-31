@@ -554,6 +554,23 @@ app.post('/api/auth/logout',
     }
 );
 
+// EMERGENCY: Force reset admin session (temporary fix)
+app.post('/api/auth/emergency-reset-admin', (req, res) => {
+    try {
+        const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+        if (adminEmail) {
+            destroySession(adminEmail);
+            console.log(`🚨 [EMERGENCY] Admin session forcefully destroyed: ${adminEmail}`);
+            res.json({ success: true, message: 'Admin session reset successful' });
+        } else {
+            res.status(500).json({ message: 'Admin email not configured' });
+        }
+    } catch (e) {
+        console.error("Emergency reset error:", e);
+        res.status(500).json({ message: e.message });
+    }
+});
+
 // PLAYER PROFILE ROUTES
 // Save player profile (stats, nickname, character)
 app.post('/api/profile/save',
