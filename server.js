@@ -371,6 +371,18 @@ app.post('/api/inventory/validate', async (req, res) => {
         const validItems = items.map(pItem => {
             if (!pItem || !pItem.id) return null;
 
+            // [EARLY EXIT] Allow items with special prefixes or types WITHOUT catalog validation
+            const allowedPrefixes = ['LOOT-', 'REWARD-', 'QUEST-', 'ENCOUNTER-', 'GENERATED-', 'BOUGHT-', 'CRAFTED-'];
+            const allowedTypes = ['RESOURCE', 'SUROVINA'];
+            const hasAllowedPrefix = allowedPrefixes.some(prefix => pItem.id.toUpperCase().startsWith(prefix));
+            const hasAllowedType = allowedTypes.includes(pItem.type);
+
+            if (hasAllowedPrefix || hasAllowedType) {
+                console.log(`[VALIDATION] Item ALLOWED (Exception): ${pItem.id} (${pItem.title}) - Type: ${pItem.type}`);
+                return { ...pItem, isSaved: true };
+            }
+
+            // [CATALOG VALIDATION] Only for items without special prefixes
             const fullId = pItem.id.toLowerCase().trim();
             const baseId = fullId.split('__')[0];
             const titleKey = pItem.title ? `TITLE:${pItem.title.toLowerCase().trim()}` : null;
@@ -395,18 +407,6 @@ app.post('/api/inventory/validate', async (req, res) => {
                         ? { ...template.resourceConfig, resourceAmount: pItem.resourceConfig.resourceAmount }
                         : template.resourceConfig
                 };
-            }
-
-
-            // [EXCEPTION] Allow items that players can obtain from events/encounters
-            const allowedPrefixes = ['LOOT-', 'REWARD-', 'QUEST-', 'ENCOUNTER-', 'GENERATED-'];
-            const allowedTypes = ['RESOURCE', 'SUROVINA'];
-            const hasAllowedPrefix = allowedPrefixes.some(prefix => pItem.id.toUpperCase().startsWith(prefix));
-            const hasAllowedType = allowedTypes.includes(pItem.type);
-
-            if (hasAllowedPrefix || hasAllowedType) {
-                console.log(`[VALIDATION] Item ALLOWED (Exception): ${pItem.id} (${pItem.title}) - Type: ${pItem.type}`);
-                return { ...pItem, isSaved: true };
             }
 
             console.warn(`[VALIDATION] Item REJECTED (Missing from Master): ${pItem.id} (${pItem.title})`);
