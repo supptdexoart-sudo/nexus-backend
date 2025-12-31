@@ -218,7 +218,7 @@ const generalLimiter = rateLimit({
 // ✅ SECURE - Stricter limit for authentication endpoints
 const authLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,  // 5 minutes
-    max: 20,  // 20 login attempts per 5 minutes
+    max: 50,  // 50 login attempts per 5 minutes (increased for development/testing)
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "⛔ Příliš mnoho pokusů o přihlášení. Zkuste to za 5 minut." }
