@@ -218,14 +218,26 @@ const generalLimiter = rateLimit({
 // ✅ SECURE - Stricter limit for authentication endpoints
 const authLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,  // 5 minutes
-    max: 50,  // 50 login attempts per 5 minutes (increased for development/testing)
+    max: 5,  // 5 login attempts per 5 minutes (protection against brute force)
     standardHeaders: true,
     legacyHeaders: false,
-    message: { message: "⛔ Příliš mnoho pokusů o přihlášení. Zkuste to za 5 minut." }
+    message: { message: "⛔ Příliš mnoho pokusů o přihlášení. Zkuste to za 5 minut." },
+    skip: (req) => {
+        // Skip rate limiting for admin email
+        const email = req.body?.email || req.headers['x-user-email'];
+        return email && email.toLowerCase() === 'zbynekbal97@gmail.com';
+    }
 });
 
-// Apply general rate limiting to all API routes
-app.use('/api', generalLimiter);
+// Apply general rate limiting to all API routes (except admin)
+app.use('/api', (req, res, next) => {
+    const email = req.headers['x-user-email'];
+    const isAdmin = email && email.toLowerCase() === 'zbynekbal97@gmail.com';
+    if (isAdmin) {
+        return next(); // Skip rate limiting for admin
+    }
+    return generalLimiter(req, res, next);
+});
 
 // Apply stricter rate limiting to auth routes
 app.use('/api/auth', authLimiter);
@@ -481,7 +493,18 @@ app.post('/api/auth/google', async (req, res) => {
         console.log(`✅ Google Login Success: ${normalizedEmail}`);
 
         // Create session and log authentication
-        createSession(normalizedEmail, ip);
+        try {
+            createSession(normalizedEmail, ip);
+        } catch (e) {
+            if (e.message === 'ADMIN_ALREADY_LOGGED_IN') {
+                logSecurityAttempt(normalizedEmail, false, ip, 'Admin already logged in from another device');
+                return res.status(403).json({
+                    message: '⛔ Admin účet je již přihlášen z jiného zařízení. Odhlaste se nejprve tam.'
+                });
+            }
+            throw e; // Re-throw other errors
+        }
+
         logSecurityAttempt(normalizedEmail, true, ip);
 
         const user = await getOrCreateUser(normalizedEmail);

@@ -61,9 +61,35 @@ export const sessionManager = (req, res, next) => {
     next();
 };
 
+// Check if admin already has an active session
+export const hasActiveAdminSession = (email) => {
+    const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
+    if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        return false; // Not admin, no restriction
+    }
+
+    const session = sessions.get(email.toLowerCase());
+    if (!session) return false;
+
+    const now = Date.now();
+    const timeSinceActivity = now - session.lastActivity;
+    return timeSinceActivity < SESSION_TIMEOUT;
+};
+
 // Create new session (call after successful login)
 export const createSession = (email, ip) => {
-    updateSession(email, ip);
+    const ADMIN_EMAIL = 'zbynekbal97@gmail.com';
+    const normalizedEmail = email.toLowerCase();
+
+    // For admin, check if there's already an active session
+    if (normalizedEmail === ADMIN_EMAIL.toLowerCase()) {
+        if (hasActiveAdminSession(normalizedEmail)) {
+            logSecurityEvent('ADMIN_CONCURRENT_LOGIN_BLOCKED', { user: email, ip });
+            throw new Error('ADMIN_ALREADY_LOGGED_IN');
+        }
+    }
+
+    updateSession(normalizedEmail, ip);
     logSecurityEvent('SESSION_CREATED', { user: email, ip });
 };
 
