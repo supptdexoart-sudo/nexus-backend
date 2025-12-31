@@ -209,7 +209,7 @@ app.use(cors({
 // ✅ SECURE - Reasonable rate limits to prevent abuse
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,  // 15 minutes
-    max: 100,  // 100 requests per 15 minutes for general endpoints
+    max: 500,  // 500 requests per 15 minutes (increased for development/testing)
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "⛔ Příliš mnoho požadavků. Zkuste to později." }
