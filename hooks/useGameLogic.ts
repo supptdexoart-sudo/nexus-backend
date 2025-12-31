@@ -920,7 +920,7 @@ export const useGameLogic = () => {
 
             // 2. Deep Sync & Validate with Master Catalog Template
             // This ensures stats are updated and non-existent cards are removed.
-            const { validItems } = await apiService.validateLocalItems(rawInv);
+            const { validItems } = await apiService.validateLocalItems(rawInv, target);
 
             console.log(`📡 [DEEP-SYNC] Processed ${rawInv.length} items. Result: ${validItems.length} valid & up-to-date items.`);
 

@@ -53,10 +53,10 @@ export const checkHealth = async (): Promise<boolean> => {
 };
 
 // UPDATED: Validate and Deep-Sync local items against Master Catalog
-export const validateLocalItems = async (items: GameEvent[]): Promise<{ validItems: GameEvent[] }> => {
+export const validateLocalItems = async (items: GameEvent[], userEmail?: string): Promise<{ validItems: GameEvent[] }> => {
   return fetchData(`${BASE_API_URL}/inventory/validate`, {
     method: 'POST',
-    body: JSON.stringify({ items })
+    body: JSON.stringify({ items, userEmail })
   });
 };
 
