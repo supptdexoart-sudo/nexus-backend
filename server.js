@@ -597,7 +597,7 @@ app.post('/api/inventory/:email',
     param('email').isEmail().normalizeEmail(),
     body('id').isString().trim().notEmpty(),
     body('title').isString().trim().notEmpty(),
-    body('type').isIn(['ITEM', 'EVENT', 'COMBAT', 'DILEMMA', 'RESOURCE', 'MERCHANT', 'STATION', 'PŘEDMĚT', 'UDÁLOST', 'SOUBOJ', 'DILEMA', 'SUROVINA', 'OBCHODNÍK', 'STANICE']),
+    body('type').isIn(['ITEM', 'EVENT', 'COMBAT', 'DILEMMA', 'RESOURCE', 'MERCHANT', 'STATION', 'PŘEDMĚT', 'UDÁLOST', 'SOUBOJ', 'DILEMA', 'SUROVINA', 'OBCHODNÍK', 'STANICE', 'VESMÍRNÁ_STANICE', 'PLANETA']),
     async (req, res) => {
         // Check validation errors
         const errors = validationResult(req);
