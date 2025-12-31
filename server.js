@@ -1448,6 +1448,7 @@ app.post('/api/rooms/:roomId/sector-event', async (req, res) => {
 // --- CHARACTER API ---
 // Get all characters for admin
 app.get('/api/characters/:adminEmail', adminAuth, async (req, res) => {
+    console.log("🚀 [DEBUG] Character endpoint hit (v2.0 fixed)");
     try {
         const adminEmail = req.params.adminEmail.toLowerCase().trim();
 
