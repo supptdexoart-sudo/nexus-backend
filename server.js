@@ -570,6 +570,22 @@ app.post('/api/auth/logout',
     }
 );
 
+// Check if user is logged in (via cookie)
+app.get('/api/auth/check', (req, res) => {
+    const adminToken = req.cookies.adminToken;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminToken && adminToken === adminPassword) {
+        // Token is valid, return admin email
+        return res.json({
+            authenticated: true,
+            email: 'zbynekbal97@gmail.com'
+        });
+    }
+
+    res.status(401).json({ authenticated: false });
+});
+
 // EMERGENCY: Force reset admin session (temporary fix)
 app.post('/api/auth/emergency-reset-admin', (req, res) => {
     try {
@@ -1166,91 +1182,6 @@ app.delete('/api/admin/purge/:cardId', adminAuth, async (req, res) => {
     }
 });
 
-// --- CHARACTER ROUTES ---
-
-// Get all characters for admin
-app.get('/api/characters/:adminEmail', adminAuth, async (req, res) => {
-    try {
-        const adminEmail = req.params.adminEmail.toLowerCase();
-        // HLAVNÍ ADMIN vidí všechny postavy (i ty z player app nebo legacy)
-        const query = adminEmail === ADMIN_EMAIL ? {} : { adminEmail };
-        const characters = await Character.find(query).sort({ createdAt: -1 });
-        console.log(`🔍 Fetched ${characters.length} characters for admin ${adminEmail}`);
-        res.json(characters);
-    } catch (e) {
-        console.error("❌ Get characters error:", e);
-        res.status(500).json({ message: e.message });
-    }
-});
-
-// Get character by ID (for scanning/selection)
-app.get('/api/characters/by-id/:characterId', async (req, res) => {
-    try {
-        const characterId = req.params.characterId.toUpperCase();
-        const character = await Character.findOne({ characterId });
-        if (!character) return res.status(404).json({ message: 'Character not found' });
-        res.json(character);
-    } catch (e) {
-        console.error("Get character by ID error:", e);
-        res.status(500).json({ message: e.message });
-    }
-});
-
-// Create or update character
-app.post('/api/characters/:adminEmail', adminAuth, async (req, res) => {
-    try {
-        const adminEmail = req.params.adminEmail.toLowerCase();
-        const characterData = req.body;
-
-        // Generate ID if not provided
-        if (!characterData.characterId) {
-            const count = await Character.countDocuments({ adminEmail });
-            characterData.characterId = `CHAR-${String(count + 1).padStart(3, '0')}`;
-        }
-
-        characterData.characterId = characterData.characterId.toUpperCase();
-        characterData.adminEmail = adminEmail;
-
-        // Try to find existing character
-        const existing = await Character.findOne({ characterId: characterData.characterId });
-
-        if (existing) {
-            // Update existing
-            Object.assign(existing, characterData);
-            await existing.save();
-            console.log(`✏️ Character updated: ${characterData.characterId} by ${adminEmail}`);
-            res.json(existing);
-        } else {
-            // Create new
-            const newChar = await Character.create(characterData);
-            console.log(`✨ Character created: ${characterData.characterId} by ${adminEmail}`);
-            res.json(newChar);
-        }
-    } catch (e) {
-        console.error("Save character error:", e);
-        res.status(500).json({ message: e.message });
-    }
-});
-
-// Delete character
-app.delete('/api/characters/:adminEmail/:characterId', adminAuth, async (req, res) => {
-    try {
-        const adminEmail = req.params.adminEmail.toLowerCase();
-        const characterId = req.params.characterId.toUpperCase();
-
-        const result = await Character.deleteOne({ characterId, adminEmail });
-
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ message: 'Character not found or unauthorized' });
-        }
-
-        console.log(`🗑️ Character deleted: ${characterId} by ${adminEmail}`);
-        res.json({ success: true });
-    } catch (e) {
-        console.error("Delete character error:", e);
-        res.status(500).json({ message: e.message });
-    }
-});
 
 // Rooms
 app.post('/api/rooms', async (req, res) => {
@@ -1516,21 +1447,25 @@ app.post('/api/rooms/:roomId/sector-event', async (req, res) => {
 
 // --- CHARACTER API ---
 // Get all characters for admin
-app.get('/api/characters/:adminEmail', async (req, res) => {
+app.get('/api/characters/:adminEmail', adminAuth, async (req, res) => {
     try {
         const adminEmail = req.params.adminEmail.toLowerCase().trim();
 
-        // Hledáme postavy které patří adminovi NEBO nemají žádného vlastníka (orphaned)
-        const characters = await Character.find({
-            $or: [
-                { adminEmail },
-                { adminEmail: { $exists: false } },
-                { adminEmail: null },
-                { adminEmail: "" }
-            ]
-        }).sort({ createdAt: -1 });
+        // HLAVNÍ ADMIN vidí vše, ostatní jen své nebo osiřelé
+        const query = adminEmail === ADMIN_EMAIL.toLowerCase()
+            ? {}
+            : {
+                $or: [
+                    { adminEmail },
+                    { adminEmail: { $exists: false } },
+                    { adminEmail: null },
+                    { adminEmail: "" }
+                ]
+            };
 
-        console.log(`✅ [CHARACTER] Fetched ${characters.length} characters for ${adminEmail} (including orphaned)`);
+        const characters = await Character.find(query).sort({ createdAt: -1 });
+
+        console.log(`✅ [CHARACTER] Fetched ${characters.length} characters for ${adminEmail}`);
         res.json(characters);
     } catch (e) {
         console.error('❌ [CHARACTER] Error fetching characters:', e.message);
@@ -1552,30 +1487,25 @@ app.get('/api/characters/by-id/:characterId', async (req, res) => {
 });
 
 // Save/Update character
-app.post('/api/characters/:adminEmail', async (req, res) => {
+app.post('/api/characters/:adminEmail', adminAuth, async (req, res) => {
     try {
         const adminEmail = req.params.adminEmail.toLowerCase().trim();
         const characterData = req.body;
 
-        // Ensure characterId is uppercase
         if (characterData.characterId) {
             characterData.characterId = characterData.characterId.toUpperCase().trim();
         }
 
-        // Set adminEmail
         characterData.adminEmail = adminEmail;
 
-        // Try to find existing character
         const existing = await Character.findOne({ characterId: characterData.characterId });
 
         if (existing) {
-            // Update existing
             Object.assign(existing, characterData);
             await existing.save();
             console.log(`✅ [CHARACTER] Updated character: ${characterData.characterId}`);
             res.json(existing);
         } else {
-            // Create new
             const newCharacter = await Character.create(characterData);
             console.log(`✅ [CHARACTER] Created new character: ${characterData.characterId}`);
             res.json(newCharacter);
@@ -1587,7 +1517,7 @@ app.post('/api/characters/:adminEmail', async (req, res) => {
 });
 
 // Delete character
-app.delete('/api/characters/:adminEmail/:characterId', async (req, res) => {
+app.delete('/api/characters/:adminEmail/:characterId', adminAuth, async (req, res) => {
     try {
         const adminEmail = req.params.adminEmail.toLowerCase().trim();
         const characterId = decodeURIComponent(req.params.characterId).toUpperCase().trim();

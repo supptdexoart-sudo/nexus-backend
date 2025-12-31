@@ -83,9 +83,16 @@ export const createSession = (email, ip) => {
 
     // For admin, check if there's already an active session
     if (normalizedEmail === ADMIN_EMAIL.toLowerCase()) {
-        if (hasActiveAdminSession(normalizedEmail)) {
-            logSecurityEvent('ADMIN_CONCURRENT_LOGIN_BLOCKED', { user: email, ip });
-            throw new Error('ADMIN_ALREADY_LOGGED_IN');
+        const existingSession = sessions.get(normalizedEmail);
+        if (existingSession) {
+            // ✅ SECURE - Allow re-login if it's the same IP
+            if (existingSession.ip === ip) {
+                console.log(`[SessionManager] Admin re-login allowed from same IP: ${ip}`);
+                sessions.delete(normalizedEmail); // Clear old session to create a fresh one
+            } else {
+                logSecurityEvent('ADMIN_CONCURRENT_LOGIN_BLOCKED', { user: email, ip, existingIp: existingSession.ip });
+                throw new Error('ADMIN_ALREADY_LOGGED_IN');
+            }
         }
     }
 
