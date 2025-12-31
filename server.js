@@ -218,15 +218,10 @@ const generalLimiter = rateLimit({
 // ✅ SECURE - Stricter limit for authentication endpoints
 const authLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,  // 5 minutes
-    max: 5,  // 5 login attempts per 5 minutes (protection against brute force)
+    max: 5,  // 5 login attempts per 5 minutes (protection against brute force - applies to ALL users including admin)
     standardHeaders: true,
     legacyHeaders: false,
-    message: { message: "⛔ Příliš mnoho pokusů o přihlášení. Zkuste to za 5 minut." },
-    skip: (req) => {
-        // Skip rate limiting for admin email
-        const email = req.body?.email || req.headers['x-user-email'];
-        return email && email.toLowerCase() === 'zbynekbal97@gmail.com';
-    }
+    message: { message: "⛔ Příliš mnoho pokusů o přihlášení. Zkuste to za 5 minut." }
 });
 
 // Apply general rate limiting to all API routes (except admin)
