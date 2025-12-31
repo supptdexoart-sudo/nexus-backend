@@ -413,22 +413,18 @@ app.post('/api/inventory/validate', async (req, res) => {
             return null;
         }).filter(Boolean);
 
+
         // ✅ AUTO-CLEANUP: If user is identified by header, update their DB inventory immediately
         const userEmailHeader = req.headers['x-user-email'];
         if (userEmailHeader) {
             const userEmail = userEmailHeader.toLowerCase().trim();
-            // Don't auto-clean admin's own inventory via this route just in case
             if (userEmail !== ADMIN_EMAIL.toLowerCase()) {
                 const user = await User.findOne({ email: userEmail });
                 if (user) {
-                    const prevCount = user.inventory.length;
-                    const newCount = validItems.length;
-                    if (prevCount !== newCount) {
-                        console.log(`🧹 [AUTO-CLEANUP] Updating DB for ${userEmail}: ${prevCount} -> ${newCount} items.`);
-                        user.inventory = validItems;
-                        user.markModified('inventory');
-                        await user.save();
-                    }
+                    console.log(`🧹 [AUTO-CLEANUP] Syncing DB for ${userEmail}.`);
+                    user.inventory = validItems;
+                    user.markModified('inventory');
+                    await user.save();
                 }
             }
         }
