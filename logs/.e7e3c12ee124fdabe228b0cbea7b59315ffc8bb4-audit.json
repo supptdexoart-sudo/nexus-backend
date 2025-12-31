@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\Zbynek\\Desktop\\nexus-game-companion\\nexus-backend\\logs\\.e7e3c12ee124fdabe228b0cbea7b59315ffc8bb4-audit.json",
+    "files": [
+        {
+            "date": 1767139361626,
+            "name": "C:\\Users\\Zbynek\\Desktop\\nexus-game-companion\\nexus-backend\\logs\\audit-2025-12-31.log",
+            "hash": "ffb2cb95f30dfac25ac8e529d64e3c795bb1cc9ef1f01fa24d84b8afaa2b5431"
+        }
+    ],
+    "hashType": "sha256"
+}
