@@ -534,6 +534,26 @@ app.post('/api/auth/google', async (req, res) => {
     }
 });
 
+// Logout endpoint - destroy session
+app.post('/api/auth/logout',
+    body('email').isEmail().normalizeEmail(),
+    (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ message: 'Neplatný email', errors: errors.array() });
+        }
+        try {
+            const { email } = req.body;
+            destroySession(email.toLowerCase());
+            console.log(`🚪 [LOGOUT] Session destroyed for: ${email}`);
+            res.json({ success: true, message: 'Odhlášení úspěšné' });
+        } catch (e) {
+            console.error("Logout error:", e);
+            res.status(500).json({ message: e.message });
+        }
+    }
+);
+
 // PLAYER PROFILE ROUTES
 // Save player profile (stats, nickname, character)
 app.post('/api/profile/save',
