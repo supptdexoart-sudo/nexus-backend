@@ -255,7 +255,17 @@ const UserSchema = new mongoose.Schema({
     playerClass: String,
     inventory: [Object],
     friends: [String],
-    requests: [{ fromEmail: String, timestamp: Number }]
+    requests: [{ fromEmail: String, timestamp: Number }],
+    // Player Stats (persistent across sessions)
+    playerStats: {
+        hp: { type: Number, default: 100 },
+        armor: { type: Number, default: 0 },
+        fuel: { type: Number, default: 100 },
+        gold: { type: Number, default: 0 },
+        oxygen: { type: Number, default: 100 }
+    },
+    // Active Character (selected character data)
+    activeCharacter: { type: Object, default: null }
 }, { timestamps: true });
 
 const TransactionSchema = new mongoose.Schema({
@@ -523,6 +533,94 @@ app.post('/api/auth/google', async (req, res) => {
         res.status(401).json({ message: `Google Auth Failed: ${e.message}` });
     }
 });
+
+// PLAYER PROFILE ROUTES
+// Save player profile (stats, nickname, character)
+app.post('/api/profile/save',
+    body('email').isEmail().normalizeEmail(),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ message: 'Neplatný email', errors: errors.array() });
+        }
+        try {
+            const { email, nickname, playerClass, playerStats, activeCharacter } = req.body;
+            const user = await getOrCreateUser(email);
+
+            if (nickname !== undefined) user.nickname = nickname;
+            if (playerClass !== undefined) user.playerClass = playerClass;
+            if (playerStats) user.playerStats = playerStats;
+            if (activeCharacter !== undefined) user.activeCharacter = activeCharacter;
+
+            user.markModified('playerStats');
+            user.markModified('activeCharacter');
+            await user.save();
+
+            res.json({ success: true, message: 'Profil uložen' });
+        } catch (e) {
+            console.error("Profile save error:", e);
+            res.status(500).json({ message: e.message });
+        }
+    }
+);
+
+// Get player profile
+app.get('/api/profile/:email',
+    param('email').isEmail().normalizeEmail(),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ message: 'Neplatný email', errors: errors.array() });
+        }
+        try {
+            const user = await getOrCreateUser(req.params.email);
+            res.json({
+                nickname: user.nickname,
+                playerClass: user.playerClass,
+                playerStats: user.playerStats || { hp: 100, armor: 0, fuel: 100, gold: 0, oxygen: 100 },
+                activeCharacter: user.activeCharacter
+            });
+        } catch (e) {
+            res.status(500).json({ message: e.message });
+        }
+    }
+);
+
+// Reset player profile
+app.post('/api/profile/reset',
+    body('email').isEmail().normalizeEmail(),
+    body('resetType').isIn(['full', 'partial']),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ message: 'Neplatné parametry', errors: errors.array() });
+        }
+        try {
+            const { email, resetType } = req.body;
+            const user = await getOrCreateUser(email);
+
+            // Reset stats, nickname, character
+            user.nickname = null;
+            user.playerClass = null;
+            user.playerStats = { hp: 100, armor: 0, fuel: 100, gold: 0, oxygen: 100 };
+            user.activeCharacter = null;
+
+            // Full reset also clears inventory
+            if (resetType === 'full') {
+                user.inventory = [];
+            }
+
+            user.markModified('playerStats');
+            user.markModified('activeCharacter');
+            await user.save();
+
+            res.json({ success: true, message: `Účet resetován (${resetType})` });
+        } catch (e) {
+            console.error("Profile reset error:", e);
+            res.status(500).json({ message: e.message });
+        }
+    }
+);
 
 // GENERIC INVENTORY ROUTES
 // ✅ SECURE - Email validation added
