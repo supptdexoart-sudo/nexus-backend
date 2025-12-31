@@ -523,11 +523,12 @@ app.post('/api/auth/google', async (req, res) => {
         };
 
         if (normalizedEmail === ADMIN_EMAIL.toLowerCase()) {
-            // ✅ SECURE - Set HttpOnly cookie instead of returning token in JSON
+            // ✅ SECURE - Set HttpOnly cookie
+            // NOTE: For cross-site (GitHub Pages -> Render), we MUST use SameSite=None and Secure=true
             res.cookie('adminToken', ADMIN_PASSWORD, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Strict',
+                secure: true, // Required for SameSite=None
+                sameSite: 'None',
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
                 path: '/'
             });
@@ -558,8 +559,8 @@ app.post('/api/auth/logout',
             res.clearCookie('adminToken', {
                 path: '/',
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Strict'
+                secure: true,
+                sameSite: 'None'
             });
             console.log(`🚪 [LOGOUT] Session destroyed and cookie cleared for: ${email}`);
             res.json({ success: true, message: 'Odhlášení úspěšné' });
