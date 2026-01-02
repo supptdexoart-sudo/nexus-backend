@@ -86,7 +86,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ALLOWED_EMAILS = [
     'zbynekbal97@gmail.com',
     'bluegodablecz@gmail.com',
-    'pharao1997@gmail.com'
+    'pharao1997@gmail.com',
+    'kwixbro@gmail.com'
 ];
 
 console.log('\n🛡️ --- STARTUJI NEXUS BACKEND (SECURE MODE v1.9 - ADMIN FIX) ---');
