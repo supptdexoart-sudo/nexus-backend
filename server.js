@@ -407,6 +407,9 @@ app.post('/api/inventory/validate', async (req, res) => {
             const baseId = fullId.split('__')[0];
             const titleKey = pItem.title ? `TITLE:${pItem.title.toLowerCase().trim()}` : null;
 
+            // Debug logging
+            console.log(`[VALIDATION DEBUG] Checking item: ${pItem.id} | Base ID: ${baseId}`);
+
             // 1. Try to find by Exact ID or Base ID
             let template = masterMap.get(baseId);
 
@@ -417,18 +420,27 @@ app.post('/api/inventory/validate', async (req, res) => {
 
             if (template) {
                 // Return updated template but keep player's unique instance ID and status
+                console.log(`[VALIDATION] Item VALID (Template found): ${pItem.id} → Base: ${baseId}`);
                 return {
                     ...template,
                     id: pItem.id, // Preserve the instance ID (with suffix)
                     isSaved: true,
                     // If the original item was a resource container, preserve its specific amount 
-                    // unless the template has a forced amount.
                     resourceConfig: pItem.resourceConfig?.isResourceContainer
                         ? { ...template.resourceConfig, resourceAmount: pItem.resourceConfig.resourceAmount }
                         : template.resourceConfig
                 };
             }
 
+            // [FIX] PRESERVE ITEMS WITH UNIQUE SUFFIXES (Traded/Crafted items)
+            // If item has a suffix (e.g., ITEM-01__ABC123), it's a player-owned instance
+            // Keep it even if base ID is not in Master Catalog (could be from another player)
+            if (fullId.includes('__')) {
+                console.warn(`[VALIDATION] Item PRESERVED (Unique suffix, no template): ${pItem.id} (${pItem.title})`);
+                return { ...pItem, isSaved: true };
+            }
+
+            // Only reject items without suffix that are not in catalog
             console.warn(`[VALIDATION] Item REJECTED (Missing from Master): ${pItem.id} (${pItem.title})`);
             return null;
         }).filter(Boolean);
