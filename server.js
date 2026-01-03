@@ -211,7 +211,7 @@ app.use(cors({
 // ✅ SECURE - Reasonable rate limits to prevent abuse
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,  // 15 minutes
-    max: 500,  // 500 requests per 15 minutes (increased for development/testing)
+    max: 2000,  // 2000 requests per 15 minutes (~133/min or ~2.2/sec) - allows for game polling
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "⛔ Příliš mnoho požadavků. Zkuste to později." }
@@ -1209,8 +1209,20 @@ app.post('/api/rooms/:roomId/join', async (req, res) => {
         if (existing) {
             existing.lastSeen = Date.now();
             if (req.body.email) existing.email = req.body.email;
+
+            // If game is started and player is not in turnOrder, add them back
+            if (r.isGameStarted && r.turnOrder && !r.turnOrder.includes(req.body.userName)) {
+                console.log(`[REJOIN] Adding ${req.body.userName} back to turnOrder`);
+                r.turnOrder.push(req.body.userName);
+            }
         } else {
             r.members.push({ name: req.body.userName, email: req.body.email, hp: 100, lastSeen: Date.now(), isReady: false });
+
+            // If game is started, add new player to turnOrder
+            if (r.isGameStarted && r.turnOrder) {
+                console.log(`[JOIN] Adding new player ${req.body.userName} to turnOrder`);
+                r.turnOrder.push(req.body.userName);
+            }
         }
         await r.save();
         res.json({ success: true });
@@ -1221,9 +1233,46 @@ app.get('/api/rooms/:roomId/status', async (req, res) => {
         const r = await Room.findOne({ roomId: req.params.roomId });
         if (!r) return res.status(404).json({ message: "Sektor nenalezen" });
 
+        // Update lastSeen for the requesting player
+        const userName = req.headers['x-user-name'];
+        console.log(`[HEARTBEAT] Received status request from: ${userName || 'UNKNOWN'}`);
+        if (userName) {
+            const member = r.members.find(m => m.name === userName);
+            if (member) {
+                const oldLastSeen = member.lastSeen;
+                member.lastSeen = Date.now();
+                console.log(`[HEARTBEAT] Updated lastSeen for ${userName} (was: ${oldLastSeen ? Math.floor((Date.now() - oldLastSeen) / 1000) + 's ago' : 'never'})`);
+            } else {
+                console.warn(`[HEARTBEAT] Player ${userName} not found in room members!`);
+            }
+        }
+
+        // Auto-cleanup inactive players (15 seconds timeout = ~5 missed polls)
+        const INACTIVITY_TIMEOUT = 15000; // 15 seconds
+        const now = Date.now();
+        const inactivePlayers = r.members.filter(m =>
+            m.lastSeen && (now - m.lastSeen) > INACTIVITY_TIMEOUT
+        );
+
+        for (const player of inactivePlayers) {
+            console.log(`[AUTO-CLEANUP] Removing inactive player: ${player.name} (last seen: ${Math.floor((now - player.lastSeen) / 1000)}s ago)`);
+            removePlayerFromRoom(r, player.name);
+            r.messages.push({
+                id: 'sys-disconnect-' + Date.now(),
+                sender: 'SYSTEM',
+                text: `⚠️ ${player.name} ztratil spojení se sektorem.`,
+                timestamp: Date.now(),
+                isSystem: true
+            });
+        }
+
         // Auto-cleanup expired sector events
         if (r.activeSectorEvent && r.activeSectorEvent.type && r.activeSectorEvent.expiresAt < Date.now()) {
             r.activeSectorEvent = { type: null, initiator: null, expiresAt: 0 };
+        }
+
+        // Save changes if any cleanup occurred OR if lastSeen was updated
+        if (inactivePlayers.length > 0 || userName) {
             await r.save();
         }
 
@@ -1258,6 +1307,7 @@ app.post('/api/rooms/:roomId/start-game', async (req, res) => {
             r.turnIndex = 0;
             // Shufflování pořadí hráčů
             r.turnOrder = r.members.map(m => m.name).sort(() => Math.random() - 0.5);
+            console.log(`[GAME START] Room: ${r.roomId}, Members: ${r.members.length}, TurnOrder: [${r.turnOrder.join(', ')}], First turn: ${r.turnOrder[0]}`);
             r.messages.push({
                 id: 'sys-' + Date.now(),
                 sender: 'SYSTEM',
