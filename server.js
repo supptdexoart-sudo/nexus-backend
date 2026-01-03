@@ -646,13 +646,18 @@ app.get('/api/profile/:email',
         }
         try {
             const user = await getOrCreateUser(req.params.email);
+
+            // Always return complete profile with defaults to prevent null values
             res.json({
-                nickname: user.nickname,
-                playerClass: user.playerClass,
+                nickname: user.nickname || null, // Explicitly return null if not set (frontend will handle)
+                playerClass: user.playerClass || null, // Explicitly return null if not set
                 playerStats: user.playerStats || { hp: 100, armor: 0, fuel: 100, gold: 0, oxygen: 100 },
-                activeCharacter: user.activeCharacter
+                activeCharacter: user.activeCharacter || null
             });
+
+            console.log(`📡 [PROFILE] Loaded profile for ${req.params.email}: nickname=${user.nickname}, class=${user.playerClass}`);
         } catch (e) {
+            console.error(`❌ [PROFILE] Error loading profile for ${req.params.email}:`, e.message);
             res.status(500).json({ message: e.message });
         }
     }
