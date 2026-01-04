@@ -268,7 +268,11 @@ const UserSchema = new mongoose.Schema({
         oxygen: { type: Number, default: 100 }
     },
     // Active Character (selected character data)
-    activeCharacter: { type: Object, default: null }
+    activeCharacter: { type: Object, default: null },
+    // Room State (for restoring room in incognito mode)
+    lastRoomId: { type: String, default: null },
+    isInRoom: { type: Boolean, default: false },
+    lastRoomUpdate: { type: Date, default: null }
 }, { timestamps: true });
 
 const TransactionSchema = new mongoose.Schema({
@@ -616,13 +620,23 @@ app.post('/api/profile/save',
             return res.status(400).json({ message: 'Neplatný email', errors: errors.array() });
         }
         try {
-            const { email, nickname, playerClass, playerStats, activeCharacter } = req.body;
+            const { email, nickname, playerClass, playerStats, activeCharacter, lastRoomId, isInRoom } = req.body;
             const user = await getOrCreateUser(email);
 
             if (nickname !== undefined) user.nickname = nickname;
             if (playerClass !== undefined) user.playerClass = playerClass;
             if (playerStats) user.playerStats = playerStats;
             if (activeCharacter !== undefined) user.activeCharacter = activeCharacter;
+
+            // NEW: Room state persistence
+            if (lastRoomId !== undefined) user.lastRoomId = lastRoomId;
+            if (isInRoom !== undefined) {
+                user.isInRoom = isInRoom;
+                // Update timestamp when room state changes
+                if (isInRoom) {
+                    user.lastRoomUpdate = new Date();
+                }
+            }
 
             user.markModified('playerStats');
             user.markModified('activeCharacter');
@@ -647,15 +661,31 @@ app.get('/api/profile/:email',
         try {
             const user = await getOrCreateUser(req.params.email);
 
+            // Check if room state is stale (older than 24 hours)
+            let lastRoomId = user.lastRoomId;
+            let isInRoom = user.isInRoom;
+
+            if (user.lastRoomUpdate) {
+                const hoursSinceUpdate = (Date.now() - new Date(user.lastRoomUpdate).getTime()) / (1000 * 60 * 60);
+                if (hoursSinceUpdate > 24) {
+                    // Room state is stale, clear it
+                    lastRoomId = null;
+                    isInRoom = false;
+                    console.log(`⏰ [PROFILE] Room state expired for ${req.params.email} (${hoursSinceUpdate.toFixed(1)}h old)`);
+                }
+            }
+
             // Always return complete profile with defaults to prevent null values
             res.json({
-                nickname: user.nickname || null, // Explicitly return null if not set (frontend will handle)
-                playerClass: user.playerClass || null, // Explicitly return null if not set
+                nickname: user.nickname || null,
+                playerClass: user.playerClass || null,
                 playerStats: user.playerStats || { hp: 100, armor: 0, fuel: 100, gold: 0, oxygen: 100 },
-                activeCharacter: user.activeCharacter || null
+                activeCharacter: user.activeCharacter || null,
+                lastRoomId: lastRoomId || null,
+                isInRoom: isInRoom || false
             });
 
-            console.log(`📡 [PROFILE] Loaded profile for ${req.params.email}: nickname=${user.nickname}, class=${user.playerClass}`);
+            console.log(`📡 [PROFILE] Loaded profile for ${req.params.email}: nickname=${user.nickname}, class=${user.playerClass}, room=${lastRoomId}`);
         } catch (e) {
             console.error(`❌ [PROFILE] Error loading profile for ${req.params.email}:`, e.message);
             res.status(500).json({ message: e.message });
