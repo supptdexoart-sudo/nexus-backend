@@ -272,7 +272,9 @@ const UserSchema = new mongoose.Schema({
     // Room State (for restoring room in incognito mode)
     lastRoomId: { type: String, default: null },
     isInRoom: { type: Boolean, default: false },
-    lastRoomUpdate: { type: Date, default: null }
+    lastRoomUpdate: { type: Date, default: null },
+    // Solo Mode State
+    soloCycleCount: { type: Number, default: 1 }
 }, { timestamps: true });
 
 const TransactionSchema = new mongoose.Schema({
@@ -620,7 +622,7 @@ app.post('/api/profile/save',
             return res.status(400).json({ message: 'Neplatný email', errors: errors.array() });
         }
         try {
-            const { email, nickname, playerClass, playerStats, activeCharacter, lastRoomId, isInRoom } = req.body;
+            const { email, nickname, playerClass, playerStats, activeCharacter, lastRoomId, isInRoom, soloCycleCount } = req.body;
             const user = await getOrCreateUser(email);
 
             if (nickname !== undefined) user.nickname = nickname;
@@ -637,6 +639,9 @@ app.post('/api/profile/save',
                     user.lastRoomUpdate = new Date();
                 }
             }
+
+            // Solo mode state
+            if (soloCycleCount !== undefined) user.soloCycleCount = soloCycleCount;
 
             user.markModified('playerStats');
             user.markModified('activeCharacter');
@@ -682,10 +687,11 @@ app.get('/api/profile/:email',
                 playerStats: user.playerStats || { hp: 100, armor: 0, fuel: 100, gold: 0, oxygen: 100 },
                 activeCharacter: user.activeCharacter || null,
                 lastRoomId: lastRoomId || null,
-                isInRoom: isInRoom || false
+                isInRoom: isInRoom || false,
+                soloCycleCount: user.soloCycleCount || 1
             });
 
-            console.log(`📡 [PROFILE] Loaded profile for ${req.params.email}: nickname=${user.nickname}, class=${user.playerClass}, room=${lastRoomId}`);
+            console.log(`📡 [PROFILE] Loaded profile for ${req.params.email}: nickname=${user.nickname}, class=${user.playerClass}, room=${lastRoomId}, cycle=${user.soloCycleCount}`);
         } catch (e) {
             console.error(`❌ [PROFILE] Error loading profile for ${req.params.email}:`, e.message);
             res.status(500).json({ message: e.message });
